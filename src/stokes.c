@@ -3,7 +3,10 @@
 #include "cal.h"
 #include <math.h>
 #include "fluxdata.h"
+#include "errno.h"//SSG
 
+extern int errno; //SSG
+extern int multibeam; //SSG
 
 
 typedef struct {
@@ -176,7 +179,7 @@ void calculate_stokes(SpecRecord dataset[], int size, int lowchan, int highchan,
 	FILE * skyfile;
 	FILE * calfile;
 	FILE * gainfile;
-
+/*SSG
 	calfile = fopen("calfile.dat", "w");
 	fprintf(calfile, "# Chan ObsCalI ObsCalQ ObsCalU ObsCalV CalCalI CalCalQ CalCalU CalCalV "
 			"GainX GainY GainPhi\n");
@@ -186,9 +189,9 @@ void calculate_stokes(SpecRecord dataset[], int size, int lowchan, int highchan,
 			"GainX GainY GainPhi\n");
 
 	gainfile = fopen("gainfile.dat", "w");
-	fprintf(skyfile, "# Chan ObsSkyI ObsSkyQ ObsSkyU ObsSkyV CalSkyI CalSkyQ CalSkyU CalSkyV "
+	fprintf(gainfile, "# Chan ObsSkyI ObsSkyQ ObsSkyU ObsSkyV CalSkyI CalSkyQ CalSkyU CalSkyV "
 			"GainX GainY GainPhi\n");
-
+SSG*/
 	//iterate over each time step
 	for (i=0; i<size; i++) 
 	{
@@ -212,20 +215,21 @@ void calculate_stokes(SpecRecord dataset[], int size, int lowchan, int highchan,
 		//printf("compute final stokes ...\n");
 		compute_final_stokes(pRec, &TrueSky, ignoreRFI, lowchan, highchan);
 
-		print_stokes(calfile, &ObsCal, &CalCal, &gain, lowchan, highchan);
-		print_stokes(skyfile, &ObsSky, &TrueSky, &gain, lowchan, highchan);
+//		print_stokes(calfile, &ObsCal, &CalCal, &gain, lowchan, highchan);
+//		print_stokes(skyfile, &ObsSky, &TrueSky, &gain, lowchan, highchan);
 	}
 
-	fclose(calfile);
-	fclose(skyfile);
-	fclose(gainfile);
+//	fclose(calfile);
+//	fclose(skyfile);
+//	fclose(gainfile);
 }
 
 
 /*
  * Writes all the stokes data for a single channel to file.
  */
-void write_channel_data(SpecRecord dataset[], int size, int lowchan, int highchan)
+//void write_channel_data(SpecRecord dataset[], int size, int lowchan, int highchan) //SSG
+void write_channel_data(SpecRecord dataset[], int size, int lowchan, int highchan, int beam)
 {
 	int n;
 	double I, Q, U, V; //working copies
@@ -233,17 +237,56 @@ void write_channel_data(SpecRecord dataset[], int size, int lowchan, int highcha
 	FILE * fluxfile;
 	char filename[32+1];
 	int chan;
+	int found;//SSG
+	char header[81];//SSG
+	int readchan; //SSG
+	FILE * beamgainfile; //SSG
+	float gain[7];//SSG
+	printf("DIAGNOSTIC:Before opening gainfile.\n");//SSG
+	if(multibeam) //SSG
+	{
+		beamgainfile = fopen("../../beamgains.dat","r");//SSG
+		if (beamgainfile == NULL) {//SSG
+			printf("ERROR: unable to open gain file %s\n", filename);//SSG
+			return;//SSG
+		}//SSG
 
+	else//SSG
+		printf("DIAGNOSTIC:Opened gainfile.\n");//SSG
+		fgets(header,80,beamgainfile);//SSG
+		found = 0;//SSG
+	}
 	for (chan=lowchan; chan<highchan; chan++) 
 	{
 		snprintf(filename, 32, "fluxtime%03i.dat", chan);
 		fluxfile = fopen(filename, "w");
 		if (fluxfile == NULL) {
 			printf("ERROR: unable to open file %s\n", filename);
+			printf("DIAGNOSTIC: errno %d\n",errno);//SSG
 			return;
 		}
 		fprintf(fluxfile, "# RA DEC AST I Q U V\n");
-		
+		//SSG
+		if(multibeam)
+		{
+			while(!found)
+			{
+				fscanf(beamgainfile,"%d",&readchan);
+//				printf("DIAGNOSTIC:%d %d\n",chan,readchan);
+				if (readchan == chan)
+				{
+					fscanf(beamgainfile,"%f %f %f %f %f %f %f",&gain[0],&gain[1],&gain[2],&gain[3],&gain[4],&gain[5],&gain[6]);
+		//			printf("Gain values: %f %f %f %f %f %f %f\n",gain[0],gain[1],gain[2],gain[3],gain[4],gain[5],gain[6]);
+					found = 1;
+				}
+				else
+				{
+					fgets(header,80,beamgainfile);
+				}
+			}
+			found = 0;
+		}
+		//SSG	
 		for (n=0; n<size; n++)
 		{
 			SpecRecord * pRec = &(dataset[n]);
@@ -251,13 +294,27 @@ void write_channel_data(SpecRecord dataset[], int size, int lowchan, int highcha
 			DEC = pRec->DEC;
 			AST = pRec->AST;
 
-			if (pRec->flagBAD || pRec->flagRFI[chan] != RFI_NONE) {
+//			if (pRec->flagBAD || pRec->flagRFI[chan] != RFI_NONE) {
+			if (pRec->flagBAD || pRec->flagRFI[chan] != RFI_NONE /*|| !isfinite(pRec->stokes.I[chan])*/) {//ssg
 				I = Q = U = V = NAN;
+
 			} else {
-				I = pRec->stokes.I[chan];
-				Q = pRec->stokes.Q[chan];
-				U = pRec->stokes.U[chan];
-				V = pRec->stokes.V[chan];
+				//SSG
+				if(multibeam)
+				{
+					I = pRec->stokes.I[chan]/gain[beam];
+					Q = pRec->stokes.Q[chan];
+					U = pRec->stokes.U[chan];
+					V = pRec->stokes.V[chan];
+				}
+				//SSG
+				else
+				{
+					I = pRec->stokes.I[chan];
+					Q = pRec->stokes.Q[chan];
+					U = pRec->stokes.U[chan];
+					V = pRec->stokes.V[chan];
+				}
 			}
 
 			fprintf(fluxfile,"%2.8f %2.8f %8.2f %4.6f %4.6f %4.6f %4.6f\n", 
@@ -268,6 +325,7 @@ void write_channel_data(SpecRecord dataset[], int size, int lowchan, int highcha
 		fclose(fluxfile);
 
 	} //end for chan
-
+	if(multibeam)//SSG
+		fclose(beamgainfile);//SSG
 }
 

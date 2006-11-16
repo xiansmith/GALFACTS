@@ -163,20 +163,24 @@ void determine_scan_lines(FluxWappData * wappdata, float decmin, float decmax)
 
 		daydata = &wappdata->daydata[d];
 		scanDayData = &wappdata->scanDayData[d];
-printf("day %s\n", daydata->mjd);
+//		printf("day %s\n", daydata->mjd);
 		numRecords = daydata->numRecords;
 
 		tags = malloc(sizeof(enum ScanTag) * numRecords);
-		tag_scanlines2(tags, daydata->records, numRecords, decmin, decmax);
-output_tags(tags, daydata->records, numRecords, daydata->mjd);
+		tag_scanlines(tags, daydata->records, numRecords, decmin, decmax);
 
 		numScans = count_scanlines(tags, numRecords);
 		scanDayData->numScans = numScans;
 		scanDayData->scans = malloc(sizeof(ScanData) * numScans);
 
 		//assuming we always start with a downscan
-		direction = DOWNSCAN;
-
+//SSG		direction = DOWNSCAN;
+		//SSG
+		if(tags[0] == DOWNSCAN || tags[0] == UPENDPOINT)
+			direction = DOWNSCAN;
+		if(tags[0] == UPSCAN || tags[0] == DOWNENDPOINT)
+			direction = UPSCAN;
+		//SSG
 		i = 0;
 		scanCount = 0;
 		while (i < numRecords) 
@@ -199,11 +203,26 @@ output_tags(tags, daydata->records, numRecords, daydata->mjd);
 				scanDayData->scans[scanCount].num_records = end-start;
 				scanCount++;
 			} else {
-				printf("WARN: short scan being ignored start:%i end:%i\n", start, end);
+//				printf("WARN: short scan being ignored start:%i end:%i\n", start, end);
+				;
 			}
-			direction = (direction == DOWNSCAN) ? UPSCAN : DOWNSCAN; 
+//SSG			direction = (direction == DOWNSCAN) ? UPSCAN : DOWNSCAN; 
+//SSG
+			if(tags[i] == DOWNSCAN || tags[i] == UPENDPOINT)
+				direction = DOWNSCAN;
+			if(tags[i] == UPSCAN || tags[i] == DOWNENDPOINT)
+				direction = UPSCAN;
+//SSG
+	
 		}
-
+		//SSG
+		if(scanCount < numScans)
+		{		
+//		printf("DIAGNOSTIC: scanCount %d numScans %d\n",scanCount-1,numScans);
+		//SSG
+		scanDayData->numScans = scanCount;//SSG
+		}
+//		printf("DIAGNOSTIC: new numscans %d\n",scanDayData->numScans);//SSG
 		free(tags);
 	}
 }

@@ -58,8 +58,25 @@ map: mapmain.o common.o jsd/jsd_futil.o jsd/jsd_util.o balance.o grid.o map.o sc
 fitscat: fitscat.c programs/fitsio.a
 	$(CC) $(CFLAFGS) -lm -o fitscat fitscat.c programs/fitsio.a
 	mv fitscat $(BIN)
+#SSG
+beamgainratios: beamgainratios.c
+	$(CC) $(CFLAGS) -lm -o beamgainratios beamgainratios.c programs/fitsio.a
+	mv beamgainratios $(BIN)
+beamgains: beamgains.c
+	$(CC) $(CFLAGS) -lm -o beamgains beamgains.c programs/fitsio.a
+	mv beamgains $(BIN)
 
+beammodels: beammodels.c beammodels.o common.o
+	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o beammodels common.o beammodels.c beammodelsmain.c programs/fitsio.a jsd/jsd_futil.o
+	mv beammodels $(BIN)
 
+cleanmap: cleanmain.c 
+	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o cleanmap common.o beammodels.o fluxdata.o map.o grid.o cleanmain.c programs/fitsio.a jsd/jsd_futil.o
+	mv cleanmap $(BIN)
+
+beammodels.o : beammodels.h beammodels.c
+beammodelsmain.o : beammodelsmain.c
+#SSG
 spec.o : spec.h spec.c
 scan.o : scan.h scan.c
 smooth.o : smooth.h smooth.c
@@ -75,15 +92,6 @@ calmain.o : common.h rfi.h cal.h calmain.c
 mapmain.o : common.h cal.h mapmain.c
 spectramain.o : common.h spectramain.c
 markdata.o : markdata.c markdata.h
-poly_harm_fit.o : poly_harm_fit.f
-	g77 -c poly_harm_fit.f
-fetch_from_best_fit_model.o: fetch_from_best_fit_model.f
-	g77 -c fetch_from_best_fit_model.f
-
-
-
-polyeval : polyeval.c
-	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o polyeval polyeval.c
 
 .PHONY : clean
 clean : empirical_clean

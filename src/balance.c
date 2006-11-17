@@ -106,12 +106,12 @@ static int scan_intersect(FILE * file, ScanData *ref, ScanData *curr, float *RA,
 	//the acutal intersection point
 	x1 = ref->records[i-1].RA; 
 	y1 = ref->records[i-1].DEC; 
-	x2 = ref->records[i+1].RA; 
-	y2 = ref->records[i+1].DEC; 
+	x2 = ref->records[i].RA; //TODO: should this be +1?
+	y2 = ref->records[i].DEC; 
 	x3 = curr->records[j-1].RA; 
 	y3 = curr->records[j-1].DEC; 
-	x4 = curr->records[j+1].RA; 
-	y4 = curr->records[j+1].DEC; 
+	x4 = curr->records[j].RA; 
+	y4 = curr->records[j].DEC; 
 
 	
 
@@ -187,8 +187,10 @@ static void find_intersections(FluxWappData *wappdata)
 		ScanDayData *refScanDay = &wappdata->scanDayData[r];
 		//printf("refday: %s\n", refday->mjd);
 
-		sprintf(filename, "cross%s.ann", refday->mjd);
+//		sprintf(filename, "cross%s.ann", refday->mjd);
+		sprintf(filename, "cross%s_beam%d.ann", refday->mjd,numDays%7); //ssg to fix for overwriting of files
 		crossfile = fopen(filename, "w");
+		fprintf(crossfile, "COLOUR BLUE\n");
 
 		for (i=0; i<refScanDay->numScans; i++) 
 		{
@@ -211,7 +213,13 @@ static void find_intersections(FluxWappData *wappdata)
 					int refpos, crosspos;
 					ScanData *currscan = &currScanDay->scans[j];
 					if (currscan->num_records == 0) continue;
-
+					//SSG
+					if (currscan->num_records < 0)
+					{
+						printf("OOPS...\n");
+						continue;
+					}
+					//SSG
 					if (scan_intersect(crossfile, refscan, currscan, &RA, &DEC, &refpos, &crosspos)) 
 					{
 						CrossingPoint *crossPoint;
@@ -502,6 +510,8 @@ static double day_weave(ScanDayData *daydata, int order, float loop_gain, int ap
 }
 
 
+#define PERCENT_CHANGE(A,B) ((A-B)/B)
+
 static void basket_weave(FluxWappData *wappdata, int order, float loop_gain, float loop_epsilon, MapMetaData * md, int show_progress)
 {
 	int r, i;
@@ -593,7 +603,13 @@ static void basket_weave(FluxWappData *wappdata, int order, float loop_gain, flo
 			chisqprev = chisqmax;
 			printf("iteration: %i change: %g\n", count, change);
 
-		} while (change > loop_epsilon && count < 50);
+		} while (/*change > loop_epsilon && */count < 100);
+
+		if (show_progress) {
+			printf("writing progress plane %i\n", n3++);
+			grid_data(wappdata, md, dataI, dataQ, dataU, dataV, weight);
+			writefits_plane(progressfile, dataI, &hpar);
+		}
 	}
 
 
@@ -671,5 +687,6 @@ void balance_data(FluxWappData * wappdata, MapMetaData *md, int order, float loo
 	basket_weave(wappdata, order, loop_gain, loop_epsilon, md, show_progress);
 
 }
+
 
 

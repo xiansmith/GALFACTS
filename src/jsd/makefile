@@ -9,7 +9,7 @@ CFLAGS = \
 -D_GNU_SOURCE \
 
 
-all : jsd_futil.o jsd_util.o jsd_fit.o jsd_fit_test
+all : jsd_futil.o jsd_util.o jsd_fit.o
 
 jsd_futil.o : jsd_futil.c jsd_futil.h
 jsd_util.o : jsd_util.c jsd_util.h

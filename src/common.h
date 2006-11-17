@@ -7,14 +7,15 @@
 #define MAX_CHANNELS 256
 
 //The maximum number of datapoints in a single scan
-#define MAX_SCAN_LEN 200
+#define MAX_SCAN_LEN 4000
 
 //The maximum number of days
-#define MAX_NUM_DAYS 16
+#define MAX_NUM_DAYS 200
 
 //The maximum number of scans in one direction in a single day
-#define MAX_NUM_SCANS 64
+#define MAX_NUM_SCANS 16
 
+#define NUM_BEAMS 7 //SSG
 //enum STOKES {STOKES_I, STOKES_Q, STOKES_U, STOKES_V};
 
 enum RFIFlags {	RFI_NONE =		0x0000,

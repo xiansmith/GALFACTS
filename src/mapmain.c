@@ -10,6 +10,7 @@
 #include "map.h"
 #include "scan.h"
 
+int multibeam; //SSG
 static void print_usage(const char * prog)
 {
 	printf(
@@ -105,9 +106,9 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 	printf("Grid Type: %i\n", md->gridtype);
 	printf("Center Frequency: %g\n", md->fcen); 
 	printf("Start Frequency: %g\n", md->fstart);
-    printf("Balance Order: %i\n", balorder);
-    printf("Balance Loop Gain: %f\n", balgain);
-    printf("Balance Epsilon: %f\n", balepsilon);
+ 	printf("Balance Order: %i\n", balorder);
+ 	printf("Balance Loop Gain: %f\n", balgain);
+ 	printf("Balance Epsilon: %f\n", balepsilon);
 
 	numbytes = md->n1 * md->n2 * sizeof (float);
 	dataI  = (float *) malloc (numbytes);
@@ -151,7 +152,6 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 			//determine scan lines
 			printf("determine scan lines ...\n");
 			determine_scan_lines(wappdata, md->decmin, md->decmax);
-
 			//perform balancing
 			if (balorder >=0 ) 
 			{
@@ -160,8 +160,8 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 			}
 
 			//write out the balanced data
-			//printf("writing balanced data to file ...\n");
-			//fluxwappdata_writechan(wappdata, chan);
+			printf("writing balanced data to file ...\n");
+			fluxwappdata_writechan(wappdata, chan);
 
 			//perform gridding
 			printf("performing gridding ...\n");
@@ -233,20 +233,26 @@ int main(int argc, char * argv[])
 		md.n2 = (int)(md.DECrange/md.cellsize) + 1;
 		md.n3 = md.highchan - md.lowchan;
 		md.fstart = md.fcen + (md.lowchan-127) * (100.0/256.0);
-
+		
 	}
-
 	numDays = get_date_dirs("./", &files);
 	if (numDays <= 0) {
 		printf("ERROR: could not find any date dirs\n");
 		return EXIT_FAILURE;
 	}
-
-
+	//SSG
+	if (!strcmp(wapp,"beam8"))
+	{
+		numDays = numDays * 7;
+		multibeam = 1;
+	}
+	else
+		multibeam = 0;
+	//SSG
 	// allocate and initialize the wapp data days
 	wappdata = fluxwappdata_alloc(wapp, files, numDays);
-
-	printf("creating a frequency cube\n");
+//	printf("After wapp alloc");
+	printf("Creating a frequency cube\n");
 	create_fits_cube(wappdata, wapp, &md, balorder, balgain, balepsilon, 0);
 	
 	//printf("creating a avg map\n");

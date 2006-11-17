@@ -13,6 +13,6 @@ void init_psf_lookup_table(int size, float maxVal);
 
 void grid_data(const FluxWappData *wappdata, const MapMetaData *md, float * dataI, float * dataQ, float * dataU, float * dataV, float *weight);
 
-
+double psf(float offset); //SSG
 #endif
 

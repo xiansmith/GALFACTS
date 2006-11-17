@@ -36,7 +36,8 @@ void init_psf_lookup_table(int size, float maxVal)
 	}
 }
 
-static double psf(float offset) {
+//SSGstatic double psf(float offset) {
+double psf(float offset) {
 	return psf_lookup_table[(int)(offset/psf_step)];
 }
 

@@ -6,13 +6,14 @@
 
 
 //pre-compute the raw cal for every channel
-void compute_raw_cal(SpecRecord dataset[], int size)
+//void compute_raw_cal(SpecRecord dataset[], int size)
+void compute_raw_cal(SpecRecord dataset[],int lowchan, int highchan, int size)
 {
 	int n, i;
-
 	for (n=0; n<size; n++)
 	{
-		for (i=0; i<MAX_CHANNELS; i++)
+		//for (i=0; i<MAX_CHANNELS; i++)
+		for (i=lowchan; i<=highchan; i++) 
 		{
 			dataset[n].cal.xx[i] = dataset[n].calon.xx[i] - dataset[n].caloff.xx[i];
 			dataset[n].cal.yy[i] = dataset[n].calon.yy[i] - dataset[n].caloff.yy[i];
@@ -73,8 +74,8 @@ void linear_fit_cal(SpecRecord dataset[], int size, int lowchan, int highchan, i
 	Yxy = (double*) malloc(sizeof(double) * size);
 	Yyx = (double*) malloc(sizeof(double) * size);
 
-	//for (chan=lowchan; chan<=highchan; chan++) 
-	for (chan=0; chan<=MAX_CHANNELS; chan++) 
+	for (chan=lowchan; chan<=highchan; chan++) 
+//ssg	for (chan=0; chan<=MAX_CHANNELS; chan++) 
 	{
 		fprintf(chifile, "%i ", chan);
 

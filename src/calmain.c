@@ -15,6 +15,8 @@
 #include "markdata.h"
 #include "programs/fitsio.h"
 
+int multibeam; //SSG
+
 static int read_tcal(const char * filename, float * Tcalx, float * Tcaly)
 {
     FILE * file;
@@ -176,11 +178,15 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 
 	/* Open Datafile */
 	globbuf.gl_offs = 1;
-	sprintf(globpattern, "%s/%s/*.za_scan*.%s.%s.spec", datadirname, datedir, subdir, datedir);
+//	sprintf(globpattern, "%s/%s/*.za_scan*.%s.%s.spec", datadirname, datedir, subdir, datedir);
+	sprintf(globpattern, "%s/%s/*.perpuls*.%s.%s.spec", datadirname, datedir, subdir, datedir); //ssg for a2174 data
 	glob(globpattern, 0, NULL, &globbuf);
 	if (globbuf.gl_pathc < 1) {
 		printf("ERROR: unable to find file with pattern %s\n", globpattern);
 	}
+//	else //SSG
+//		printf("DIAGNOSTIC: found file with pattern %s:: beam %d\n", globpattern,beam); //SSG
+
 	strncpy(datafilename, globbuf.gl_pathv[0], 128);
 	//globfree(&globbuf);	
 
@@ -193,7 +199,8 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 
 	/* Open Configuration File */
 	globbuf.gl_offs = 1;
-	sprintf(globpattern, "%s/%s/*.za_scan*.%s.%s.spec_cfg", datadirname, datedir, subdir, datedir);
+//	sprintf(globpattern, "%s/%s/*.za_scan*.%s.%s.spec_cfg", datadirname, datedir, subdir, datedir);
+	sprintf(globpattern, "%s/%s/*.perpuls*.%s.%s.spec_cfg", datadirname, datedir, subdir, datedir);//ssg for a2174 data
 	glob(globpattern, 0, NULL, &globbuf);
 	if (globbuf.gl_pathc < 1) {
 		printf("ERROR: unable to find file with pattern %s\n", globpattern);
@@ -253,9 +260,9 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 	mark_bad_datapoints(badfilename, dataset, numRecords);
 
 	/* count remaining good records */
-	for (i=0; i<numRecords; i++) {
-		SpecRecord *pRec = &(dataset[i]);
-	}
+//	for (i=0; i<numRecords; i++) {
+//		SpecRecord *pRec = &(dataset[i]);
+//	}
 
 
 	printf("perform frequency smoothing ...\n");
@@ -264,11 +271,15 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 	if (!ignoreRFI) 
 	{
 		/* Perform the RFI detection */
+		printf("performing aerostat RFI blanking ...\n");
 		aerostat_rfi_blanking(dataset, numRecords, lowchan, highchan);
 		printf("performing RFI detection ...\n");
 		rfi_detection(dataset, numRecords, lowchan, highchan, numSigma, numSigmaThresh, ignoreA_low, ignoreA_high, 0, 0);
+		printf("performing RFI spanning ...\n");
 		rfi_spanning(dataset, numRecords, lowchan, highchan, rfiSpan);
+		printf("performing RFI blanking ...\n");
 		rfi_blanking(dataset, numRecords, lowchan, highchan, rfiTolerance);
+		printf("performing RFI write ...\n");
 		rfi_write(dataset, numRecords, lowchan, highchan, freq);
 	}
 
@@ -278,7 +289,8 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 
 	/* Compute the cal values */
 	printf("compute the raw values of cal ...\n");
-	compute_raw_cal(dataset, numRecords);
+//ssg	compute_raw_cal(dataset, numRecords);
+	compute_raw_cal(dataset, lowchan, highchan, numRecords);//ssg
 	//print_cal(dataset, numRecords, lowchan, highchan, 0);
 
 	/* Compute curve fit cal */
@@ -295,8 +307,10 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 
 	/* Write Channel Data */
 	printf("writing channel data...\n");
-	write_channel_data(dataset, numRecords, lowchan, highchan);
-	write_channel_data(dataset, numRecords, 0, 1);
+//	write_channel_data(dataset, numRecords, lowchan, highchan);
+//	write_channel_data(dataset, numRecords, 0, 1);
+	write_channel_data(dataset, numRecords, lowchan, highchan, beam); //SSG
+//	write_channel_data(dataset, numRecords, 0, 1,beam); //SSG
 
 	/* Smooth */
 	//printf("smooth the band averaged data in time ...\n");
@@ -322,7 +336,8 @@ int main(int argc, char *argv[])
 	int numdirs;
 	float decmin, decmax;
 	int scan_count_thresh;
-
+	char subdirname[5+1];//SSG
+	int beamcounter;//SSG
 	float numSigma;
 	char * datadirname;
 	char ** datedirs;
@@ -332,7 +347,7 @@ int main(int argc, char *argv[])
 	int num_tcal;
 	const char *tcalfilename = "Tcal.dat";
 
-	int mjd, i;
+	int mjd, i, j;
 	char *subdir;
 
 	if (argc != 17) {
@@ -358,6 +373,10 @@ int main(int argc, char *argv[])
 		decmin = atof(argv[14]);
 		decmax = atof(argv[15]);
 		scan_count_thresh = atoi(argv[16]);
+		if(beam == 8) //SSG
+			multibeam = 1; //SSG
+		else
+			multibeam = 0; //SSG
 	}
 
 	//Handle the Tcal correction file
@@ -387,17 +406,46 @@ int main(int argc, char *argv[])
 
 	numdirs = get_date_dirs(datadirname, &datedirs);
 	printf("Found %i data directories in %s\n", numdirs, datadirname);
-
+	beamcounter = -1; //SSG
 	for (mjd=0; mjd<numdirs; mjd++) 
 	{
 		const char * datedir = datedirs[mjd];
 		mode_t mode = S_IRWXU|S_IRWXG|S_IRWXO;
 		mkdir(datedir, mode);
 		chdir(datedir);
-		mkdir(subdir, mode);
-		chdir(subdir);
-		process_dataset(datadirname, datedir, subdir, beam, numSigma, numSigmaThresh, lowchan, highchan, tsmooth, ignoreRFI, rfiTolerance, rfiSpan, ignoreA_low, ignoreA_high, decmin, decmax, scan_count_thresh, Tcalx, Tcaly);
-		chdir("..");
+		//SSG
+		printf("Now processing day %s...\n",datedirs[mjd]); //SSG
+		if(beam == 8)
+		{
+			for(j = 0;j < 7;j++) //for each beam
+			{
+				if(beamcounter == 6)
+					beamcounter = 0;
+				else
+					beamcounter++;
+				sprintf(subdirname,"beam%d",beamcounter);
+				subdir = subdirname;
+				mkdir(subdir, mode);
+				chdir(subdir);
+				printf("Processing %s\n",subdirname); //SSG
+				process_dataset(datadirname, datedir, subdir, beamcounter, numSigma, numSigmaThresh, lowchan, highchan, tsmooth, ignoreRFI, rfiTolerance, rfiSpan, ignoreA_low, ignoreA_high, decmin, decmax, scan_count_thresh, Tcalx, Tcaly); //SSG
+				chdir("..");
+			}
+		}
+		else
+		{
+			beamcounter = beam;
+			mkdir(subdir, mode);
+			chdir(subdir);
+			process_dataset(datadirname, datedir, subdir, beamcounter, numSigma, numSigmaThresh, lowchan, highchan, tsmooth, ignoreRFI, rfiTolerance, rfiSpan, ignoreA_low, ignoreA_high, decmin, decmax, scan_count_thresh, Tcalx, Tcaly); //SSG
+			chdir("..");
+		}
+		//SSG
+//		mkdir("beam0", mode);//SSG
+//		chdir("beam0");//SSG
+
+//SSG		process_dataset(datadirname, datedir, subdir, beam, numSigma, numSigmaThresh, lowchan, highchan, tsmooth, ignoreRFI, rfiTolerance, rfiSpan, ignoreA_low, ignoreA_high, decmin, decmax, scan_count_thresh, Tcalx, Tcaly);
+
 		chdir("..");
 	}
 

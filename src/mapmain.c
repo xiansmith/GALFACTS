@@ -14,8 +14,8 @@ int multibeam; //SSG
 static void print_usage(const char * prog)
 {
 	printf(
-	"Usage: %s wapp<n> <fcenter> <lowchan> <highchan> <ramin> <ramax> "
-	"<decmin> <decmax> <cell size> <patch radius> <balance order> <balance loopgain> <balance epsilon>\n"
+	"Usage: %s beam<n> <fcenter> <lowchan> <highchan> <ramin> <ramax> "
+	"<decmin> <decmax> <cell size> <patch radius> <balance day order> <balance scan order> <balance loopgain> <balance epsilon> <showprogress>\n"
 	"\n"
 	"\twapp<n> - the wapp number to create maps for\n"
 	"\tfcenter - the center frequency of this wapp\n"
@@ -24,9 +24,11 @@ static void print_usage(const char * prog)
 	"\tdecmin, decmax - the Declination range in degrees\n"
 	"\tcell size - cell size of map in arc minutes\n"
 	"\tpatch radius - area in pixels to calculate point spread response\n"
-	"\tbalance order - order of the polynomial fit in balancing\n"
+	"\tbalance day order - order of the polynomial fit in day-to-day balancing\n"
+	"\tbalance scan order - order of the polynomial fit in scan-by-scan balancing\n"
 	"\tbalance loopgain - the gain of each balance iteration (should be between 0 and 1)\n"
 	"\tbalance epsilon - the percent change of simasq threshold where the iteraiton will stop\n"
+	"\tshowprogress - 1 to create a basket weave progress cube, 0 otherwise\n"
 	"\n"
 	"eg: %s wapp1 1170.0 25 230 6.75 7.75 11.0 12.1 0.25 5 0.5 0.001 53108\n"
 	"\n"
@@ -89,7 +91,7 @@ static void create_fits_map(FluxWappData * wappdata, MapMetaData * md, float fce
 }
 */
 
-static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData * md, int balorder, float balgain, float balepsilon, int show_progress)
+static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData * md, int day_order, int scan_order, float balgain, float balepsilon, int show_progress)
 {
 	float *dataI, *dataQ, *dataU, *dataV, *weight; 
 	int chan;
@@ -106,7 +108,8 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 	printf("Grid Type: %i\n", md->gridtype);
 	printf("Center Frequency: %g\n", md->fcen); 
 	printf("Start Frequency: %g\n", md->fstart);
- 	printf("Balance Order: %i\n", balorder);
+ 	printf("Balance day Order: %i\n", day_order);
+ 	printf("Balance scan Order: %i\n", scan_order);
  	printf("Balance Loop Gain: %f\n", balgain);
  	printf("Balance Epsilon: %f\n", balepsilon);
 
@@ -134,7 +137,7 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 		printf("determine scan lines ...\n");
 		determine_scan_lines(wappdata, md->decmin, md->decmax);
 		printf("performing balancing ...\n");
-		balance_data(wappdata, md, balorder, balgain, balepsilon, show_progress);
+		balance_data(wappdata, md, day_order, scan_order, balgain, balepsilon, show_progress);
 	}
 	else
 	{
@@ -152,12 +155,10 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 			//determine scan lines
 			printf("determine scan lines ...\n");
 			determine_scan_lines(wappdata, md->decmin, md->decmax);
+
 			//perform balancing
-			if (balorder >=0 ) 
-			{
-				printf("performing balancing ...\n");
-				balance_data(wappdata, md, balorder, balgain, balepsilon, show_progress);
-			}
+			printf("performing balancing ...\n");
+			balance_data(wappdata, md, day_order, scan_order, balgain, balepsilon, show_progress);
 
 			//write out the balanced data
 			printf("writing balanced data to file ...\n");
@@ -198,14 +199,16 @@ int main(int argc, char * argv[])
 	//at the moment the values have no effect
 
 	char * wapp;
-	int balorder;
+	int day_order;
+	int scan_order;
 	float balgain;
 	float balepsilon;
+	int showprogress;
 
 	/* Process command line arguments */ 
 	/* Convert args into more usable units were required */
 
-	if (argc != 16) {
+	if (argc != 18) {
 		print_usage(argv[0]);
 		return EXIT_FAILURE;
 	} else {
@@ -220,10 +223,12 @@ int main(int argc, char * argv[])
 		md.cellsize = (float) atof(argv[9]) / 60; //convert to degrees
 		md.patch = atoi(argv[10]);
 		md.gridtype = atoi(argv[11]);
-		balorder = atoi(argv[12]);
-		balgain = (float) atof(argv[13]);
-		balepsilon = (float) atof(argv[14]); 
-		md.title = argv[15];
+		day_order = atoi(argv[12]);
+		scan_order = atoi(argv[13]);
+		balgain = (float) atof(argv[14]);
+		balepsilon = (float) atof(argv[15]);
+		showprogress = atoi(argv[16]);
+		md.title = argv[17];
 
 		md.RAcen = (md.ramax + md.ramin)/2.0;
 		md.DECcen = (md.decmax + md.decmin)/2.0;
@@ -253,7 +258,7 @@ int main(int argc, char * argv[])
 	wappdata = fluxwappdata_alloc(wapp, files, numDays);
 //	printf("After wapp alloc");
 	printf("Creating a frequency cube\n");
-	create_fits_cube(wappdata, wapp, &md, balorder, balgain, balepsilon, 0);
+	create_fits_cube(wappdata, wapp, &md, day_order, scan_order, balgain, balepsilon, showprogress);
 	
 	//printf("creating a avg map\n");
 	//create_fits_map(wappdata, &md, fcen, patch, balorder, balgain, balepsilon, title);	

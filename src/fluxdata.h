@@ -35,6 +35,7 @@ typedef struct {
 
 struct _CrossingPoint {
 	float RA;
+	float DEC;
 	struct _ScanData *crossScan;
 	int ref_pos;
 	int cross_pos;

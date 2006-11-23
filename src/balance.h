@@ -5,7 +5,7 @@
 #include "fluxdata.h"
 #include "map.h"
 
-void balance_data(FluxWappData * wappdata, MapMetaData *md, int order, float loop_gain, float loop_epsilon, int progress);
+void balance_data(FluxWappData * wappdata, MapMetaData *md, int day_order, int scan_order, float loop_gain, float loop_epsilon, int progress);
 
 
 #endif 

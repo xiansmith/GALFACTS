@@ -125,7 +125,12 @@ static void create_annotations(SpecRecord dataset[], int size)
 	fprintf(annfile, "#Annotations\n");
 
 	found = 0;
+
+	//plot the starting dot as yellow
+	//TODO: perhaps this should be a circle
+	fprintf(annfile, "COLOUR %s\n", "YELLOW"); 
 	fprintf(annfile, "DOT W %7.4f %7.4f #%7.2f\n", dataset[0].RA, dataset[0].DEC, dataset[0].AST);
+
 	for (n=1; n<size-1; n++)
 	{
 		if (dataset[n].flagBAD) {
@@ -136,18 +141,31 @@ static void create_annotations(SpecRecord dataset[], int size)
 		fprintf(annfile, "DOT W %7.4f %7.4f #%7.2f\n", 
 			dataset[n].RA, dataset[n].DEC, dataset[n].AST);
 
-		//write a red circle around pointing rages of change that are too high
+		//write a red circle around pointing ranges of change that are too high
 		h = (dataset[n+1].AST - dataset[n-1].AST) / 2;
 		secderiv = (dataset[n-1].DEC - 2*dataset[n].DEC + dataset[n+1].DEC) / (h*h);
-		if (fabs(secderiv) > 0.08) {
-			if (!found) {
+		if (fabs(secderiv) > 0.08) 
+		{
+			if (!found) { //so we only plot one circle per error
 				found = 1; 
 				fprintf(annfile, "COLOUR %s\n", "RED"); 
 				fprintf(annfile, "CIRCLE W %7.4f %7.4f %7.4f #%7.2f\n", 
 					dataset[n].RA, dataset[n].DEC, 0.025, dataset[n].AST);
 			}
+
 		} else {
 			found = 0;
+		}
+
+		//correct for a known pointing error when dec does not change
+		if (dataset[n].DEC == dataset[n+1].DEC) 
+		{
+			int limit = (n+10 < size) ? 10 : n+10-size;
+			float dec_change = dataset[n+limit].DEC - dataset[n].DEC;
+			int k;
+			for (k=1; k<limit; k++) {
+				dataset[n+k].DEC = dataset[n].DEC + dec_change*k;
+			}
 		}
 	}
 	fprintf(annfile, "DOT W %7.4f %7.4f #%7.2f\n", dataset[n].RA, dataset[n].DEC, dataset[n].AST);

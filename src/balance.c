@@ -380,7 +380,6 @@ static double scan_weave(ScanDayData *daydata, int scan, int order, float loop_g
 }
 
 
-
 static double mesh_weave(FluxWappData * wappdata)
 {
 	int h, i, j;
@@ -451,16 +450,14 @@ static double day_weave(ScanDayData *daydata, int order, float loop_gain, int ap
 	int k;
 	double RA, DEC;
 	double min, max;
-
+	FILE * logfile;
 	double dI[MAX_NUM_DAYS*MAX_NUM_SCANS], dQ[MAX_NUM_DAYS*MAX_NUM_SCANS], dU[MAX_NUM_DAYS*MAX_NUM_SCANS], dV[MAX_NUM_DAYS*MAX_NUM_SCANS];
 	//TODO: cX size is related to the order, not days
 	double cI[MAX_NUM_DAYS], cQ[MAX_NUM_DAYS], cU[MAX_NUM_DAYS], cV[MAX_NUM_DAYS];
 	double dRA[MAX_NUM_DAYS*MAX_NUM_SCANS];
 	double chisq[4];
 	const float nsigma = 3.0;
-
 	int num_delta = 0;
-
 	for (i=0; i<daydata->numScans; i++) 
 	{
 		ScanData *refscan = &daydata->scans[i];
@@ -497,7 +494,6 @@ static double day_weave(ScanDayData *daydata, int order, float loop_gain, int ap
 			dU[num_delta] = refU - crossU;
 			dV[num_delta] = refV - crossV;
 			dRA[num_delta] = RA;
-
 			num_delta++;
 		}
 	}
@@ -509,14 +505,12 @@ static double day_weave(ScanDayData *daydata, int order, float loop_gain, int ap
 	jsd_minmax(dRA, num_delta, &min, &max);
 	jsd_normalize(dRA, num_delta, min, max);
 
-	//curve fit the dX values
 	if (apply) 
 	{
 		jsd_poly_fit(dRA, dI, num_delta, nsigma, cI, order, &chisq[0]);
 		jsd_poly_fit(dRA, dQ, num_delta, nsigma, cQ, order, &chisq[1]);
 		jsd_poly_fit(dRA, dU, num_delta, nsigma, cU, order, &chisq[2]);
 		jsd_poly_fit(dRA, dV, num_delta, nsigma, cV, order, &chisq[3]);
-
 
 		//jsd_print_poly(stdout, cI, order);
 		//apply the dX values
@@ -534,7 +528,6 @@ static double day_weave(ScanDayData *daydata, int order, float loop_gain, int ap
 			}
 		}
 	}
-	
 
 	/* Difficult to determine what a good criteria for a good or bad
 	day is.  chisq values are not valid, since bad data could have a good fit.
@@ -559,12 +552,10 @@ static void basket_weave(FluxWappData *wappdata, FILE * chisqfile, int day_order
 	double chisqtmp, chisqglobal, chisqday, chisqglobalprev;
 	double globalchange;
 	int ord;
-
 	static header_param_list hpar;
 	FILE *progressfile;
 	float *dataI, *dataQ, *dataU, *dataV, *weight;
 	int n1, n2, n3;
-
 	if (show_progress) 
 	{
 		n1 = md->n1;
@@ -615,8 +606,7 @@ static void basket_weave(FluxWappData *wappdata, FILE * chisqfile, int day_order
 	{
 		chisqglobalprev = INFINITY;
 		count = 0;
-		printf("Basket weaving order %i\n", ord);
-
+		printf("Day weaving order %i\n", ord);
 		do {
 			chisqglobal = 0.0;
 			for (r=0; r<wappdata->numDays; r++) 
@@ -639,7 +629,6 @@ static void basket_weave(FluxWappData *wappdata, FILE * chisqfile, int day_order
 			count++;
 			globalchange = chisqglobalprev - chisqglobal;
 			chisqglobalprev = chisqglobal;
-
 			printf("day iteration:%i global chisq:%g global change:%g\n", count, chisqglobal, globalchange);
 			fprintf(chisqfile, "%f %f\n", chisqglobal, globalchange);
 
@@ -662,6 +651,7 @@ static void basket_weave(FluxWappData *wappdata, FILE * chisqfile, int day_order
 		chisqglobalprev = INFINITY;
 		count = 0;
 		printf("Scan weaving order %i\n", ord);
+//		fprintf(logfile,"Scan weaving order %i\n", ord);
 
 		do {
 			chisqglobal = 0.0;

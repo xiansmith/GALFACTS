@@ -14,8 +14,6 @@ int multibeam; //SSG
 static void print_usage(const char * prog)
 {
 	printf(
-	"Usage: %s beam<n> <fcenter> <lowchan> <highchan> <ramin> <ramax> "
-	"<decmin> <decmax> <cell size> <patch radius> <balance day order> <balance scan order> <balance loopgain> <balance epsilon> <showprogress>\n"
 	"\n"
 	"\twapp<n> - the wapp number to create maps for\n"
 	"\tfcenter - the center frequency of this wapp\n"
@@ -193,7 +191,7 @@ int main(int argc, char * argv[])
 
 	char ** files;
 	int numDays;
-
+	int show_progress;//ssg
 	/* Inputs to this program */
 	//TODO: it would be nice to make these defaults
 	//at the moment the values have no effect

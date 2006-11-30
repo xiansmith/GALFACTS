@@ -9,6 +9,7 @@
 #include "grid.h"
 #include "map.h"
 #include "scan.h"
+#include "decdependence.h"
 
 int multibeam; //SSG
 static void print_usage(const char * prog)
@@ -153,6 +154,11 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 			//determine scan lines
 			printf("determine scan lines ...\n");
 			determine_scan_lines(wappdata, md->decmin, md->decmax);
+
+			//remove declination dependence
+			printf("removing the declination dependence...\n");
+			remove_dec_dependence(wappdata, md->decmin, md->decmax, 0.1);
+			remove_dec_dependence(wappdata, md->decmin, md->decmax, 0.1);
 
 			//perform balancing
 			printf("performing balancing ...\n");

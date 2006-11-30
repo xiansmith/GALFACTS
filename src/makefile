@@ -51,8 +51,8 @@ cal: calmain.o rfi.o stokes.o calibrate.o common.o smooth.o spec.o markdata.o
 spechack : 
 	$(CC) -lm -o spechack spechack.c common.o
 
-map: mapmain.o common.o jsd/jsd_futil.o jsd/jsd_util.o balance.o grid.o map.o scan.o fluxdata.o jsd/jsd_fit.o
-	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o map common.o jsd/jsd_futil.o jsd/jsd_util.o jsd/jsd_fit.o jsd/nrutil.o jsd/nrfit.o balance.o grid.o map.o scan.o fluxdata.o mapmain.o programs/fitsio.a
+map: mapmain.o common.o jsd/jsd_futil.o jsd/jsd_util.o balance.o grid.o map.o scan.o fluxdata.o jsd/jsd_fit.o decdependence.o
+	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o map common.o jsd/jsd_futil.o jsd/jsd_util.o jsd/jsd_fit.o jsd/nrutil.o jsd/nrfit.o balance.o decdependence.o grid.o map.o scan.o fluxdata.o mapmain.o programs/fitsio.a
 	mv map $(BIN)
 
 fitscat: fitscat.c programs/fitsio.a
@@ -92,6 +92,7 @@ calmain.o : common.h rfi.h cal.h calmain.c
 mapmain.o : common.h cal.h mapmain.c
 spectramain.o : common.h spectramain.c
 markdata.o : markdata.c markdata.h
+decdependence.o : decdependence.c decdependence.h
 
 .PHONY : clean
 clean : empirical_clean

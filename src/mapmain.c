@@ -158,7 +158,6 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 			//remove declination dependence
 			printf("removing the declination dependence...\n");
 			remove_dec_dependence(wappdata, md->decmin, md->decmax, 0.1);
-			remove_dec_dependence(wappdata, md->decmin, md->decmax, 0.1);
 
 			//perform balancing
 			printf("performing balancing ...\n");

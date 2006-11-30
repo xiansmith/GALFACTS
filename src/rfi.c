@@ -495,7 +495,8 @@ void aerostat_rfi_blanking(SpecRecord dataset[], int size, int lowchan, int high
 			continue;
 		}
 
-		if (diff2[i] > 0.07 || diff2[i] < -0.07) 
+//		if (diff2[i] > 0.07 || diff2[i] < -0.07) 
+		if ((diff2[i] > 0.07 || diff2[i] < -0.07) && i>0) //ssg fixed i > 0 
 		{
 
 			printf("outofband rfi with diff %f %f\n", diff1[i], diff2[i]);

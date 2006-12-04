@@ -327,7 +327,9 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 	printf("writing channel data...\n");
 //	write_channel_data(dataset, numRecords, lowchan, highchan);
 //	write_channel_data(dataset, numRecords, 0, 1);
-	write_channel_data(dataset, numRecords, lowchan, highchan, beam); //SSG
+	if(multibeam)
+		correct_beamgains(dataset, numRecords, lowchan, highchan, beam);
+	write_channel_data(dataset, numRecords, lowchan, highchan); //SSG
 //	write_channel_data(dataset, numRecords, 0, 1,beam); //SSG
 
 	/* Smooth */

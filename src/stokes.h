@@ -6,9 +6,9 @@
 
 void calculate_stokes(SpecRecord dataset[], int size, int lowchan, int highchan, int ignoreRFI, float Tcalx[], float Tcaly[]);
 //void smooth_stokes(SpecRecord dataset[], int size, int lowchan, int highchan, int tsmooth);
-void write_channel_data(SpecRecord dataset[], int size, int lowchan, int highchan, int beam);
-//SSGvoid write_channel_data(SpecRecord dataset[], int size, int lowchan, int highchan);
+void write_channel_data(SpecRecord dataset[], int size, int lowchan, int highchan);
 void average_stokes(SpecRecord dataset[], int size, int lowchan, int highchan);
+void correct_beamgains(SpecRecord dataset[], int size, int lowchan, int highchan, int beam);
 
 #endif //_STOKES_H
 

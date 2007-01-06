@@ -51,6 +51,8 @@ const int START_CHAN = 30; //TODO: this is a hack for the start channel number
     return p-START_CHAN;
 }
 
+
+
 void write_cal_fits(SpecRecord dataset[], int size, float fcen, float df)
 {
 	int i, n;
@@ -161,9 +163,9 @@ static void create_annotations(SpecRecord dataset[], int size)
 		if (dataset[n].DEC == dataset[n+1].DEC) 
 		{
 			int limit = (n+10 < size) ? 10 : n+10-size;
-			float dec_change = dataset[n+limit].DEC - dataset[n].DEC;
+			double dec_change = (dataset[n+limit].DEC - dataset[n].DEC) / 10.0;
 			int k;
-			for (k=1; k<limit; k++) {
+			for (k=1; k<=limit; k++) {
 				dataset[n+k].DEC = dataset[n].DEC + dec_change*k;
 			}
 		}
@@ -197,7 +199,7 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 	/* Open Datafile */
 	globbuf.gl_offs = 1;
 //	sprintf(globpattern, "%s/%s/*.za_scan*.%s.%s.spec", datadirname, datedir, subdir, datedir);
-	sprintf(globpattern, "%s/%s/*.perpuls*.%s.%s.spec", datadirname, datedir, subdir, datedir); //ssg for a2174 data
+	sprintf(globpattern, "%s/%s/*.*.beam%i.*.spec", datadirname, datedir, beam);
 	glob(globpattern, 0, NULL, &globbuf);
 	if (globbuf.gl_pathc < 1) {
 		printf("ERROR: unable to find file with pattern %s\n", globpattern);
@@ -218,7 +220,7 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 	/* Open Configuration File */
 	globbuf.gl_offs = 1;
 //	sprintf(globpattern, "%s/%s/*.za_scan*.%s.%s.spec_cfg", datadirname, datedir, subdir, datedir);
-	sprintf(globpattern, "%s/%s/*.perpuls*.%s.%s.spec_cfg", datadirname, datedir, subdir, datedir);//ssg for a2174 data
+	sprintf(globpattern, "%s/%s/*.*.beam%i.*.spec_cfg", datadirname, datedir, beam);
 	glob(globpattern, 0, NULL, &globbuf);
 	if (globbuf.gl_pathc < 1) {
 		printf("ERROR: unable to find file with pattern %s\n", globpattern);

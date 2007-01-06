@@ -4,7 +4,18 @@
 #include "markdata.h"
 
 
-
+/*
+ * Reads the specified badfilename and marks entries in the given dataset
+ * as bad (ie: flagBAD = 1) for the range in the datafile.
+ * 
+ * bad_datapoints.dat file format is:
+ * # comment
+ * blank lines allowed
+ * <type> <low> <high>
+ * type can be one of 'RA' 'DEC' or 'AST'
+ * low and high determine the ranges to flag for the given type
+ * negative values and inf allowed
+ */
 void mark_bad_datapoints(const char * badfilename, SpecRecord dataset[], int numRecords)
 {
 	int i;
@@ -25,6 +36,7 @@ void mark_bad_datapoints(const char * badfilename, SpecRecord dataset[], int num
 	{
 		if (buf[0] == '#') continue;
 		if (buf[0] == '\n') continue;
+
 		sscanf(buf, "%s %f %f", type, &low, &high);
 		printf("bad datapoints in: %s (%f, %f)\n", type, low, high);
 

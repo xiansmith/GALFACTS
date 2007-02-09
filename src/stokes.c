@@ -127,11 +127,7 @@ static void compute_observed_stokes(const SpecRecord * pRec, StokesSet * ObsCal,
 static void compute_final_stokes(SpecRecord * pRec, StokesSet * TrueSky, int ignoreRFI, int lowchan, int highchan)
 {
 	int i;
-    int count;
-	double I, Q, U, V;
 
-	count = 0;
-	I = Q = U = V = 0.0;
 	for (i=lowchan; i<=highchan; i++)
 	{
 		if ((ignoreRFI || pRec->flagRFI[i] == RFI_NONE) && isfinite(TrueSky->I[i]))
@@ -140,11 +136,6 @@ static void compute_final_stokes(SpecRecord * pRec, StokesSet * TrueSky, int ign
 			pRec->stokes.Q[i] = TrueSky->Q[i];
 			pRec->stokes.U[i] = TrueSky->U[i];
 			pRec->stokes.V[i] = TrueSky->V[i];
-			I += TrueSky->I[i];
-			Q += TrueSky->Q[i];
-			U += TrueSky->U[i];
-			V += TrueSky->V[i];
-			count++;
 		}
 		else
 		{
@@ -154,11 +145,54 @@ static void compute_final_stokes(SpecRecord * pRec, StokesSet * TrueSky, int ign
 			pRec->stokes.V[i] = NAN;
 		}
 	}
-	//pack the averages into channel 0
-	pRec->stokes.I[0] = I/count;
-	pRec->stokes.Q[0] = Q/count;
-	pRec->stokes.U[0] = U/count;
-	pRec->stokes.V[0] = V/count;
+
+}
+
+/* Does a straight average of the channel data in the given channel range.
+ * Results are packed into the 'channel 0' records for convienence.
+ * This allows a single channel to represent the average data later in the pipeline.
+ */
+void average_stokes(SpecRecord dataset[], int size, int lowchan, int highchan)
+{
+	int i, chan;
+	double I, Q, U, V;
+	int count;
+	SpecRecord * pRec;
+
+	//iterate over each time step
+	for (i=0; i<size; i++) 
+	{
+		pRec = &(dataset[i]);
+		if (pRec->flagBAD) 
+		{
+			//put in NAN if the record is bad
+			pRec->stokes.I[0] = NAN;
+			pRec->stokes.Q[0] = NAN;
+			pRec->stokes.U[0] = NAN;
+			pRec->stokes.V[0] = NAN;
+			continue;
+		}
+
+		count = 0;
+		I = Q = U = V = 0.0;
+		for (chan=lowchan; chan<=highchan; chan++)
+		{
+			if (isfinite(pRec->stokes.I[chan]))
+			{
+				I += pRec->stokes.I[chan];
+				Q += pRec->stokes.Q[chan];
+				U += pRec->stokes.U[chan];
+				V += pRec->stokes.V[chan];
+				count++;
+			}
+		}
+
+		//pack the averages into channel 0
+		pRec->stokes.I[0] = I/count;
+		pRec->stokes.Q[0] = Q/count;
+		pRec->stokes.U[0] = U/count;
+		pRec->stokes.V[0] = V/count;
+	}
 }
 
 
@@ -176,10 +210,10 @@ void calculate_stokes(SpecRecord dataset[], int size, int lowchan, int highchan,
 
 	GainSet gain;
 
+/*SSG
 	FILE * skyfile;
 	FILE * calfile;
 	FILE * gainfile;
-/*SSG
 	calfile = fopen("calfile.dat", "w");
 	fprintf(calfile, "# Chan ObsCalI ObsCalQ ObsCalU ObsCalV CalCalI CalCalQ CalCalU CalCalV "
 			"GainX GainY GainPhi\n");

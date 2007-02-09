@@ -207,10 +207,12 @@ int fluxwappdata_readchan(FluxWappData * wappdata, int chan)
 	{
 		j = m%7;
 		sprintf(beamno,"beam%d",j);
+        	//sprintf(filename, "%s/%s/balanceB%03i.dat", daydata->mjd, beamno, chan);
         	sprintf(filename, "%s/%s/fluxtime%03i.dat", daydata->mjd, beamno, chan);
  //       	sprintf(filename, "%s/%s/clean%03i.dat", daydata->mjd, beamno, chan); //SSG hack for cleanmain
 	}
 	else
+        	//sprintf(filename, "%s/%s/balanceB%03i.dat", daydata->mjd, wappdata->wapp, chan);
         	sprintf(filename, "%s/%s/fluxtime%03i.dat", daydata->mjd, wappdata->wapp, chan);
 	//SSG
         infile = fopen(filename, "r");

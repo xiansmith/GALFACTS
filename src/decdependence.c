@@ -2,108 +2,173 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 #include "jsd/jsd_fit.h"
 
 /*
  * use a single channel worth of data
  * iterate over each beam
  * iterate over every day
- * fit a curve to each scan, reject outliers (sources)
- * take remaining points and put them into DEC bins
+ * put points into DEC bins
+ * reject outliers in the bins
  * fit a final curve to the dec bins
  * then subtract the amount of that curve from the data
  * 
  */
 
-#define BIN_ORDER 4
-
-/*
- * decgrain - granularity of the declination bins, ie the bin width, in degrees
- */
-static void beam_dec_dependence(FluxWappData * wappdata, int beam, float decmin, float decmax, float decgrain)
+static double compute_mean(double data[], int size)
 {
-	int i, d, r;
-	int num_bins;
-	double *binI, *binQ, *binU, *binV, *binDEC;
-	int * bin_counts;
-	FILE * decfile;
-	char filename[16+1];
-	
-	snprintf(filename, 16, "dec_beam%i.dat", beam);
-	decfile = fopen(filename, "w");
-	
+	double sum;
+	int count;
+	int i;
 
-	num_bins = (int) ceil((decmax-decmin)/decgrain);
-	decgrain = (decmax-decmin)/num_bins; //actual grain (bin) size
-
-	binI = calloc(num_bins, sizeof(double));
-	binQ = calloc(num_bins, sizeof(double));
-	binU = calloc(num_bins, sizeof(double));
-	binV = calloc(num_bins, sizeof(double));
-	binDEC = calloc(num_bins, sizeof(double));
-	bin_counts = calloc(num_bins, sizeof(int));
-
-	//TODO: reject outliers as needed
-
-	for (d=0; d<wappdata->numDays; d++) 
-	{
-		if (d%7!=beam) continue; //TODO: this is a workaround for non-beam aware datastructures
-		FluxDayData * daydata;
-
-		daydata = &wappdata->daydata[d];
-		for (r=0; r<daydata->numRecords; r++) 
-		{
-			int bin;
-			bin = (int) floor((daydata->records[r].DEC - decmin) / decgrain);
-			if (bin<0 || bin>=num_bins) continue;
-			binI[bin] += daydata->records[r].stokes.I;
-			binQ[bin] += daydata->records[r].stokes.Q;
-			binU[bin] += daydata->records[r].stokes.U;
-			binV[bin] += daydata->records[r].stokes.V;
-			bin_counts[bin]++;
+	sum = 0.0;
+	count = 0;
+	for (i=0; i<size; i++) {
+		if (isnormal(data[i])) {
+			sum += data[i];
+			count++;
 		}
 	}
 
-	//normalize by the bin counts
-	for (i=0; i<num_bins; i++) 
-	{
-		register int count = bin_counts[i];
-		binI[i] /= count;
-		binQ[i] /= count;
-		binU[i] /= count;
-		binV[i] /= count;
-		binDEC[i] = i*decgrain+decmin; //TODO: compute this more intellegently
-		fprintf(decfile, "%f %i %g %g %g %g\n", binDEC[i], count, binI[i], binQ[i], binU[i], binV[i]); 
+	return (double) sum/count;
+}
+
+
+#define SQR(X) ((X)*(X))
+static double compute_sigma(double data[], int size, double mean)
+{
+	double sum;
+	int count;
+	int i;
+
+	sum = 0.0;
+	count = 0;
+	for (i=0; i<size; i++) {
+		if (isnormal(data[i])) {
+			sum += SQR(data[i] - mean);
+			count++;	
+		}
 	}
+	return (double) sqrt(sum / (count-1) );
+}
 
-	fclose(decfile);
-	
 
-	//curve fit the binned data
-	float nsigma = 5.0;
+static void compute_dirty_bins (double **binarrayX, int countX[], double binX[], int num_bins)
+{
+	int b;
+	for (b=0; b<num_bins; b++)
+	{
+		binX[b] = compute_mean(binarrayX[b], countX[b]);
+	}
+}
+
+static void compute_clean_bins (double **binarrayX, int *countX, double *binX, int num_bins, float nsigma, int *outliercounts)
+{
+	int b, i;
+	double mean, sigma;
+	int outlier;
+	double *binarray;
+	int count;
+
+	memset(outliercounts, 0, num_bins*sizeof(int));
+	for (b=0; b<num_bins; b++)
+	{
+		//repeat until no more outliers
+		do {
+			outlier = 0;
+			binarray = binarrayX[b];
+			count = countX[b];
+			mean = compute_mean(binarray, count);
+			sigma = compute_sigma(binarray, count, mean);
+
+			//do the cleaning by setting outliers to NAN
+			for (i=0; i<count; i++) {
+				if (fabs(mean-binarray[i]) > nsigma*sigma) {
+					binarray[i] = NAN;
+					outlier = 1;
+					outliercounts[b]++;
+				}
+			}
+		} while (outlier);
+		binX[b] = mean;
+	}
+}
+
+
+static void create_dec_bins(FluxWappData * wappdata, double **binarrayI,  double **binarrayQ,  double **binarrayU,  double **binarrayV, int *counts, int beam, float decmin, float decgrain, int num_bins)
+{
+	int d, r;
+	int i;
+
+	memset(counts, 0, num_bins*sizeof(int));
+
+	for (d=0; d<wappdata->numDays; d++) 
+	{
+		FluxDayData * daydata = &wappdata->daydata[d];
+
+		if (d%7!=beam) 
+			continue; //TODO: this is a workaround for non-beam aware datastructures
+
+		for (r=0; r<daydata->numRecords; r++) 
+		{
+			double I = daydata->records[r].stokes.I;
+			double Q = daydata->records[r].stokes.Q;
+			double U = daydata->records[r].stokes.U;
+			double V = daydata->records[r].stokes.V;
+			double DEC = daydata->records[r].DEC;
+			int bin = (int) floor((DEC - decmin) / decgrain);
+
+			if (bin<0 || bin>=num_bins) continue;
+			if (isfinite(I)) {
+				double *binarray;
+				binarray = binarrayI[bin];
+				binarray[counts[bin]] = I;
+				binarray = binarrayQ[bin];
+				binarray[counts[bin]] = Q;
+				binarray = binarrayU[bin];
+				binarray[counts[bin]] = U;
+				binarray = binarrayV[bin];
+				binarray[counts[bin]] = V;
+				counts[bin]++;
+			}
+		}
+	}
+}
+
+
+#define BIN_ORDER 12
+//curve fit the binned data
+static void fit_dec_bins(FluxWappData * wappdata, double *binI, double *binQ, double *binU, double *binV, int num_bins, int beam, float decmin, float decmax, float decgrain)
+{
+
+	int i, d, r;
+	float nsigma = 3.0;
 	double chisq;
 	double cI[BIN_ORDER+1];
 	double cQ[BIN_ORDER+1];
 	double cU[BIN_ORDER+1];
 	double cV[BIN_ORDER+1];
 	double min, max;
+	double *binDEC;
+
+	binDEC = calloc(num_bins, sizeof(double));
+	for (i=0; i<num_bins; i++) {
+		binDEC[i] = i*decgrain+decmin; //TODO: compute this more intellegently
+	}
 
 	jsd_minmax(binDEC, num_bins, &min, &max);
 	jsd_normalize(binDEC, num_bins, min, max);
-//printf("decmin:%g min:%g decmax:%g, max: %g\n", decmin, min, decmax, max);
+	//printf("decmin:%g min:%g decmax:%g, max: %g\n", decmin, min, decmax, max);
+
 
 	jsd_poly_fit(binDEC, binI, num_bins, nsigma, cI, BIN_ORDER, &chisq);
 	jsd_poly_fit(binDEC, binQ, num_bins, nsigma, cQ, BIN_ORDER, &chisq);
 	jsd_poly_fit(binDEC, binU, num_bins, nsigma, cU, BIN_ORDER, &chisq);
 	jsd_poly_fit(binDEC, binV, num_bins, nsigma, cV, BIN_ORDER, &chisq);
+	//jsd_print_poly(stdout, cI, BIN_ORDER);
 
-	free(binI);
-	free(binQ);
-	free(binU);
-	free(binV);
-	free(binDEC);
-	free(bin_counts);
-
+	//modify the data to remove the dec effect according to the polyfit
 	for (d=0; d<wappdata->numDays; d++) 
 	{
 		if (d%7!=beam) continue; //TODO: this is a workaround for non-beam aware datastructures
@@ -118,17 +183,114 @@ static void beam_dec_dependence(FluxWappData * wappdata, int beam, float decmin,
 			daydata->records[r].stokes.U -= jsd_poly_eval(DEC, cU, BIN_ORDER);
 			daydata->records[r].stokes.V -= jsd_poly_eval(DEC, cV, BIN_ORDER);
 		}
-//if (d==0) jsd_print_poly(stdout, cI, BIN_ORDER);
 	}
+
+	free(binDEC);
+}
+
+//hack
+#define MAX_BIN_SIZE 10000
+
+/*
+ * decgrain - granularity of the declination bins, ie the bin width, in degrees
+ */
+static void beam_dec_dependence(FluxWappData * wappdata, int beam, float decmin, float decmax, float decgrain, int chan)
+{
+	int i;
+	int num_bins;
+	double **binarrayI;
+	double **binarrayQ;
+	double **binarrayU;
+	double **binarrayV;
+	double *cleanbinI;
+	double *cleanbinQ;
+	double *cleanbinU;
+	double *cleanbinV;
+	int * counts, *outliercounts;
+	FILE * decfile;
+	char filename[32+1];
+	float nsigma = 3.0;
+	
+	num_bins = (int) ceil((decmax-decmin)/decgrain);
+	decgrain = (decmax-decmin)/num_bins; //actual grain (bin) size
+
+	binarrayI = (double**) malloc(num_bins * sizeof(double*));
+	binarrayQ = (double**) malloc(num_bins * sizeof(double*));
+	binarrayU = (double**) malloc(num_bins * sizeof(double*));
+	binarrayV = (double**) malloc(num_bins * sizeof(double*));
+	for (i=0; i<num_bins; i++) {
+		binarrayI[i] = (double*) malloc(MAX_BIN_SIZE * sizeof(double));
+		binarrayQ[i] = (double*) malloc(MAX_BIN_SIZE * sizeof(double));
+		binarrayU[i] = (double*) malloc(MAX_BIN_SIZE * sizeof(double));
+		binarrayV[i] = (double*) malloc(MAX_BIN_SIZE * sizeof(double));
+	}
+	counts = malloc(num_bins * sizeof(int));
+	outliercounts = malloc(num_bins * sizeof(double));
+	cleanbinI = malloc(num_bins * sizeof(double));
+	cleanbinQ = malloc(num_bins * sizeof(double));
+	cleanbinU = malloc(num_bins * sizeof(double));
+	cleanbinV = malloc(num_bins * sizeof(double));
+
+	//bin up the values in declination
+	create_dec_bins(wappdata, binarrayI, binarrayQ, binarrayU, binarrayV, counts, beam, decmin, decgrain, num_bins);
+	compute_clean_bins(binarrayI, counts, cleanbinI, num_bins, nsigma, outliercounts);
+	compute_clean_bins(binarrayQ, counts, cleanbinQ, num_bins, nsigma, outliercounts);
+	compute_clean_bins(binarrayU, counts, cleanbinU, num_bins, nsigma, outliercounts);
+	compute_clean_bins(binarrayV, counts, cleanbinV, num_bins, nsigma, outliercounts);
+
+	//print bin data
+	snprintf(filename, 32, "decbins_beam%i_chan%i.dat", beam, chan); 
+	decfile = fopen(filename, "w");
+	fprintf(decfile, "#bin DEC counts cleanI cleanQ cleanU cleanV\n");
+	for (i=0; i<num_bins; i++) {
+		fprintf(decfile, "%i %f %i %g %g %g %g\n", i, i*decgrain+decmin, counts[i], cleanbinI[i], cleanbinQ[i], cleanbinU[i], cleanbinV[i]);
+	}
+	fclose(decfile);
+
+	//modify the data
+	fit_dec_bins(wappdata, cleanbinI, cleanbinQ, cleanbinU, cleanbinV, num_bins, beam, decmin, decmax, decgrain);
+
+	//do it again
+	create_dec_bins(wappdata, binarrayI, binarrayQ, binarrayU, binarrayV, counts, beam, decmin, decgrain, num_bins);
+	compute_clean_bins(binarrayQ, counts, cleanbinQ, num_bins, nsigma, outliercounts);
+	compute_clean_bins(binarrayU, counts, cleanbinU, num_bins, nsigma, outliercounts);
+	compute_clean_bins(binarrayV, counts, cleanbinV, num_bins, nsigma, outliercounts);
+	compute_clean_bins(binarrayI, counts, cleanbinI, num_bins, nsigma, outliercounts);
+
+	snprintf(filename, 32, "decbinsnew_beam%i_chan%i.dat", beam, chan); 
+	decfile = fopen(filename, "w");
+	fprintf(decfile, "#bin DEC counts cleanI cleanQ cleanU cleanV\n");
+	for (i=0; i<num_bins; i++) {
+		fprintf(decfile, "%i %f %i %g %g %g %g\n", i, i*decgrain+decmin, counts[i], cleanbinI[i], cleanbinQ[i], cleanbinU[i], cleanbinV[i]);
+	}
+	fclose(decfile);
+
+
+	//cleanup
+	for (i=0; i<num_bins; i++) {
+		free(binarrayI[i]);
+		free(binarrayQ[i]);
+		free(binarrayU[i]);
+		free(binarrayV[i]);
+	}
+	free(binarrayI);
+	free(binarrayQ);
+	free(binarrayU);
+	free(binarrayV);
+	free(cleanbinI);
+	free(cleanbinQ);
+	free(cleanbinU);
+	free(cleanbinV);
+	free(counts);
 }
 
 
-void remove_dec_dependence(FluxWappData * wappdata, float decmin, float decmax, float decgrain)
+void remove_dec_dependence(FluxWappData * wappdata, float decmin, float decmax, float decgrain, int chan)
 {
 	int beam;
 
 	for (beam=0; beam<7; beam++) {
-		beam_dec_dependence(wappdata, beam, decmin, decmax, decgrain);
+		beam_dec_dependence(wappdata, beam, decmin, decmax, decgrain, chan);
 	}
 }
 

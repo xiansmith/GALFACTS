@@ -138,8 +138,8 @@ void jsd_linear_fit(double X[], double Y[], int size, float nsigma, double C[], 
 		for (i=0; i<size; i++) {
 			if (fabs(mean-Y[i]) > nsigma*sigma) {
 				outlier = 1;
-				printf("outlier=%g: (size=%i mean=%g sigma=%g nsigma=%g)\n", 
-					Y[i], size, mean, sigma, nsigma);
+				//printf("outlier=%g: (size=%i mean=%g sigma=%g nsigma=%g)\n", 
+				//	Y[i], size, mean, sigma, nsigma);
 				size = size-1;
 				Y[i] = Y[size];
 				X[i] = X[size];
@@ -189,14 +189,15 @@ void jsd_poly_fit(double X[], double Y[], int size, float nsigma, double C[], in
 	v=dmatrix(1,terms,1,terms);
 
 	do {
-		for (i=1;i<=size;i++) {
+		for (i=1;i<=size;i++) { //nr fortran style indexing
 			x[i]=X[i-1];
 			y[i]=Y[i-1];
 			sig[i]=1.0;
 		}
 
 		err = svdfit(x,y,sig,size,a,terms,u,v,w,chisq,fpoly);
-		if (err) {
+		if (err || !isfinite(a[1])) {
+			printf("ERROR: svdfit curve fit failed!\n");
 			for (i=1;i<=terms;i++)
 			C[i-1] = 0.0;
 			break;
@@ -206,7 +207,7 @@ void jsd_poly_fit(double X[], double Y[], int size, float nsigma, double C[], in
 
 		/* do the evaluations */
 		mean = 0.0;
-		for (i=0; i<size; i++) {
+		for (i=0; i<size; i++) { //normal indexing
 			eval[i] = jsd_poly_eval(X[i], C, order);
 			diff[i] = eval[i] - Y[i];
 			mean += diff[i];
@@ -347,6 +348,7 @@ void jsd_iterative_fpoly_fit(float X[], float Y[], float sig[], int size, float 
 
         count++;
         //repeat until there are no more outliers
+
     } while (outlierFound && count < LOOP_COUNT_MAX);
 
     printf("curve fit iterations: %i\n", count);

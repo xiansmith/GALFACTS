@@ -265,7 +265,24 @@ static void cross_line(FluxRecord records[], int size, int pos, double cI[], dou
 	
 }
 
-//TODO: make this a parameter
+//compute the average value of the array elements below low and high
+//inclusive of array[low], exclusive of array[high]
+static double arravg(double array[], int low, int high)
+{
+	double sum;
+	int i, count;
+
+	sum = 0.0;
+	if (low < 0) low = 0;
+	for (i=low; i<high; i++) {
+		sum += array[i];
+		count++;
+	}
+	return sum/count;
+}
+
+
+//TODO: make this a parameter as needed
 #define CROSS_ORDER 2
 
 static double scan_weave(ScanDayData *daydata, int scan, int order, float loop_gain, int apply)
@@ -282,7 +299,6 @@ static double scan_weave(ScanDayData *daydata, int scan, int order, float loop_g
 	double delta_sum;
 
 	double dI[MAX_NUM_DAYS*MAX_NUM_SCANS], dQ[MAX_NUM_DAYS*MAX_NUM_SCANS], dU[MAX_NUM_DAYS*MAX_NUM_SCANS], dV[MAX_NUM_DAYS*MAX_NUM_SCANS];
-	//TODO: cX size is related to the order, 
 	double dRA[MAX_NUM_DAYS*MAX_NUM_SCANS];
 	double chisq[4];
 	double cI[CROSS_ORDER+1], cQ[CROSS_ORDER+1], cU[CROSS_ORDER+1], cV[CROSS_ORDER+1];
@@ -336,9 +352,27 @@ static double scan_weave(ScanDayData *daydata, int scan, int order, float loop_g
 		}
 	}
 
+
 	//ensure we have at least enough points
 	if (num_delta/2 > order) 
 	{
+
+		//constrain the endpoints
+		int i;
+		int num = 20; //number of points to constrain on each end.
+		for (i=num_delta-num; i<num_delta; i++) {
+			dI[i] = arravg(dI, i-num, i);
+			dQ[i] = arravg(dQ, i-num, i);
+			dU[i] = arravg(dU, i-num, i);
+			dV[i] = arravg(dV, i-num, i);
+		}
+		for (i=num; i>=0; i--) {
+			dI[i] = arravg(dI, i, i+num);
+			dQ[i] = arravg(dQ, i, i+num);
+			dU[i] = arravg(dU, i, i+num);
+			dV[i] = arravg(dV, i, i+num);
+		}
+
 		//only apply the curve fit to the current scan
 		//apply the curve fits
 		if (apply) 
@@ -355,6 +389,7 @@ static double scan_weave(ScanDayData *daydata, int scan, int order, float loop_g
 			jsd_poly_fit(dRA, dV, num_delta, nsigma, cV, order, &chisq[3]);
 
 			//jsd_print_poly(stdout, cI, order);
+
 			for (k=0; k<refscan->num_records; k++) 
 			{
 				RA = NORMALIZE(refscan->records[k].RA, min, max);
@@ -369,7 +404,7 @@ static double scan_weave(ScanDayData *daydata, int scan, int order, float loop_g
 		//sum up delta magnitudes and return result (for I only)!
 		delta_sum = 0.0;
 		for (k=0; k<num_delta; k++) {
-			delta_sum += fabs(dI[k]);
+			delta_sum += dI[k]*dI[k];
 		}
 		return delta_sum/num_delta;
 	}
@@ -536,7 +571,7 @@ static double day_weave(ScanDayData *daydata, int order, float loop_gain, int ap
 	{
 		double sum = 0.0;
 		for (i=0; i<num_delta; i++) {
-			sum += fabs(dI[i]);
+			sum += dI[i]*dI[i];
 		}
 		return sum/num_delta;
 	}
@@ -602,9 +637,10 @@ static void basket_weave(FluxWappData *wappdata, FILE * chisqfile, int day_order
 	}
 
 	//do day by day weaving
+	chisqglobalprev = INFINITY;
 	for (ord=0; ord<=day_order; ord++) 
+	//ord = day_order;
 	{
-		chisqglobalprev = INFINITY;
 		count = 0;
 		printf("Day weaving order %i\n", ord);
 		do {
@@ -629,10 +665,10 @@ static void basket_weave(FluxWappData *wappdata, FILE * chisqfile, int day_order
 			count++;
 			globalchange = chisqglobalprev - chisqglobal;
 			chisqglobalprev = chisqglobal;
-			printf("day iteration:%i global chisq:%g global change:%g\n", count, chisqglobal, globalchange);
+			printf("day iteration:%i global chisq:%g change:%g\n", count, chisqglobal, globalchange);
 			fprintf(chisqfile, "%f %f\n", chisqglobal, globalchange);
 
-		} while (fabs(globalchange) > loop_epsilon && count < 20);
+		} while (globalchange > loop_epsilon && count < 20);
 
 		//done all weaves for this order, so write a progress plane
 		if (show_progress) {
@@ -647,8 +683,8 @@ static void basket_weave(FluxWappData *wappdata, FILE * chisqfile, int day_order
 	
 	//do the scan by scan weaving
 	for (ord=0; ord<=scan_order; ord++) 
+	//ord = scan_order;
 	{
-		chisqglobalprev = INFINITY;
 		count = 0;
 		printf("Scan weaving order %i\n", ord);
 //		fprintf(logfile,"Scan weaving order %i\n", ord);
@@ -682,10 +718,10 @@ static void basket_weave(FluxWappData *wappdata, FILE * chisqfile, int day_order
 			globalchange = chisqglobalprev - chisqglobal;
 			chisqglobalprev = chisqglobal;
 
-			printf("scan iteration:%i global chisq:%g global change:%g\n", count, chisqglobal, globalchange);
+			printf("scan iteration:%i global chisq:%g change:%g\n", count, chisqglobal, globalchange);
 			fprintf(chisqfile, "%f %f\n", chisqglobal, globalchange);
 
-		} while (fabs(globalchange) > loop_epsilon && count < 20);
+		} while (globalchange > loop_epsilon && count < 20);
 
 		//done all weaves for this order, so write a progress plane
 		if (show_progress) {
@@ -744,7 +780,7 @@ void balance_data(FluxWappData * wappdata, MapMetaData *md, int day_order, int s
 	find_intersections(wappdata);
 
 	printf("performing basket weaving ...\n");
-	printf("loop_gain: %f loop_epsilon: %f\n", loop_gain, loop_epsilon);
+	printf("loop_gain: %g loop_epsilon: %g\n", loop_gain, loop_epsilon);
 
 	fprintf(chisqfile, "#day chisqmax, change, chisqglobal, globalchange\n");
 	basket_weave(wappdata, chisqfile, day_order, scan_order, loop_gain, loop_epsilon, md, show_progress);

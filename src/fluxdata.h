@@ -43,7 +43,9 @@ typedef struct _CrossingPoint CrossingPoint;
 
 struct _ScanData {
 	int num_records;
-	FluxRecord *records; //pointer to start of scan
+	//FluxRecord *records; //pointer to start of scan
+	int day_idx; //index into the the daydata array
+	int rec_idx; //index of the start of the scan
 	int num_cross_points;
 	struct _CrossingPoint crossPoints[MAX_NUM_DAYS];
 };

@@ -88,9 +88,6 @@ int read_datafile(FILE * pFile, SpecRecord ** pDataset, int beam)
 /*
 Read a single SpecRecord from disk including the pointing block
 and the raw spectral data.  
-TODO: Due to a bug in the Arecibo software, the pointing information in the
-header is systematically wrong.  There is a hack in this code to correct for
-this problem.  After it is fixed in Arecibo, the hack must be removed here.
   
 @param rec the structure to read the data into.
 @param datafile the open file for reading

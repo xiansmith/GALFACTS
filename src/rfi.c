@@ -505,6 +505,7 @@ void aerostat_rfi_blanking(SpecRecord dataset[], int size, int lowchan, int high
 			{
 				for (chan=0; chan<MAX_CHANNELS; chan++) 
 				{
+					dataset[j].flagBAD = 1;
 					dataset[j].flagRFI[chan] |= RFI_OUTOFBAND;
 				}
 			}

@@ -18,10 +18,12 @@ typedef struct {
 	float cellsize;             // cell size of map in degrees
 	int n1, n2, n3;
 	int patch;
+	int beamwidths;
 	int gridtype;
 	const char * title;
 	float fcen;
 	float fstart;
+	float fwhm;
 } MapMetaData;
 
 void write_fits_maps(const char * wapp, MapMetaData *md, float dataI[], float dataQ[], float dataU[], float dataV[]);

@@ -5,12 +5,58 @@
 #include "fluxdata.h"
 #include "map.h"
 #include "grid.h"
+#include "programs/fitsio.h"
 
-#define fwhm      2.0                    // FWHM of psf in arc minutes
-//#define fwhm      1.5                    // FWHM of psf in arc minutes
+#define FWHM      2.0                    // FWHM of psf in arc minutes
+//#define FWHM      1.5                    // FWHM of psf in arc minutes
 
 //original PSF
 //(exp(-2.772589*(offset/fwhm)*(offset/fwhm)));
+
+
+static float* psf_map; //patch X patch in dimension
+static int psf_map_size;
+void init_psf_map(float fwhm, float cellsize, int beamwidths)
+{
+	int i,j;
+	float scale = cellsize * 60.0; //scaled to arcminutes
+	int radius = beamwidths*fwhm / scale;
+	float maxdist = radius * scale;
+
+	psf_map_size = radius*2+1;
+	psf_map = malloc (sizeof(double) * psf_map_size*psf_map_size);
+	for (i=0; i<psf_map_size; i++) {
+		for (j=0; j<psf_map_size; j++) {
+			int xpos = i-radius;
+			int ypos = j-radius;
+			double dist = sqrt(xpos*xpos + ypos*ypos) * scale;
+			psf_map[j*psf_map_size+i] = (dist > maxdist) ? 0.0 : exp(-2.772589*(dist/fwhm)*(dist/fwhm));
+		}
+	}
+
+	{
+	header_param_list hpar;
+	init_header_param_list (&hpar);  /* initialize parameter records */
+	hpar.bitpix = -32;
+	hpar.num_axes = 2;
+	hpar.naxis[0] = psf_map_size;
+	hpar.naxis[1] = psf_map_size;
+	sprintf (hpar.ctype[0], "RA---CAR");
+	sprintf (hpar.ctype[1], "DEC---CAR");
+	hpar.crval[0] = 0;
+	hpar.crval[1] = 0;
+	hpar.crpix[0] = radius+1;
+	hpar.crpix[1] = radius+1;
+	hpar.cdelt[0] = -cellsize;
+	hpar.cdelt[1] = cellsize;
+	hpar.equinox = 2000.0;
+	sprintf (hpar.bunit, "Weight");
+	sprintf (hpar.object, "PSF");
+	writefits_map ("psf_map.fits", psf_map, &hpar);
+	}
+}
+
+
 
 
 static double * psf_lookup_table;
@@ -32,7 +78,7 @@ void init_psf_lookup_table(int size, float maxVal)
 	psf_lookup_table = malloc (sizeof(double) * size);
 	for (i=0; i<size; i++) {
 		offset += psf_step;
-		psf_lookup_table[i] = (exp(-2.772589*(offset/fwhm)*(offset/fwhm)));
+		psf_lookup_table[i] = (exp(-2.772589*(offset/FWHM)*(offset/FWHM)));
 	}
 }
 
@@ -45,6 +91,56 @@ static float dist(float dx, float dy, float scale) {
 	return sqrt(dx*dx+dy*dy) * scale;
 }
 
+static void grid_fluxdaydata(const FluxDayData *daydata, const MapMetaData *md, float * dataI, float * dataQ, float * dataU, float * dataV, float * weight)
+{
+	int r, i, j;
+	int n1, n2;
+
+	//dimensions of the map
+	n1 = md->n1;
+	n2 = md->n2;
+
+	for (r=0; r<daydata->numRecords; r++) 
+	{
+		int x, y;
+		const FluxRecord * rec = &daydata->records[r];
+		if (!finite(rec->stokes.I)) continue;
+
+		//dont grid on data that is outside the map
+		if ((rec->DEC > md->decmax) || (rec->DEC < md->decmin) ||
+			(rec->RA > md->ramax) || (rec->RA < md->ramin))
+			continue; 
+
+		//find the pixel coords for this measurement
+		x = n1-(rec->RA-md->ramin)/md->cellsize;
+		y = (rec->DEC-md->decmin)/md->cellsize;
+
+		for (i=0; i<psf_map_size; i++) 
+		{
+			for (j=0; j<psf_map_size; j++) 
+			{
+				//pixel coords for this particular weight
+				int m = x+(i-psf_map_size/2);
+				int n = y+(j-psf_map_size/2);
+
+				if ( (m >= 0) && (m < n1) ) {
+					if( (n >= 0) && (n < n2) ) {
+						double spread = psf_map[j*psf_map_size+i];
+						int indx = n*n1+m;
+						dataI[indx] +=  rec->stokes.I * spread;
+						dataQ[indx] +=  rec->stokes.Q * spread;          
+						dataU[indx] +=  rec->stokes.U * spread;          
+						dataV[indx] +=  rec->stokes.V * spread;
+						weight[indx] += spread;
+					}
+				}
+			} 
+		} 
+	}
+}
+
+
+/*
 static void grid_fluxdaydata(const FluxDayData *daydata, const MapMetaData *md, float * dataI, float * dataQ, float * dataU, float * dataV, float * weight)
 {
 	int r, m, n;
@@ -96,7 +192,7 @@ static void grid_fluxdaydata(const FluxDayData *daydata, const MapMetaData *md, 
 		} 
 	}
 }
-
+*/
 
 void grid_data(const FluxWappData *wappdata, const MapMetaData *md, float * dataI, float * dataQ, float * dataU, float * dataV, float *weight)
 {

@@ -58,10 +58,10 @@ void write_cal_fits(SpecRecord dataset[], int size, float fcen, float df)
 	int i, n;
 	header_param_list hpar;
 
-	const char * calxxfile = "calxx.fits";
-	const char * calyyfile = "calyy.fits";
-	const char * calxyfile = "calxy.fits";
-	const char * calyxfile = "calyx.fits";
+	const char * calxxfile = "calxx2.fits";
+	const char * calyyfile = "calyy2.fits";
+	const char * calxyfile = "calxy2.fits";
+	const char * calyxfile = "calyx2.fits";
 
 	float *caldataxx  = (float *) malloc (MAX_CHANNELS * size * sizeof(float));
 	float *caldataxy  = (float *) malloc (MAX_CHANNELS * size * sizeof(float));
@@ -153,12 +153,14 @@ static void create_annotations(SpecRecord dataset[], int size)
 				fprintf(annfile, "COLOUR %s\n", "RED"); 
 				fprintf(annfile, "CIRCLE W %7.4f %7.4f %7.4f #%7.2f\n", 
 					dataset[n].RA, dataset[n].DEC, 0.025, dataset[n].AST);
+				printf("WARN: DEC pointing error detected\n");
 			}
 
 		} else {
 			found = 0;
 		}
 
+		/* no longer needed since it was fixed in the first stage processing
 		//correct for a known pointing error when dec does not change
 		if (dataset[n].DEC == dataset[n+1].DEC) 
 		{
@@ -168,7 +170,9 @@ static void create_annotations(SpecRecord dataset[], int size)
 			for (k=1; k<=limit; k++) {
 				dataset[n+k].DEC = dataset[n].DEC + dec_change*k;
 			}
+			printf("WARN: DEC pointing error corrected\n");
 		}
+		*/
 	}
 	fprintf(annfile, "DOT W %7.4f %7.4f #%7.2f\n", dataset[n].RA, dataset[n].DEC, dataset[n].AST);
 	
@@ -242,7 +246,7 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 	/* calculate the channel frequencies */
 	fcen = cfgData.centerMHz; 
 	df = cfgData.bandwitdhkHz / 256 / 1000;
-	printf ("center frequency: %fMHz\n", fcen);
+	printf("center frequency: %fMHz\n", fcen);
 	printf("channel bandwidth: %fMHz\n", df);
 	for (i=0; i<MAX_CHANNELS; i++) {
 		freq[i] = fcen + ((float)(i - 127)) * df;
@@ -258,7 +262,7 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 		printf("ERROR: Skipping %s %s: there are no records!\n", datedir, subdir);
 		return;
 	}
-
+	
 
 	/* determine the field size */
 	maxRA = 0.0;
@@ -309,14 +313,12 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 
 	/* Compute the cal values */
 	printf("compute the raw values of cal ...\n");
-//ssg	compute_raw_cal(dataset, numRecords);
-	compute_raw_cal(dataset, lowchan, highchan, numRecords);//ssg
-	//print_cal(dataset, numRecords, lowchan, highchan, 0);
+	compute_raw_cal(dataset, numRecords);
 
 	/* Compute curve fit cal */
-	printf("compute the curve fit cal ...\n");
-	linear_fit_cal(dataset, numRecords, lowchan, highchan, ignoreRFI);
-	//print_cal(dataset, numRecords, lowchan, highchan, ignoreRFI);
+	printf("compute smoothed cal ...\n");
+	//linear_fit_cal(dataset, numRecords, lowchan, highchan, ignoreRFI);
+	smooth_cal_bandaverage(dataset, numRecords, lowchan, highchan, 120 * 5 - 1, 2.5);
 
 	printf("writing cal fits on curve fit cal ...\n");
 	write_cal_fits(dataset, numRecords, fcen, df);
@@ -325,14 +327,17 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 	printf("calculate stokes parameters ...\n");
 	calculate_stokes(dataset, numRecords, lowchan, highchan, ignoreRFI, Tcalx, Tcaly);
 
-	/* Write Channel Data */
-	printf("writing channel data...\n");
-//	write_channel_data(dataset, numRecords, lowchan, highchan);
-//	write_channel_data(dataset, numRecords, 0, 1);
+	printf("correct beam gains...\n");
 	if(multibeam)
 		correct_beamgains(dataset, numRecords, lowchan, highchan, beam);
-	write_channel_data(dataset, numRecords, lowchan, highchan); //SSG
-//	write_channel_data(dataset, numRecords, 0, 1,beam); //SSG
+
+	/* Write Channel Data */
+	printf("writing channel data...\n");
+	write_channel_data(dataset, numRecords, lowchan, highchan);
+
+	printf("writing average data...\n");
+	average_stokes(dataset, numRecords, lowchan, highchan);
+	write_channel_data(dataset, numRecords, 0, 1);
 
 	/* Smooth */
 	//printf("smooth the band averaged data in time ...\n");

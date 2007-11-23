@@ -4,6 +4,7 @@
 #include <math.h>
 #include <string.h>
 #include "jsd/jsd_fit.h"
+#include "stats.h"
 
 /*
  * use a single channel worth of data
@@ -15,43 +16,6 @@
  * then subtract the amount of that curve from the data
  * 
  */
-
-static double compute_mean(double data[], int size)
-{
-	double sum;
-	int count;
-	int i;
-
-	sum = 0.0;
-	count = 0;
-	for (i=0; i<size; i++) {
-		if (isnormal(data[i])) {
-			sum += data[i];
-			count++;
-		}
-	}
-
-	return (double) sum/count;
-}
-
-
-#define SQR(X) ((X)*(X))
-static double compute_sigma(double data[], int size, double mean)
-{
-	double sum;
-	int count;
-	int i;
-
-	sum = 0.0;
-	count = 0;
-	for (i=0; i<size; i++) {
-		if (isnormal(data[i])) {
-			sum += SQR(data[i] - mean);
-			count++;	
-		}
-	}
-	return (double) sqrt(sum / (count-1) );
-}
 
 
 static void compute_dirty_bins (double **binarrayX, int countX[], double binX[], int num_bins)
@@ -99,7 +63,6 @@ static void compute_clean_bins (double **binarrayX, int *countX, double *binX, i
 static void create_dec_bins(FluxWappData * wappdata, double **binarrayI,  double **binarrayQ,  double **binarrayU,  double **binarrayV, int *counts, int beam, float decmin, float decgrain, int num_bins)
 {
 	int d, r;
-	int i;
 
 	memset(counts, 0, num_bins*sizeof(int));
 
@@ -137,13 +100,13 @@ static void create_dec_bins(FluxWappData * wappdata, double **binarrayI,  double
 }
 
 
-#define BIN_ORDER 12
+#define BIN_ORDER 8
 //curve fit the binned data
 static void fit_dec_bins(FluxWappData * wappdata, double *binI, double *binQ, double *binU, double *binV, int num_bins, int beam, float decmin, float decmax, float decgrain)
 {
 
 	int i, d, r;
-	float nsigma = 3.0;
+	float nsigma = 2.5; //for the final curve fit exclusion
 	double chisq;
 	double cI[BIN_ORDER+1];
 	double cQ[BIN_ORDER+1];
@@ -209,7 +172,7 @@ static void beam_dec_dependence(FluxWappData * wappdata, int beam, float decmin,
 	int * counts, *outliercounts;
 	FILE * decfile;
 	char filename[32+1];
-	float nsigma = 3.0;
+	float nsigma = 2.0; //for the per bin data point exclusion
 	
 	num_bins = (int) ceil((decmax-decmin)/decgrain);
 	decgrain = (decmax-decmin)/num_bins; //actual grain (bin) size
@@ -250,7 +213,7 @@ static void beam_dec_dependence(FluxWappData * wappdata, int beam, float decmin,
 	//modify the data
 	fit_dec_bins(wappdata, cleanbinI, cleanbinQ, cleanbinU, cleanbinV, num_bins, beam, decmin, decmax, decgrain);
 
-	//do it again
+	//do it again just so we can print out the bin data and see the residuals
 	create_dec_bins(wappdata, binarrayI, binarrayQ, binarrayU, binarrayV, counts, beam, decmin, decgrain, num_bins);
 	compute_clean_bins(binarrayQ, counts, cleanbinQ, num_bins, nsigma, outliercounts);
 	compute_clean_bins(binarrayU, counts, cleanbinU, num_bins, nsigma, outliercounts);

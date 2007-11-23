@@ -154,7 +154,7 @@ static void print_scandata(FILE * file, ScanData * scandata)
 static void find_intersections(FluxWappData *wappdata)
 {
 	int r, c;
-	int i, j;
+	int i, j, k;
 	int numDays;
 
 	numDays = wappdata->numDays;
@@ -217,6 +217,18 @@ static void find_intersections(FluxWappData *wappdata)
 						refscan->num_cross_points++;
 					}
 				}
+			}
+
+			//the scans are not in a useful order, so lets sort them by RA using simple bubble sort
+			for (j=0; j<refscan->num_cross_points; j++) {
+				int minpos = j;
+				for (k=j+1; k<refscan->num_cross_points; k++) {
+					if (refscan->crossPoints[k].RA < refscan->crossPoints[minpos].RA) 
+						minpos = k;
+				}
+				CrossingPoint tmp = refscan->crossPoints[j];
+				refscan->crossPoints[j] =  refscan->crossPoints[minpos];
+				refscan->crossPoints[minpos] = tmp;
 			}
 		}
 		fclose(crossfile);
@@ -479,18 +491,49 @@ static double mesh_weave(FluxWappData * wappdata)
 	fclose (weavefile);
 }
 
+static void apply_difference_corrections(ScanDayData *daydata, double *dRA, double *dI, double *dQ, double *dU, double *dV, int num_delta, int order, float loop_gain)
+{
+	int i, k;
+	double min, max;
+	const float nsigma;
+	double cI[MAX_NUM_DAYS], cQ[MAX_NUM_DAYS], cU[MAX_NUM_DAYS], cV[MAX_NUM_DAYS];
+	double chisq;
+
+	jsd_minmax(dRA, num_delta, &min, &max);
+	jsd_normalize(dRA, num_delta, min, max);
+
+	jsd_poly_fit(dRA, dI, num_delta, nsigma, cI, order, &chisq);
+	jsd_poly_fit(dRA, dQ, num_delta, nsigma, cQ, order, &chisq);
+	jsd_poly_fit(dRA, dU, num_delta, nsigma, cU, order, &chisq);
+	jsd_poly_fit(dRA, dV, num_delta, nsigma, cV, order, &chisq);
+
+	//jsd_print_poly(stdout, cI, order);
+	//apply the dX values
+	for (i=0; i<daydata->numScans; i++) 
+	{
+		ScanData *refscan = &daydata->scans[i];
+		for (k=0; k<refscan->num_records; k++) 
+		{
+			double RA = NORMALIZE(refscan->records[k].RA, min, max);
+			refscan->records[k].stokes.I -= jsd_poly_eval(RA, cI, order) * loop_gain;
+			refscan->records[k].stokes.Q -= jsd_poly_eval(RA, cQ, order) * loop_gain;
+			refscan->records[k].stokes.U -= jsd_poly_eval(RA, cU, order) * loop_gain;
+			refscan->records[k].stokes.V -= jsd_poly_eval(RA, cV, order) * loop_gain;
+		}
+	}
+
+}
+
 static double day_weave(ScanDayData *daydata, int order, float loop_gain, int apply)
 {
 	int i, j;
 	int k;
 	double RA, DEC;
-	double min, max;
 	FILE * logfile;
 	double dI[MAX_NUM_DAYS*MAX_NUM_SCANS], dQ[MAX_NUM_DAYS*MAX_NUM_SCANS], dU[MAX_NUM_DAYS*MAX_NUM_SCANS], dV[MAX_NUM_DAYS*MAX_NUM_SCANS];
 	//TODO: cX size is related to the order, not days
 	double cI[MAX_NUM_DAYS], cQ[MAX_NUM_DAYS], cU[MAX_NUM_DAYS], cV[MAX_NUM_DAYS];
 	double dRA[MAX_NUM_DAYS*MAX_NUM_SCANS];
-	double chisq[4];
 	const float nsigma = 3.0;
 	int num_delta = 0;
 	for (i=0; i<daydata->numScans; i++) 
@@ -537,31 +580,8 @@ static double day_weave(ScanDayData *daydata, int order, float loop_gain, int ap
 		return 0.0;
 	}
 
-	jsd_minmax(dRA, num_delta, &min, &max);
-	jsd_normalize(dRA, num_delta, min, max);
-
-	if (apply) 
-	{
-		jsd_poly_fit(dRA, dI, num_delta, nsigma, cI, order, &chisq[0]);
-		jsd_poly_fit(dRA, dQ, num_delta, nsigma, cQ, order, &chisq[1]);
-		jsd_poly_fit(dRA, dU, num_delta, nsigma, cU, order, &chisq[2]);
-		jsd_poly_fit(dRA, dV, num_delta, nsigma, cV, order, &chisq[3]);
-
-		//jsd_print_poly(stdout, cI, order);
-		//apply the dX values
-		for (i=0; i<daydata->numScans; i++) 
-		{
-			ScanData *refscan = &daydata->scans[i];
-			if (!finite(jsd_poly_eval(RA, cI, order))) break; 
-			for (k=0; k<refscan->num_records; k++) 
-			{
-				RA = NORMALIZE(refscan->records[k].RA, min, max);
-				refscan->records[k].stokes.I -= jsd_poly_eval(RA, cI, order) * loop_gain;
-				refscan->records[k].stokes.Q -= jsd_poly_eval(RA, cQ, order) * loop_gain;
-				refscan->records[k].stokes.U -= jsd_poly_eval(RA, cU, order) * loop_gain;
-				refscan->records[k].stokes.V -= jsd_poly_eval(RA, cV, order) * loop_gain;
-			}
-		}
+	if (apply) {
+		apply_difference_corrections(daydata, dRA, dI, dQ, dU, dV, num_delta, order, loop_gain);
 	}
 
 	/* Difficult to determine what a good criteria for a good or bad
@@ -576,6 +596,7 @@ static double day_weave(ScanDayData *daydata, int order, float loop_gain, int ap
 		return sum/num_delta;
 	}
 }
+
 
 
 #define PERCENT_CHANGE(A,B) ((A-B)/B)

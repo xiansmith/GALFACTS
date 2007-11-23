@@ -10,6 +10,7 @@
 #include "map.h"
 #include "scan.h"
 #include "decdependence.h"
+#include "fieldflat.h"
 
 int multibeam; //SSG
 static void print_usage(const char * prog)
@@ -34,7 +35,7 @@ static void print_usage(const char * prog)
 	"Call this program through the following names (hint: use softlinks)\n"
 	"\tmapcube - to create cubes, on slice per channel\n"
 	"\tmapavg - to create combined maps of all channels\n"
-	"\n", prog, prog); 
+	"\n", prog); 
 }
 
 /*
@@ -97,13 +98,15 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 	int numbytes;
 
 	printf("Map size: %d x %d\n", md->n1, md->n2);
-	printf("DEC range: %f ... %f\n", md->decmin, md->decmax);
-	printf("RA range: %f ... %f\n", md->ramin, md->ramax);
+	printf("DEC range: %f ... %f degrees\n", md->decmin, md->decmax);
+	printf("RA range: %f ... %f degrees\n", md->ramin, md->ramax);
 	printf("Map centre: %.2f %.2f\n", md->RAcen, md->DECcen); 
-	printf("Cell size: %7.5f\n", md->cellsize);
 	printf("Channel range: (%i, %i]\n", md->lowchan, md->highchan);
 	printf("Channel count: %i\n", md->n3);
 	printf("Patch radius: %i\n", md->patch);
+	printf("Beamwidths: %i\n", md->beamwidths);
+	printf("Cell Size: %f degrees\n", md->cellsize);
+	printf("fwhm: %f arcmin\n", md->fwhm);
 	printf("Grid Type: %i\n", md->gridtype);
 	printf("Center Frequency: %g\n", md->fcen); 
 	printf("Start Frequency: %g\n", md->fstart);
@@ -125,6 +128,8 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 	}
 
 	init_psf_lookup_table(65537, 9.1);
+	init_psf_map(md->fwhm, md->cellsize, md->beamwidths);
+
 
 
 	if (show_progress) 
@@ -159,13 +164,17 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 			printf("removing the declination dependence...\n");
 			remove_dec_dependence(wappdata, md->decmin, md->decmax, 0.01, chan);
 
+			//flatten the field
+			//printf("flatten the field...\n");
+			//flatten_field(wappdata, 1.5, 0);
+
 			//perform balancing
 			printf("performing balancing ...\n");
 			balance_data(wappdata, md, day_order, scan_order, balgain, balepsilon, show_progress);
 
 			//write out the balanced data
-			printf("writing balanced data to file ...\n");
-			fluxwappdata_writechan(wappdata, chan);
+			//printf("writing balanced data to file ...\n");
+			//fluxwappdata_writechan(wappdata, chan);
 
 			//perform gridding
 			printf("performing gridding ...\n");
@@ -219,12 +228,13 @@ int main(int argc, char * argv[])
 		md.fcen = (float) atof(argv[2]);
 		md.lowchan = atoi(argv[3]);
 		md.highchan = atoi(argv[4]);
-		md.ramin = (float) atof(argv[5]) * 15; //convert to degrees
-		md.ramax = (float) atof(argv[6]) * 15; //convert to degrees
+		md.ramin = (float) atof(argv[5]) * 15.0; //convert to degrees
+		md.ramax = (float) atof(argv[6]) * 15.0; //convert to degrees
 		md.decmin = (float) atof(argv[7]);
 		md.decmax = (float) atof(argv[8]);
-		md.cellsize = (float) atof(argv[9]) / 60; //convert to degrees
-		md.patch = atoi(argv[10]);
+		md.cellsize = (float) atof(argv[9]) / 60.0; //convert to degrees
+		md.patch = atoi(argv[10]); //TODO: remove this
+		md.beamwidths = atoi(argv[10]);
 		md.gridtype = atoi(argv[11]);
 		day_order = atoi(argv[12]);
 		scan_order = atoi(argv[13]);
@@ -233,6 +243,7 @@ int main(int argc, char * argv[])
 		showprogress = atoi(argv[16]);
 		md.title = argv[17];
 
+		md.fwhm = 2.0; //TODO: paramaterize this
 		md.RAcen = (md.ramax + md.ramin)/2.0;
 		md.DECcen = (md.decmax + md.decmin)/2.0;
 		md.RArange =  md.ramax - md.ramin;

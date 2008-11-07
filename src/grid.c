@@ -11,7 +11,7 @@
 //#define FWHM      1.5                    // FWHM of psf in arc minutes
 
 //original PSF
-//  (exp(-2.772589*(offset/fwhm)*(offset/fwhm)));
+//   (exp(-2.772589*(offset/fwhm)*(offset/fwhm)));
 
 static float* psf_map; //patch X patch in dimension
 static int psf_map_size;

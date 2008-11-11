@@ -420,7 +420,7 @@ void smooth_cal_bandaverage(SpecRecord dataset[], int size, int lowchan, int hig
 
 }
 
-//no longer used
+/*
 void linear_fit_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int ignoreRFI)
 {
 	int n, chan;
@@ -467,7 +467,7 @@ void linear_fit_cal(SpecRecord dataset[], int size, int lowchan, int highchan, i
 			//NaN values will result in the dataset cal
 		}
 
-		/* normalize the x values for the curve fit */
+		// normalize the x values for the curve fit 
 		{
 			double min, max;
 			jsd_minmax(Xast, count, &min, &max);
@@ -515,4 +515,5 @@ void linear_fit_cal(SpecRecord dataset[], int size, int lowchan, int highchan, i
 	free(Yyx);
 }
 
+*/
 

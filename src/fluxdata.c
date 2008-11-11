@@ -2,6 +2,8 @@
 #include "jsd/jsd_futil.h"
 #include <string.h>
 #include <values.h>
+#include <math.h>
+
 extern int multibeam;//SSG
 int fluxrecord_read(FluxRecord * pRec, FILE * file)
 {
@@ -168,21 +170,22 @@ static int fluxdaydata_read(FluxDayData *daydata, FILE *infile)
     k = 0;
     while (!feof(infile) && k<numRecords)
     {
-        int num = fluxrecord_read(&daydata->records[k], infile);
+	FluxRecord *pRec = &daydata->records[k];
+        int num = fluxrecord_read(pRec, infile);
         if (num == 7) {
             float RA = daydata->records[k].RA;
             if (RA > RAmax) RAmax = RA;
             if (RA < RAmin) RAmin = RA;
-            k++;
+            if (isfinite(pRec->stokes.I+pRec->stokes.U))  k++;
         }
         else if (num < 0) break;
         else printf("ERROR: flux file record only read %i fields\n", num);
     }
-	
+
     daydata->numRecords = k;
     daydata->RAmin = RAmin;
     daydata->RAmax = RAmax;
-    return numRecords;
+    return k;
 }
 
 

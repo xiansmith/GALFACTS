@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <math.h>
 #include <float.h>
-#include <gsl/gsl_fit.h>
-#include <gsl/gsl_multifit.h>
+//#include <gsl/gsl_fit.h>
+//#include <gsl/gsl_multifit.h>
 #include "jsd_fit.h"
 #include "nrfit.h"
 #include "nrutil.h"
@@ -91,6 +91,7 @@ float jsd_fpoly_eval(float x, float C[], int order)
 	return val;
 }
 
+/*
 void jsd_linear_fit(double X[], double Y[], int size, float nsigma, double C[], double *chisq)
 {
 	double c0, c1, cov00, cov01, cov11;
@@ -117,7 +118,7 @@ void jsd_linear_fit(double X[], double Y[], int size, float nsigma, double C[], 
 			return;
 		}
 		
-		/* do the evaluations */
+		// do the evaluations 
 		mean = 0.0;
 		for (i=0; i<size; i++) {
 			eval[i] = c0+c1*X[i];
@@ -125,7 +126,7 @@ void jsd_linear_fit(double X[], double Y[], int size, float nsigma, double C[], 
 		}
 		mean /= size;
 
-		/* calc sigma */
+		// calc sigma 
 		sigma = 0.0;
 		for (i=0; i<size; i++) {
 			sigma += SQR(Y[i]-mean);
@@ -133,7 +134,7 @@ void jsd_linear_fit(double X[], double Y[], int size, float nsigma, double C[], 
 		sigma = sqrt(sigma/size);
 
 
-		/* determine outliers */
+		// determine outliers 
 		outlier = 0;
 		for (i=0; i<size; i++) {
 			if (fabs(mean-Y[i]) > nsigma*sigma) {
@@ -152,7 +153,7 @@ void jsd_linear_fit(double X[], double Y[], int size, float nsigma, double C[], 
 
 	free(eval);
 }
-
+*/
 
 void jsd_print_poly(FILE *file, double C[], int order)
 {
@@ -165,7 +166,7 @@ void jsd_print_poly(FILE *file, double C[], int order)
 	fprintf(file, "%g*x**%i\n", C[i], i);
 }
 
-void jsd_poly_fit(double X[], double Y[], int size, float nsigma, double C[], int order, double *chisq)
+int jsd_poly_fit(double X[], double Y[], int size, float nsigma, double C[], int order, double *chisq)
 {
 	int i;
 	int terms = order+1;
@@ -174,7 +175,12 @@ void jsd_poly_fit(double X[], double Y[], int size, float nsigma, double C[], in
 	int outlier;
 	double mean;
 	double *diff, *eval;
-	int err;
+	int err = 0; //assume no error
+
+	if (nsigma < 1.0) {
+		printf("ERROR: nsigma less than 1.0\n");
+		return -2;
+	}
 
 	diff = malloc(sizeof(double) * size);
 	eval = malloc(sizeof(double) * size);
@@ -200,6 +206,7 @@ void jsd_poly_fit(double X[], double Y[], int size, float nsigma, double C[], in
 			printf("ERROR: svdfit curve fit failed!\n");
 			for (i=1;i<=terms;i++)
 			C[i-1] = 0.0;
+			err = -1;
 			break;
 		}
 		for (i=1;i<=terms;i++)
@@ -228,7 +235,7 @@ void jsd_poly_fit(double X[], double Y[], int size, float nsigma, double C[], in
 			if (fabs(diff[i]) > nsigma*sigma) {
 				outlier = 1;
 				//printf("outlier=%g: (size=%i mean=%g sigma=%g nsigma=%g)\n", 
-				//		Y[i], size, mean, sigma, nsigma);
+				//	Y[i], size, mean, sigma, nsigma);
 				Y[i] = eval[i];
 			}
 		}
@@ -244,6 +251,8 @@ void jsd_poly_fit(double X[], double Y[], int size, float nsigma, double C[], in
 	free_dvector(sig,1,size);
 	free_dvector(y,1,size);
 	free_dvector(x,1,size);
+
+	return err;
 }
 
 /*

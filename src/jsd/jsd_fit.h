@@ -18,8 +18,8 @@ double jsd_linear_eval(double x, double C[]);
 /*
 void jsd_iterative_fpoly_fit(float X[], float Y[], float sig[], int size, float C[], int order, float *chisq);
 */
-void jsd_poly_fit(double X[], double Y[], int size, float nsigma, double C[], int order, double *chisq);
-void jsd_linear_fit(double X[], double Y[], int size, float nsigma, double C[], double *chisq);
+int jsd_poly_fit(double X[], double Y[], int size, float nsigma, double C[], int order, double *chisq);
+//void jsd_linear_fit(double X[], double Y[], int size, float nsigma, double C[], double *chisq);
 void jsd_print_poly(FILE *file, double C[], int order);
 
 #endif

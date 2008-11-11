@@ -46,14 +46,15 @@ calhack: calhack.c rfi.o stokes.o calibrate.o common.o smooth.o scan.o spec.o
 	mv calhack $(BIN)
 
 cal: calmain.o rfi.o stokes.o calibrate.o common.o smooth.o spec.o markdata.o stats.o smoothing.o
-	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o cal rfi.o stokes.o calibrate.o common.o smooth.o smoothing.o calmain.o spec.o stats.o markdata.o programs/fitsio.a jsd/jsd_fit.o jsd/nrutil.o jsd/nrfit.o
+	$(CC) $(CFLAGS) -lm -o cal rfi.o stokes.o calibrate.o common.o smooth.o smoothing.o calmain.o spec.o stats.o markdata.o programs/fitsio.a jsd/jsd_fit.o jsd/nrutil.o jsd/nrfit.o
 	mv cal $(BIN)
 
 spechack : 
 	$(CC) -lm -o spechack spechack.c common.o
 
-map: mapmain.o common.o jsd/jsd_futil.o jsd/jsd_util.o balance2.o grid.o map.o scan.o fluxdata.o jsd/jsd_fit.o decdependence.o fieldflat.o stats.o
-	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o map common.o jsd/jsd_futil.o jsd/jsd_util.o jsd/jsd_fit.o jsd/nrutil.o jsd/nrfit.o balance2.o decdependence.o fieldflat.o grid.o map.o scan.o stats.o fluxdata.o mapmain.o programs/fitsio.a
+map: mapmain.o common.o jsd/jsd_futil.o jsd/jsd_util.o balance3.o grid.o map.o scan.o fluxdata.o jsd/jsd_fit.o decdependence.o fieldflat.o stats.o
+	$(CC) $(CFLAGS) -lm -o map common.o jsd/jsd_futil.o jsd/jsd_util.o jsd/jsd_fit.o jsd/nrutil.o jsd/nrfit.o balance3.o decdependence.o fieldflat.o grid.o map.o scan.o stats.o fluxdata.o mapmain.o programs/fitsio.a
+	#$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o map common.o jsd/jsd_futil.o jsd/jsd_util.o jsd/jsd_fit.o jsd/nrutil.o jsd/nrfit.o balance3.o decdependence.o fieldflat.o grid.o map.o scan.o stats.o fluxdata.o mapmain.o programs/fitsio.a
 	mv map $(BIN)
 
 fitscat: fitscat.c programs/fitsio.a
@@ -86,6 +87,7 @@ map.o : map.h map.c
 grid.o : grid.c grid.h
 balance.o : balance.c balance.h
 balance2.o : balance2.c balance.h
+balance3.o : balance3.c balance.h
 common.o : common.h common.c
 rfi.o : common.h rfi.h rfi.c
 stokes.o : common.h stokes.h stokes.c

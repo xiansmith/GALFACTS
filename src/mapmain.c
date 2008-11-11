@@ -205,7 +205,6 @@ int main(int argc, char * argv[])
 
 	char ** files;
 	int numDays;
-	int show_progress;//ssg
 	/* Inputs to this program */
 	//TODO: it would be nice to make these defaults
 	//at the moment the values have no effect

@@ -317,7 +317,6 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 
 	/* Compute curve fit cal */
 	printf("compute smoothed cal ...\n");
-	//linear_fit_cal(dataset, numRecords, lowchan, highchan, ignoreRFI);
 	smooth_cal_bandaverage(dataset, numRecords, lowchan, highchan, 120 * 5 - 1, 2.5);
 
 	printf("writing cal fits on curve fit cal ...\n");

@@ -4,7 +4,8 @@
 #include"programs/fitsio.h"
 #include<malloc.h>
 #include<stdlib.h>
-void cnvrt_end_sint(short int *x)
+#define IGNORE_SECONDS 3
+static inline void cnvrt_end_sint(short int *x)
 {
 	short int result;
 	((unsigned char*)&result)[0] = ((unsigned char*)x)[1];	
@@ -12,7 +13,7 @@ void cnvrt_end_sint(short int *x)
 	*x = result;
 }
 
-void cnvrt_end_int(int *x)
+static inline void cnvrt_end_int(int *x)
 {
 	int result;
 	((unsigned char*)&result)[0] = ((unsigned char*)x)[3];	
@@ -22,7 +23,7 @@ void cnvrt_end_int(int *x)
 	*x = result;
 }
 
-void cnvrt_end_db(double *x)
+static inline void cnvrt_end_db(double *x)
 {
 	double result;
 	((unsigned char*)&result)[0] = ((unsigned char*)x)[7];	
@@ -47,10 +48,11 @@ int main(int argc,char* argv[])
 	int htls_spec_comp;
 	char *proj_code;
 	char *date;
+	char *datadir;
 	int band;
-	if(argc !=10)
+	if(argc !=11)
 	{
-		printf("usage: cimfits2spec num_files beam lths_time_comp lths_spec_comp htls_time_comp htls_spec_comp proj_code date band");
+		printf("usage: cimafits2spec <num_files> <beam> \n <lths_time_comp> <lths_spec_comp> <htls_time_comp> <htls_spec_comp> \n<proj_code> <date> <band> <datadir>\n");
 		return 0;
 	}
 	else
@@ -64,13 +66,14 @@ int main(int argc,char* argv[])
 		proj_code = argv[7];
 		date = argv[8];
 		band = atoi(argv[9]);
+		datadir = argv[10];
 	}	
 
 	
 	int config_lths_not_written=1,config_htls_not_written=1;
 
 	FILE *datafile,*lths_file,*htls_file;
-	char datafilename[40+1],lthsfilename[40+1],htlsfilename[40+1];
+	char datafilename[100+1],lthsfilename[40+1],htlsfilename[40+1];
 	
 	sprintf(htlsfilename,"%s.%s.b%1ds%1d.htls.spec",proj_code,date,beam,band);
 	if ( (htls_file = fopen(htlsfilename, "wb") ) == NULL )
@@ -160,7 +163,7 @@ int main(int argc,char* argv[])
 	{
 		int pcount,pcounts,theap,naxis1,naxis2;
 			
-		sprintf(datafilename,"%s.%s.b%1ds%1dg0.00%3d.fits",proj_code,date,beam,band,800+f);
+		sprintf(datafilename,"%s/%s.%s.b%1ds%1dg0.00%3d.fits",datadir,proj_code,date,beam,band,100+f);
 		if ( (datafile = fopen(datafilename, "r") ) == NULL )
 		{ 
 			printf("ERROR: can't open data file for reading '%s'\n", datafilename);
@@ -175,7 +178,7 @@ int main(int argc,char* argv[])
 			if(strncmp(buf,"NAXIS1  ",8)==0)
 			{
 				sscanf(&buf[10],"%d",&naxis1);
-				//printf("NAXIS1: %d\n",naxis1);
+				printf("NAXIS1: %d\n",naxis1);
 				found = TRUE;
 			}
 		}while(!found);
@@ -188,7 +191,7 @@ int main(int argc,char* argv[])
 			if(strncmp(buf,"NAXIS2  ",8)==0)
 			{
 				sscanf(&buf[10],"%d",&naxis2);
-				//printf("NAXIS2: %d\n",naxis2);
+				printf("NAXIS2: %d\n",naxis2);
 				found = TRUE;
 			}
 		}while(!found);
@@ -201,7 +204,7 @@ int main(int argc,char* argv[])
 			if(strncmp(buf,"PCOUNT  ",8)==0)
 			{
 				sscanf(&buf[10],"%d",&pcount);
-				//printf("PCOUNT: %ld\n",pcount);
+				printf("PCOUNT: %ld\n",pcount);
 				found = TRUE;
 			}
 		}while(!found);
@@ -227,17 +230,26 @@ int main(int argc,char* argv[])
 			if(strncmp(buf,"PCOUNTS ",8)==0)
 			{
 				sscanf(&buf[10],"%d",&pcounts);
-				//printf("PCOUNTS: %ld\n",pcounts);
+				printf("PCOUNTS: %ld\n",pcounts);
 				found = TRUE;
 			}
 		}while(!found);		
 	
 
 		int g,i;
+		int naxis2_fix;	
+		if(f == 0)
+			g = IGNORE_SECONDS;
+		else
+			g = 0;
 
-		for(g = 0;g < naxis2;g++)
+		if(f == (num_files-1))
+			naxis2_fix = naxis2 - IGNORE_SECONDS;
+		else
+			naxis2_fix = naxis2;
+		for(;g < naxis2_fix;g++)
 		{
-			printf("Reading row:%d\n",g+1);
+			printf("Reading row %d\n",g+1);
 			fseek(datafile,offset+g*naxis1,SEEK_SET);
 			fread(&c1,sizeof(cimafits_row),1,datafile);
 			fread(&c2,sizeof(cimafits_row),1,datafile);
@@ -266,7 +278,7 @@ int main(int argc,char* argv[])
 				//fread(&pstat[i],size_pstat,DUMPS_PER_ROW,datafile);
 				fread(&pstat[i],size_pstat,1,datafile);
 			}
-			fseek(datafile,offset+theap+naxis2*DUMPS_PER_ROW*size_pstat+g*DUMPS_PER_ROW*size_pdatum,SEEK_SET);
+			fseek(datafile,offset+naxis1*naxis2+pcounts+g*DUMPS_PER_ROW*size_pdatum,SEEK_SET);
 			for(i = 0;i < DUMPS_PER_ROW;i++)
 			{
 				//fread(&pdatum[i],size_pdatum,DUMPS_PER_ROW,datafile);
@@ -374,6 +386,7 @@ int main(int argc,char* argv[])
 				for(k = 0;k < htls_time_comp*2;k++)
 				{
 					cnvrt_end_sint(&pstat[h*htls_time_comp*2+k].calOn);
+				//	printf("Cal:%d\n",pstat[h*htls_time_comp*2+k].calOn);
 					if(pstat[h*htls_time_comp*2+k].calOn == 0)
 					{
 						flag = 0;

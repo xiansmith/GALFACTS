@@ -63,7 +63,7 @@ fitscat: fitscat.c programs/fitsio.a
 #SSG
 cimafits2spec: cimafits2spec.c cimafits2.h
 	$(CC) $(CFLAGS) -lm -o cimafits2spec cimafits2spec.c
-	mv cimafits2spec $(BIN)
+	#mv cimafits2spec $(BIN)
 beamgainratios: beamgainratios.c
 	$(CC) $(CFLAGS) -lm -o beamgainratios beamgainratios.c programs/fitsio.a
 	mv beamgainratios $(BIN)

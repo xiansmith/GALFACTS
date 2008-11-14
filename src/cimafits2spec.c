@@ -96,8 +96,14 @@ int main(int argc,char* argv[])
 	int size_pdatum = sizeof(pdev_datum);
 	int size_int = sizeof(int);
 	int size_long = sizeof(long int);
-	pdev_stat pstat[DUMPS_PER_ROW];
-	pdev_datum pdatum[DUMPS_PER_ROW];
+//	pdev_stat pstat[DUMPS_PER_ROW];
+//	pdev_datum pdatum[DUMPS_PER_ROW];
+	pdev_stat *pstat;
+	pdev_datum *pdatum;
+
+	pstat = (pdev_stat *)malloc(size_pstat*DUMPS_PER_ROW);
+	pdatum = (pdev_datum *)malloc(size_pdatum*DUMPS_PER_ROW);
+
 	
 	nSpecPointingBlock *spointing_htls,*spointing_lths;
 	spointing_htls = (nSpecPointingBlock *)malloc(sizeof(nSpecPointingBlock)*DUMPS_PER_ROW/(2*htls_time_comp));
@@ -204,7 +210,7 @@ int main(int argc,char* argv[])
 			if(strncmp(buf,"PCOUNT  ",8)==0)
 			{
 				sscanf(&buf[10],"%d",&pcount);
-				printf("PCOUNT: %ld\n",pcount);
+				printf("PCOUNT: %d\n",pcount);
 				found = TRUE;
 			}
 		}while(!found);
@@ -230,7 +236,7 @@ int main(int argc,char* argv[])
 			if(strncmp(buf,"PCOUNTS ",8)==0)
 			{
 				sscanf(&buf[10],"%d",&pcounts);
-				printf("PCOUNTS: %ld\n",pcounts);
+				printf("PCOUNTS: %d\n",pcounts);
 				found = TRUE;
 			}
 		}while(!found);		

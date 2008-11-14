@@ -9,7 +9,7 @@ CFLAGS = \
 -D_GNU_SOURCE \
 
 
-BIN=./bin/
+BIN=../bin/
 
 all: cal map cimafits2spec
 
@@ -106,7 +106,7 @@ stats.o : stats.c stats.h
 
 .PHONY : clean
 clean : empirical_clean
-	rm *.o cimafits2spec
+	rm *.o ../bin/*
 
 
 empirical: empirical_determine empirical_apply empirical_intensity

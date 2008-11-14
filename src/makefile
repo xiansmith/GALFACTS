@@ -11,7 +11,7 @@ CFLAGS = \
 
 BIN=../bin
 
-all: cal map
+all: cal map cimafits2spec
 
 
 scan: scanmain.c
@@ -61,6 +61,8 @@ fitscat: fitscat.c programs/fitsio.a
 	$(CC) $(CFLAFGS) -lm -o fitscat fitscat.c programs/fitsio.a
 	mv fitscat $(BIN)
 #SSG
+cimafits2spec: cimafits2spec.c cimafits2.h
+	$(CC) $(CFLAGS) -lm -o cimafits2spec cimafits2spec.c
 beamgainratios: beamgainratios.c
 	$(CC) $(CFLAGS) -lm -o beamgainratios beamgainratios.c programs/fitsio.a
 	mv beamgainratios $(BIN)
@@ -103,7 +105,7 @@ stats.o : stats.c stats.h
 
 .PHONY : clean
 clean : empirical_clean
-	rm *.o
+	rm *.o cimafits2spec
 
 
 empirical: empirical_determine empirical_apply empirical_intensity

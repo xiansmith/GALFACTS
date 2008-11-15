@@ -265,7 +265,7 @@ int main(int argc,char* argv[])
 			naxis2_fix = naxis2;
 
 		int outside_bound;
-		for(;g < naxis2_fix;g++)
+		for(;g < naxis2_fix-1;g++)
 		{
 			printf("Reading row %d\n",g+1);
 			fseek(datafile,offset+g*naxis1,SEEK_SET);
@@ -289,6 +289,8 @@ int main(int argc,char* argv[])
 			cnvrt_end_db(&c2.req_decj);
 			cnvrt_end_db(&c1.alfa_ang);
 			
+//			printf("RA:%f DEC:%f\n",c1.crval2,c1.crval3);
+		
 			if(c1.crval3 > DEC_MAX || c1.crval3 < DEC_MIN) //may not work always keep an eye
 			{
 				outside_bound = TRUE;
@@ -397,7 +399,7 @@ int main(int argc,char* argv[])
 			int num_on=0,num_off=0,onoff=0;
 			for(h = 0;h < DUMPS_PER_ROW/(htls_time_comp*2);h++)			
 			{
-				//printf("h i%d\n",h);
+//				printf("h %d\n",h);
 				spointing_htls[h].raj_true_in_degrees = c1.crval2 + h*(c2.crval2-c1.crval2)*(2*htls_time_comp)/(DUMPS_PER_ROW);
 				spointing_htls[h].decj_true_in_degrees = c1.crval3 + h*(c2.crval3-c1.crval3)*(2*htls_time_comp)/(DUMPS_PER_ROW);
 				spointing_htls[h].arecibo_local_mean_sidereal_time_in_sec = c1.lst + h*(c2.lst-c1.lst)*(2*htls_time_comp)/(DUMPS_PER_ROW);
@@ -408,7 +410,7 @@ int main(int argc,char* argv[])
 				spointing_htls[h].mjd_last_five_digits = c1.mjdxxobs;
 				spointing_htls[h].alfa_rotation_angle_in_degrees = c1.alfa_ang;
 			
-		//		printf("%f %f %f\n",spointing_htls[h].raj_true_in_degrees,spointing_htls[h].decj_true_in_degrees, \
+//				printf("%f %f %f\n",spointing_htls[h].raj_true_in_degrees,spointing_htls[h].decj_true_in_degrees, \
 				spointing_htls[h].arecibo_local_mean_sidereal_time_in_sec);
 
 				int k,l;

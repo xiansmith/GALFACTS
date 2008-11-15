@@ -169,7 +169,7 @@ int main(int argc,char* argv[])
 	{
 		int pcount,pcounts,theap,naxis1,naxis2;
 			
-		sprintf(datafilename,"%s/%s.%s.b%1ds%1dg0.00%3d.fits",datadir,proj_code,date,beam,band,100+f);
+		sprintf(datafilename,"%s/%s.%s.b%1ds%1dg0.00%3d.fits",datadir,proj_code,date,beam,band,800+f);
 		if ( (datafile = fopen(datafilename, "r") ) == NULL )
 		{ 
 			printf("ERROR: can't open data file for reading '%s'\n", datafilename);

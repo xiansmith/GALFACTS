@@ -9,9 +9,6 @@ http://www2.naic.edu/~tghosh/a1947/continuum_pointing.inc
 
 */
 
-#ifndef _SPEC_H
-#define _SPEC_H
-
 #include "common.h"
 
 #ifndef FITSHEADERH
@@ -56,6 +53,9 @@ http://www2.naic.edu/~tghosh/a1947/continuum_pointing.inc
  *
  *
  * $Log$
+ * Revision 1.2  2008/11/15 09:11:53  sguram
+ * *** empty log message ***
+ *
  * Revision 1.1  2008/11/14 06:48:33  sguram
  * *** empty log message ***
  *
@@ -344,6 +344,10 @@ typedef struct {
 	int *V;
 }Spec_PolSet;
 
+static inline void cnvrt_end_sint(short int *x);
+static inline void cnvrt_end_int(int *x);
+static inline void cnvrt_end_db(double *x);
+
 /*
 SpecRecord
 This is the core data structure for operating on data in the time domain: ie
@@ -353,5 +357,4 @@ contain the RFI bit flags on a per channel basis.  flagBAD is non-zero when
 the entire spectra is marked bad.  stokes contains the spectra of the computed,
 calibrated stokes parameters.
 */
-#endif //_SPEC_H
 

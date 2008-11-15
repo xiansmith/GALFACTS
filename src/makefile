@@ -8,11 +8,11 @@ CFLAGS = \
 -fshort-enums -fno-common -g \
 -D_GNU_SOURCE \
 
+DIRS = jsd programs leakage
 
 BIN=../bin/
 
-all: cal map cimafits2spec
-
+all:	cal map cimafits2spec
 
 scan: scanmain.c
 	$(CC) $(CFLAGS) -lm -o scan common.o fluxdata.o jsd/jsd_futil.o scanmain.c
@@ -63,7 +63,7 @@ fitscat: fitscat.c programs/fitsio.a
 #SSG
 cimafits2spec: cimafits2spec.c cimafits2.h
 	$(CC) $(CFLAGS) -lm -o cimafits2spec cimafits2spec.c
-	#mv cimafits2spec $(BIN)
+	cp cimafits2spec $(BIN)
 beamgainratios: beamgainratios.c
 	$(CC) $(CFLAGS) -lm -o beamgainratios beamgainratios.c programs/fitsio.a
 	mv beamgainratios $(BIN)
@@ -106,7 +106,8 @@ stats.o : stats.c stats.h
 
 .PHONY : clean
 clean : empirical_clean
-	rm *.o ../bin/*
+	rm *.o 
+	for d in $(DIRS); do (cd $$d; $(MAKE) clean ); done
 
 
 empirical: empirical_determine empirical_apply empirical_intensity

@@ -262,10 +262,10 @@ int main(int argc,char* argv[])
 		if(f == (num_files-1))
 			naxis2_fix = naxis2 - IGNORE_ROWS;
 		else
-			naxis2_fix = naxis2;
+			naxis2_fix = naxis2 - 1;
 
 		int outside_bound;
-		for(;g < naxis2_fix-1;g++)
+		for(;g < naxis2_fix;g++)
 		{
 			printf("Reading row %d\n",g+1);
 			fseek(datafile,offset+g*naxis1,SEEK_SET);

@@ -53,6 +53,9 @@ http://www2.naic.edu/~tghosh/a1947/continuum_pointing.inc
  *
  *
  * $Log$
+ * Revision 1.3  2008/11/15 12:07:30  sguram
+ * *** empty log message ***
+ *
  * Revision 1.2  2008/11/15 09:11:53  sguram
  * *** empty log message ***
  *
@@ -83,6 +86,9 @@ http://www2.naic.edu/~tghosh/a1947/continuum_pointing.inc
 #define BINTABLE_HEADER 20*2880
 #define DUMPS_PER_ROW 500
 #define RAW_CHANNELS 2048
+#define DEC_MAX 37.7666
+#define DEC_MIN 19.5666
+
 /*  Comment-format:       unit format comment */
 typedef struct  {
   FITS_ARRAY_DES datapointer; /* x x Pointer to the data in the heap */
@@ -342,6 +348,7 @@ typedef struct {
 	unsigned  int *B;
 	int *U;
 	int *V;
+	int fft_weight;
 }Spec_PolSet;
 
 static inline void cnvrt_end_sint(short int *x);

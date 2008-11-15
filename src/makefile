@@ -12,7 +12,7 @@ DIRS = jsd programs leakage
 
 BIN=../bin/
 
-all:	cal map cimafits2spec
+all:	cal map cimafits2spec new_spec2fits
 
 scan: scanmain.c
 	$(CC) $(CFLAGS) -lm -o scan common.o fluxdata.o jsd/jsd_futil.o scanmain.c
@@ -36,6 +36,8 @@ fits_smooth: fits_smooth.c
 spec2fits: spec2fits.c common.o smooth.o spec.o rfi.o markdata.o
 	$(CC) $(CFLAGS) -lm -o spec2fits common.o smooth.o spec.o rfi.o markdata.o spec2fits.c programs/fitsio.a
 	cp spec2fits $(BIN)
+new_spec2fits: new_spec2fits.c common.o smooth.o spec.o rfi.o markdata.o        
+	$(CC) $(CFLAGS) -lm -o new_spec2fits common.o smooth.o spec.o rfi.o markdata.o  new_spec2fits.c programs/fitsio.a
 
 spectra: spectramain.o common.o spec.o
 	$(CC) $(CFLAGS) -lm -o spectra common.o spec.o spectramain.o

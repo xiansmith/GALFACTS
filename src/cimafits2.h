@@ -53,6 +53,9 @@ http://www2.naic.edu/~tghosh/a1947/continuum_pointing.inc
  *
  *
  * $Log$
+ * Revision 1.4  2008/11/15 20:45:30  csmith
+ * changed to 600/4096  --christian
+ *
  * Revision 1.3  2008/11/15 12:07:30  sguram
  * *** empty log message ***
  *
@@ -84,8 +87,8 @@ http://www2.naic.edu/~tghosh/a1947/continuum_pointing.inc
 
 #define MAIN_HEADER 2880
 #define BINTABLE_HEADER 20*2880
-#define DUMPS_PER_ROW 500
-#define RAW_CHANNELS 2048
+#define DUMPS_PER_ROW 600
+#define RAW_CHANNELS 4096
 #define DEC_MAX 37.7666
 #define DEC_MIN 19.5666
 

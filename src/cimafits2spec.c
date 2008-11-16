@@ -332,7 +332,7 @@ int main(int argc,char* argv[])
 				}
 
 				cnvrt_end_db(&c1.cdelt5);
-				fprintf(htls_cfg_file,"%f\n",c1.cdelt5*htls_time_comp);
+				fprintf(htls_cfg_file,"%f\n",c1.cdelt5*htls_time_comp*1000);
 				fprintf(htls_cfg_file,"%i\n",RAW_CHANNELS*4/htls_spec_comp);
 				cnvrt_end_db(&c1.crval1);
 				fprintf(htls_cfg_file,"%f\n",c1.crval1/1000000);
@@ -342,6 +342,16 @@ int main(int argc,char* argv[])
 				fprintf(htls_cfg_file,"%s\n",proj_code);
 				fprintf(htls_cfg_file,"%f\n",c1.mjdxxobs);
 				fprintf(htls_cfg_file,"AO\n");
+				fprintf(htls_cfg_file,"Integration time (ms):%f\n",c1.cdelt5*htls_time_comp*1000);
+				fprintf(htls_cfg_file,"MJD: %f\n",c1.mjdxxobs);
+				fprintf(htls_cfg_file,"Center freq (MHz): %f\n",c1.crval1/1000000);
+				fprintf(htls_cfg_file,"Channel band (kHz): %f\n",-1*c1.cdelt1*htls_spec_comp/1000);
+				fprintf(htls_cfg_file,"Number of channels/record: %d\n",RAW_CHANNELS/htls_spec_comp);
+				fprintf(htls_cfg_file,"RA at start (degrees): %f\n",c1.crval2);
+				fprintf(htls_cfg_file,"DEC at start (degrees): %f\n",c1.crval3);
+				fprintf(htls_cfg_file,"LST at start (seconds): %f\n",c1.lst);
+				fprintf(htls_cfg_file,"ALFA angle (degrees) at start: %f\n",c1.alfa_ang);
+				fprintf(htls_cfg_file,"Project ID: %s\n",proj_code);
 				fclose(htls_cfg_file);
 				config_htls_not_written = 0;
 			}
@@ -358,7 +368,7 @@ int main(int argc,char* argv[])
 					return 0;
 				}
 
-				fprintf(lths_cfg_file,"%f\n",c1.cdelt5*lths_time_comp);
+				fprintf(lths_cfg_file,"%f\n",c1.cdelt5*lths_time_comp*1000);
 				fprintf(lths_cfg_file,"%i\n",RAW_CHANNELS*4/lths_spec_comp);
 				fprintf(lths_cfg_file,"%f\n",c1.crval1/1000000);
 				fprintf(lths_cfg_file,"%f\n",-1*c1.cdelt1*lths_spec_comp/1000);
@@ -366,6 +376,16 @@ int main(int argc,char* argv[])
 				fprintf(lths_cfg_file,"%s\n",proj_code);
 				fprintf(lths_cfg_file,"%f\n",c1.mjdxxobs);
 				fprintf(lths_cfg_file,"AO\n");
+				fprintf(lths_cfg_file,"Integration time (ms):%f\n",c1.cdelt5*lths_time_comp*1000);
+				fprintf(lths_cfg_file,"MJD: %f\n",c1.mjdxxobs);
+				fprintf(lths_cfg_file,"Center freq (MHz): %f\n",c1.crval1/1000000);
+				fprintf(lths_cfg_file,"Channel band (kHz): %f\n",-1*c1.cdelt1*lths_spec_comp/1000);
+				fprintf(lths_cfg_file,"Number of channels/record: %d\n",RAW_CHANNELS/lths_spec_comp);
+				fprintf(lths_cfg_file,"RA at start (degrees): %f\n",c1.crval2);
+				fprintf(lths_cfg_file,"DEC at start (degrees): %f\n",c1.crval3);
+				fprintf(lths_cfg_file,"LST at start (seconds): %f\n",c1.lst);
+				fprintf(lths_cfg_file,"ALFA angle (degrees) at start: %f\n",c1.alfa_ang);
+				fprintf(lths_cfg_file,"Project ID: %s\n",proj_code);
 				fclose(lths_cfg_file);
 				config_lths_not_written = 0;
 			}

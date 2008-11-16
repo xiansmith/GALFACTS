@@ -13,8 +13,9 @@
 #include"programs/fitsio.h"
 #include<malloc.h>
 #include<stdlib.h>
-#define IGNORE_ROWS 3
-#define STATUS_HEAP_SIZE 2610000
+//#define IGNORE_ROWS 3
+//#define STATUS_HEAP_SIZE 2610000
+#define MAX_ROWS 109
 static inline void cnvrt_end_sint(short int *x)
 {
 	short int result;
@@ -60,9 +61,13 @@ int main(int argc,char* argv[])
 	char *date;
 	char *datadir;
 	int band;
-	if(argc !=11)
+	int start_file;
+	int ignore_rows;
+	float dec_min,dec_max;	
+	if(argc !=15)
 	{
-		printf("usage: cimafits2spec <num_files> <beam> \n <lths_time_comp> <lths_spec_comp> <htls_time_comp> <htls_spec_comp> \n<proj_code> <date> <band> <datadir>\n");
+		printf("usage: cimafits2spec <num_files> <beam> \n <lths_time_comp> <lths_spec_comp> <htls_time_comp> <htls_spec_comp> \n\
+		<proj_code> <date> <band> <datadir> <start_file nnnnn> <ignore_rows> <dec_min> <dec_max>\n");
 		return 0;
 	}
 	else
@@ -77,6 +82,10 @@ int main(int argc,char* argv[])
 		date = argv[8];
 		band = atoi(argv[9]);
 		datadir = argv[10];
+                start_file = atoi(argv[11]);
+                ignore_rows = atoi(argv[12]);
+                dec_min = atof(argv[13]);
+                dec_max = atof(argv[14]);
 	}	
 
 	
@@ -179,7 +188,7 @@ int main(int argc,char* argv[])
 	{
 		int pcount,pcounts,theap,naxis1,naxis2;
 			
-		sprintf(datafilename,"%s/%s.%s.b%1ds%1dg0.00%3d.fits",datadir,proj_code,date,beam,band,800+f);
+		sprintf(datafilename,"%s/%s.%s.b%1ds%1dg0.%.5d.fits",datadir,proj_code,date,beam,band,start_file+f);
 		if ( (datafile = fopen(datafilename, "r") ) == NULL )
 		{ 
 			printf("ERROR: can't open data file for reading '%s'\n", datafilename);
@@ -255,12 +264,12 @@ int main(int argc,char* argv[])
 		int g,i;
 		int naxis2_fix;	
 		if(f == 0)
-			g = IGNORE_ROWS;
+			g = ignore_rows-1;
 		else
 			g = 0;
 
 		if(f == (num_files-1))
-			naxis2_fix = naxis2 - IGNORE_ROWS;
+			naxis2_fix = naxis2 - ignore_rows;
 		else
 			naxis2_fix = naxis2 - 1;
 
@@ -291,7 +300,7 @@ int main(int argc,char* argv[])
 			
 //			printf("RA:%f DEC:%f\n",c1.crval2,c1.crval3);
 		
-			if(c1.crval3 > DEC_MAX || c1.crval3 < DEC_MIN) //may not work always keep an eye
+			if(c1.crval3 > dec_max || c1.crval3 < dec_min) //may not work always keep an eye
 			{
 				outside_bound = TRUE;
 				printf("Row outside normal DEC range\n");
@@ -305,7 +314,7 @@ int main(int argc,char* argv[])
 				//fread(&pstat[i],size_pstat,DUMPS_PER_ROW,datafile);
 				fread(&pstat[i],size_pstat,1,datafile);
 			}
-			fseek(datafile,offset+theap+STATUS_HEAP_SIZE+g*DUMPS_PER_ROW*size_pdatum,SEEK_SET); 
+			fseek(datafile,offset+theap+MAX_ROWS*size_pstat*DUMPS_PER_ROW+g*DUMPS_PER_ROW*size_pdatum,SEEK_SET); 
 			for(i = 0;i < DUMPS_PER_ROW;i++)
 			{
 				//fread(&pdatum[i],size_pdatum,DUMPS_PER_ROW,datafile);
@@ -396,7 +405,7 @@ int main(int argc,char* argv[])
 
 
 			int h1 =0,h2 =0,flag=0;
-			int num_on=0,num_off=0,onoff=0;
+			int num_on=0,num_off=0,onoff=0,onoff_count=0;
 			for(h = 0;h < DUMPS_PER_ROW/(htls_time_comp*2);h++)			
 			{
 //				printf("h %d\n",h);
@@ -461,6 +470,7 @@ int main(int argc,char* argv[])
 							}//l loop htls	
 							num_on++;
 						}//onoff else
+						onoff_count++;
 					}
 					else if(pstat[h*htls_time_comp*2+k].calOn == 0)
 					{
@@ -520,6 +530,14 @@ int main(int argc,char* argv[])
 						flag = 1;
 					}//final else	
 					cnvrt_end_sint(&pstat[h*htls_time_comp*2+k+1].calOn);
+					if(onoff_count == 20) //cal on off cycle keep an eye on this hard coded value
+					{
+						if(onoff)
+							onoff = 0;
+						else
+							onoff = 1;
+						onoff_count = 0;
+					}
 					if(num_on == htls_time_comp)
 					{
 	//					printf("num on %d \n",num_on);
@@ -532,7 +550,6 @@ int main(int argc,char* argv[])
 //						}
 						num_on = 0;
 						h2++;
-						onoff = 0;
 					}
 					if(num_off == htls_time_comp)
 					{
@@ -546,7 +563,6 @@ int main(int argc,char* argv[])
 //						}
 						num_off = 0;
 						h1++;
-						onoff = 1;
 					}
 				}//k loop htls
 				

@@ -13,7 +13,7 @@ http://www2.naic.edu/~tghosh/a1947/continuum_pointing.inc
 #define _NEW_SPEC_H
 
 #include "common.h"
-#define MAX_CHANNELS1 64
+#define MAX_CHANNELS1 4096
 
 /* 
 Object to contain the data from the .cfg file.
@@ -81,6 +81,7 @@ typedef struct {
 	unsigned long int B;
 	long int U;
 	long int V;
+	long int fft_weight;
 } PolAvg;
 
 /*
@@ -92,6 +93,7 @@ typedef struct {
 	unsigned int B[MAX_CHANNELS1];
 	int U[MAX_CHANNELS1];
 	int V[MAX_CHANNELS1];
+	int fft_weight;
 } PolSet;
 
 /*

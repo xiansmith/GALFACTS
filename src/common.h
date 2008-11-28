@@ -4,7 +4,8 @@
 #include <stdio.h>
 
 //The maximum number of channels in the dataset
-#define MAX_CHANNELS 256
+//#define MAX_CHANNELS 256
+#define MAX_CHANNELS 4096
 
 //The maximum number of datapoints in a single scan
 #define MAX_SCAN_LEN 4000

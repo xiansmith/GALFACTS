@@ -517,25 +517,25 @@ static void process_dataset(const char * filepath, int beam, int smooth)
 
 
 	/* Open Configuration File */
-	snprintf(cfgfilepath, 256, "%s_cfg", filepath);
+/*	snprintf(cfgfilepath, 256, "%s_cfg", filepath);
 	if ( (cfgfile = fopen(cfgfilepath, "r") ) == NULL )
 	{ 
 		printf("ERROR: can't open config file '%s'\n", cfgfilepath); 
 		return;
 	}
-
+*/
 
 	/* read config file */
-	printf("reading config file %s ... \n", cfgfilepath);
+/*	printf("reading config file %s ... \n", cfgfilepath);
 	read_cfgfile(cfgfile, &cfgData);
 	fclose(cfgfile);
-
+*/
 	/* calculate the channel frequencies */
-	fcen = cfgData.centerMHz; 
+/*	fcen = cfgData.centerMHz; 
 	df = cfgData.bandwitdhkHz / MAX_CHANNELS / 1000;
 	printf ("center frequency: %fMHz\n", fcen);
 	printf("channel bandwidth: %fMHz\n", df);
-
+*/
 	/* Read Datafile */
 	printf("reading data file %s ... \n", datafilepath);
 	numRecords = read_datafile(datafile, &dataset, beam);
@@ -555,12 +555,13 @@ static void process_dataset(const char * filepath, int beam, int smooth)
 
 
 	get_name_from_filepath(filename, path, FILENAME_SIZE, filepath);
+//	printf("Filename: %s\n",filename);	
 
 	snprintf(badfilepath, 256, "%s/bad_datapoints.dat", path);
 	mark_bad_datapoints(badfilepath, dataset, numRecords);
 
-	printf("writing raw data to fits ...\n");
-	write_raw_pol_fits(dataset, numRecords, fcen, df, filename);
+//	printf("writing raw data to fits ...\n");
+//	write_raw_pol_fits(dataset, numRecords, fcen, df, filename);
 
 	printf("writing rfi data ...\n");
 	write_rfi_data(dataset, numRecords, filename, fcen, df);
@@ -591,7 +592,7 @@ static int get_beamid(const char * filename)
 	regex_t reg;
 	regex_t * preg = &reg;
 	int errcode;
-	const char * regex = "beam(.?)"; //TODO: make this an input arg
+	const char * regex = "b(.?)"; //TODO: make this an input arg
 	regmatch_t pmatch[2];
 	size_t nmatch = 2;
 	char name[8+1];
@@ -625,18 +626,19 @@ int main(int argc, char *argv[])
 	if (argc != 3) 
 	{
 		printf("Usage: %s <specfilename> <smooth>\n", argv[0]);
-		printf("eg: %s A2174.perpuls_08_00_025346+250905.beam0.53989.spec 1\n", argv[0]);
+		printf("eg: %s A2174.perpuls_08_00_025346+250905.beam0.53989.spec 1 \n", argv[0]);
 		return EXIT_FAILURE;
 	} 
 
 	filename = argv[1];
 	smooth = atoi(argv[2]);
+//	beamid = atoi(argv[3]);
 
 	beamid = get_beamid(filename);
 	if (beamid < 0) {
 		return EXIT_FAILURE;
 	}
-
+	printf("Beam:%d\n",beamid);
 	process_dataset(filename, beamid, smooth);
 	return EXIT_SUCCESS;
 }

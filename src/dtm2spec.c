@@ -1,7 +1,8 @@
-#include<stdio.h>
-#include"galfactsLib.h"
-#include"spec.h"
-#include"dtm2spec.h"
+#include <stdio.h>
+#include <string.h>
+#include "galfactsLib.h"
+#include "spec.h"
+#include "dtm2spec.h"
 
 #define MAX_ROWS 109
 static inline void cnvrt_end_sint(short int *x)
@@ -72,9 +73,9 @@ int main(int argc,char* argv[])
 		return 0;
 	}
 
-	printf("Size of row struct: %d\n",sizeof(GFLIB_ROW));
-	printf("Size of data struct: %d\n",sizeof(GFLIB_DATA));
-	printf("Size of stat struct: %d\n",sizeof(GFLIB_PDEVSTAT));
+	printf("Size of row struct: %ld\n",sizeof(GFLIB_ROW));
+	printf("Size of data struct: %ld\n",sizeof(GFLIB_DATA));
+	printf("Size of stat struct: %ld\n",sizeof(GFLIB_PDEVSTAT));
 	char buf[LINELEN+1];
 	long int offset = MAIN_HEADER + BINTABLE_HEADER;
 	int f,g,k,l,found = FALSE;
@@ -83,7 +84,10 @@ int main(int argc,char* argv[])
 		int naxis1,naxis2;
 		GFLIB_ROW row1,row2;
 		SpecPointingBlock SPBlock;	
-		float Aon,Aoff,Bon,Boff,Uon,Uoff,Von,Voff;
+		float Aon[MAX_CHANNELS],Aoff[MAX_CHANNELS],Bon[MAX_CHANNELS],Boff[MAX_CHANNELS];
+		float XXon[MAX_CHANNELS],XXoff[MAX_CHANNELS],YYon[MAX_CHANNELS],YYoff[MAX_CHANNELS];
+		float Uon[MAX_CHANNELS],Uoff[MAX_CHANNELS],Von[MAX_CHANNELS],Voff[MAX_CHANNELS];
+		float XYon[MAX_CHANNELS],XYoff[MAX_CHANNELS],YXon[MAX_CHANNELS],YXoff[MAX_CHANNELS];
 
 		sprintf(datafilename,"%s/%s_dtm.%s.b%1ds%1dg0.%.5d.fits",datadir,proj_code,date,beam,band,start_file+f);
 		if ( (datafile = fopen(datafilename, "r") ) == NULL )
@@ -125,18 +129,27 @@ int main(int argc,char* argv[])
 			fseek(datafile,offset+g*naxis1,SEEK_SET);
 			fread(&row1,sizeof(GFLIB_ROW),1,datafile);
 			fread(&row2,sizeof(GFLIB_ROW),1,datafile);
-			
+			if(!g)
+			{
+				cnvrt_end_db(&row1.cf);
+				cnvrt_end_db(&row1.fdelt);
+				printf("Center Frequency (MHz): %f\n",row1.cf/1000000);
+				printf("Channel Width (kHz): %f\n",row1.fdelt/1000);
+			}
+
 			cnvrt_end_db(&row1.RA);
 			cnvrt_end_db(&row2.RA);
 			cnvrt_end_db(&row1.DEC);
 			cnvrt_end_db(&row2.DEC);
 			cnvrt_end_db(&row1.AST);
 			cnvrt_end_db(&row2.AST);
+
+//			printf("RA: %f,DEC: %f,AST: %f\n",row1.RA,row1.DEC,row1.AST);
 			for(k=0;k<DUMPS_PER_ROW;k++)
 			{
 				SPBlock.centralBeam.raj_true_in_hours=(row1.RA + k*(row2.RA-row1.RA)/DUMPS_PER_ROW)/15;
 				SPBlock.centralBeam.decj_true_in_degrees=(row1.DEC + k*(row2.DEC-row1.DEC)/DUMPS_PER_ROW);
-				SPBlock.centralBeam.arecibo_local_mean_sidereal_time_in_sec=\
+				SPBlock.centralBeam.atlantic_solar_time_now_in_sec=\
 				(row1.AST+k*(row2.AST-row1.AST)/DUMPS_PER_ROW);
 
 				cnvrt_end_sint(&row1.staton[k].fftAccum);
@@ -145,7 +158,7 @@ int main(int argc,char* argv[])
 				fwrite(&SPBlock,sizeof(SpecPointingBlock),1,specfile);
 				for(l=0;l<RAW_CHANNELS;l++)
 				{
-
+					//byteswap
 					cnvrt_end_int(&row1.dataon[k].A[l]);
 					cnvrt_end_int(&row1.dataon[k].B[l]);
 					cnvrt_end_int(&row1.dataon[k].U[l]);
@@ -154,25 +167,36 @@ int main(int argc,char* argv[])
 					cnvrt_end_int(&row1.dataoff[k].B[l]);
 					cnvrt_end_int(&row1.dataoff[k].U[l]);
 					cnvrt_end_int(&row1.dataoff[k].V[l]);
-				
-					Aon = (float)(row1.dataon[k].A[l]/row1.staton[k].fftAccum);
-					Bon = (float)(row1.dataon[k].A[l]/row1.staton[k].fftAccum);
-					Uon = (float)(row1.dataon[k].A[l]/row1.staton[k].fftAccum);
-					Von = (float)(row1.dataon[k].A[l]/row1.staton[k].fftAccum);
-					Aoff = (float)(row1.dataoff[k].A[l]/row1.statoff[k].fftAccum);
-					Boff = (float)(row1.dataoff[k].A[l]/row1.statoff[k].fftAccum);
-					Uoff = (float)(row1.dataoff[k].A[l]/row1.statoff[k].fftAccum);
-					Voff = (float)(row1.dataoff[k].A[l]/row1.statoff[k].fftAccum);
-
-					fwrite(&Aon,sizeof(float),1,specfile);
-					fwrite(&Bon,sizeof(float),1,specfile);
-					fwrite(&Uon,sizeof(float),1,specfile);
-					fwrite(&Von,sizeof(float),1,specfile);
-					fwrite(&Aoff,sizeof(float),1,specfile);
-					fwrite(&Boff,sizeof(float),1,specfile);
-					fwrite(&Uoff,sizeof(float),1,specfile);
-					fwrite(&Voff,sizeof(float),1,specfile);
+					//normalize
+					Aon[l] = (float)(row1.dataon[k].A[l]/row1.staton[k].fftAccum);
+					Bon[l] = (float)(row1.dataon[k].B[l]/row1.staton[k].fftAccum);
+					Uon[l] = (float)((int)row1.dataon[k].U[l]/row1.staton[k].fftAccum);
+					Von[l] = (float)((int)row1.dataon[k].V[l]/row1.staton[k].fftAccum);
+					Aoff[l] = (float)(row1.dataoff[k].A[l]/row1.statoff[k].fftAccum);
+					Boff[l] = (float)(row1.dataoff[k].B[l]/row1.statoff[k].fftAccum);
+					Uoff[l] = (float)((int)row1.dataoff[k].U[l]/row1.statoff[k].fftAccum);
+					Voff[l] = (float)((int)row1.dataoff[k].V[l]/row1.statoff[k].fftAccum);
+					//convert to xx yy xy yx
+					XXon[l] = Aon[l]/2;
+					XXoff[l] = Aoff[l]/2;
+					YYon[l] = Bon[l]/2;
+					YYoff[l] = Boff[l]/2;
+					XYon[l] = (Uon[l]+Von[l])/2;
+					XYoff[l] = (Uoff[l]+Voff[l])/2;
+					YXon[l] = (Uon[l]-Von[l])/2;
+					YXoff[l] = (Uoff[l]-Voff[l])/2;
+					
+					
 				}//l loop for each channel
+
+				fwrite(&XXon,sizeof(float),MAX_CHANNELS,specfile);
+				fwrite(&YYon,sizeof(float),MAX_CHANNELS,specfile);
+				fwrite(&XYon,sizeof(float),MAX_CHANNELS,specfile);
+				fwrite(&YXon,sizeof(float),MAX_CHANNELS,specfile);
+				fwrite(&XXoff,sizeof(float),MAX_CHANNELS,specfile);
+				fwrite(&YYoff,sizeof(float),MAX_CHANNELS,specfile);
+				fwrite(&XYoff,sizeof(float),MAX_CHANNELS,specfile);
+				fwrite(&YXoff,sizeof(float),MAX_CHANNELS,specfile);
 			}//k loop num dumps
 			cnvrt_end_db(&row2.RA);
 			cnvrt_end_db(&row2.DEC);
@@ -182,4 +206,5 @@ int main(int argc,char* argv[])
 		fclose(datafile);
 	}//num files loop f
 	fclose(specfile);
+	return 1;
 }

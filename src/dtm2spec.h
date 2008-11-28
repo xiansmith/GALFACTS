@@ -21,12 +21,13 @@ typedef struct
 	char object[16];
 	double cf; // center frequency
 	double fdelt; //delta frequency
+	double crpix;
 	double RA;
 	double DEC;
 	double pol; //?? not used
 	double AST;
 	double tdelt; //time delta ?? integration time per point ??
-	char fill[768]; //just read in the rest of the row, values currently not used for anything
+	char fill[760]; //just read in the rest of the row, values currently not used for anything
 }GFLIB_ROW;
 
 static inline void cnvrt_end_sint(short int *x);

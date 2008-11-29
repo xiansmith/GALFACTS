@@ -185,6 +185,14 @@ int main(int argc,char* argv[])
 					XYoff[l] = (Uoff[l]+Voff[l])/2;
 					YXon[l] = (Uon[l]-Von[l])/2;
 					YXoff[l] = (Uoff[l]-Voff[l])/2;
+//					XXon[l] = Aon[l];
+//					XXoff[l] = Aoff[l];
+//					YYon[l] = Bon[l];
+//					YYoff[l] = Boff[l];
+//					XYon[l] = Uon[l];
+//					XYoff[l] = Uoff[l];
+//					YXon[l] = Von[l];
+//					YXoff[l] = Voff[l];
 					
 					
 				}//l loop for each channel

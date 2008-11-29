@@ -1,4 +1,5 @@
 CC = gcc
+#CFLAGS =
 CFLAGS = \
 -Wall -W \
 -Wmissing-prototypes \
@@ -33,6 +34,10 @@ fits_smooth: fits_smooth.c
 	$(CC) $(CFLAGS) -lm -o fits_smooth fits_smooth.c programs/fitsio.a
 	cp fits_smooth $(BIN)
 
+new_spec2fits: new_spec2fits.c common.o smooth.o new_spec.o
+	$(CC) $(CFLAGS) -lm -o new_spec2fits common.o new_spec.o new_spec2fits.c programs/fitsio.a
+	cp new_spec2fits $(BIN)
+
 spec2fits: spec2fits.c common.o smooth.o spec.o rfi.o markdata.o
 	$(CC) $(CFLAGS) -lm -o spec2fits common.o smooth.o spec.o rfi.o markdata.o spec2fits.c programs/fitsio.a
 	cp spec2fits $(BIN)
@@ -56,18 +61,26 @@ cal: calmain.o rfi.o stokes.o calibrate.o common.o smooth.o spec.o markdata.o st
 spechack : 
 	$(CC) -lm -o spechack spechack.c common.o
 
-map: mapmain.o common.o jsd/jsd_futil.o jsd/jsd_util.o balance3.o grid.o map.o scan.o fluxdata.o jsd/jsd_fit.o decdependence.o fieldflat.o stats.o
-	$(CC) $(CFLAGS) -lm -o map common.o jsd/jsd_futil.o jsd/jsd_util.o jsd/jsd_fit.o jsd/nrutil.o jsd/nrfit.o balance3.o decdependence.o fieldflat.o grid.o map.o scan.o stats.o fluxdata.o mapmain.o programs/fitsio.a
-	#$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o map common.o jsd/jsd_futil.o jsd/jsd_util.o jsd/jsd_fit.o jsd/nrutil.o jsd/nrfit.o balance3.o decdependence.o fieldflat.o grid.o map.o scan.o stats.o fluxdata.o mapmain.o programs/fitsio.a
-	mv map $(BIN)
+map: mapmain.o common.o jsd/jsd_futil.o jsd/jsd_util.o balance.o grid.o map.o scan.o fluxdata.o jsd/jsd_fit.o decdependence.o fieldflat.o
+	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o map common.o jsd/jsd_futil.o jsd/jsd_util.o jsd/jsd_fit.o jsd/nrutil.o jsd/nrfit.o balance.o decdependence.o fieldflat.o grid.o map.o scan.o fluxdata.o mapmain.o programs/fitsio.a
+	cp map $(BIN)
 
 fitscat: fitscat.c programs/fitsio.a
 	$(CC) $(CFLAFGS) -lm -o fitscat fitscat.c programs/fitsio.a
 	mv fitscat $(BIN)
 #SSG
-cimafits2spec: cimafits2spec.c cimafits2.h
+dtm2spec: dtm2spec.c
+	$(CC) $(CFLAGS) -lm -o dtm2spec dtm2spec.c
+	cp dtm2spec $(BIN)
+
+cimafits2spec: cimafits2spec.c
 	$(CC) $(CFLAGS) -lm -o cimafits2spec cimafits2spec.c
-	cp cimafits2spec $(BIN)
+	mv cimafits2spec $(BIN)
+
+read_cimafits_header: read_cimafits_header.c
+	$(CC) $(CFLAGS) -lm -o read_cimafits_header read_cimafits_header.c
+	mv read_cimafits_header $(BIN)
+
 beamgainratios: beamgainratios.c
 	$(CC) $(CFLAGS) -lm -o beamgainratios beamgainratios.c programs/fitsio.a
 	mv beamgainratios $(BIN)
@@ -80,13 +93,66 @@ beammodels: beammodels.c beammodels.o common.o
 	mv beammodels $(BIN)
 
 cleanmap: cleanmain.c 
-	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o cleanmap common.o beammodels.o fluxdata.o map.o grid.o cleanmain.c programs/fitsio.a jsd/jsd_futil.o
+	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o cleanmap common.o beammodels.o fluxdata.o map.o grid.o cleanmain.c programs/fitsio.a jsd/jsd_futil.o psfmodel.o
 	mv cleanmap $(BIN)
 
+cleanmapold: cleanmainold.c 
+	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o cleanmapold common.o beammodels.o fluxdata.o map.o grid.o cleanmainold.c programs/fitsio.a jsd/jsd_futil.o psfmodel.o
+	mv cleanmapold $(BIN)
+
+beamdiffs : beamdiffs.c  beamdiffs.o common.o fluxdata.o balance.o grid.o map.o jsd/jsd_fit.o
+	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o beamdiffs common.o fluxdata.o balance.o grid.o map.o scan.o beamdiffs.c jsd/jsd_fit.o programs/fitsio.a jsd/jsd_futil.o jsd/nrutil.o jsd/nrfit.o programs/fitsio.a 
+	mv beamdiffs $(BIN)
+
+model_err : model_err.c 
+	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o model_err model_err.c jsd/jsd_futil.o
+	mv model_err $(BIN)
+
+psfmodel: psfmodelmain.c 
+	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o psfmodel psfmodelmain.c psfmodel.o jsd/jsd_futil.o
+	mv psfmodel $(BIN)
+
+psftestcase: psftestcase.c 
+	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o psftestcase psftestcase.c psfmodel.o jsd/jsd_futil.o
+	mv psftestcase $(BIN)
+
+psfmodelimages: psfmodelimages.c
+	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o psfmodelimages psfmodelimages.c generic_grid.o jsd/jsd_futil.o programs/fitsio.a
+	mv psfmodelimages $(BIN)
+
+subregion: get_subregion.c
+	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o get_subregion get_subregion.c common.o jsd/jsd_futil.o
+	mv get_subregion $(BIN)
+
+combine: combine.c
+	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o combine combine.c common.o jsd/jsd_futil.o
+	mv combine $(BIN)
+
+append_quv: append_quv.c
+	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o append_quv append_quv.c common.o jsd/jsd_futil.o
+	mv append_quv $(BIN)
+
+beammodel_norms: beammodel_norms.c
+	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o beammodel_norms beammodel_norms.c psfmodel.o jsd/jsd_futil.o
+	mv beammodel_norms $(BIN)
+
+weight_table: weight_table.c
+	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o weight_table weight_table.c 
+	mv weight_table $(BIN)
+
+zernike_images: zernike_images.c
+	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o zernike_images zernike_images.c psfmodel.o jsd/jsd_futil.o programs/fitsio.a
+	mv zernike_images $(BIN)
+
+beamdiffs.o : beamdiffs.c
 beammodels.o : beammodels.h beammodels.c
 beammodelsmain.o : beammodelsmain.c
+psfmodel.o : psfmodel.h psfmodel.c
+generic_grid.o : generic_grid.h generic_grid.c
 #SSG
+cimafits2spec.o : cimafits2.h fits_des.h
 spec.o : spec.h spec.c
+new_spec.o : new_spec.h new_spec.c
 scan.o : scan.h scan.c
 smooth.o : smooth.h smooth.c
 fluxdata.o : fluxdata.h fluxdata.c

@@ -66,8 +66,8 @@ fitscat: fitscat.c programs/fitsio.a
 	mv fitscat $(BIN)
 #SSG
 dtm2spec: dtm2spec.c
-        $(CC) $(CFLAGS) -I. -lm -o dtm2spec dtm2spec.c
-        cp dtm2spec $(BIN)
+	$(CC) $(CFLAGS) -I. -lm -o dtm2spec dtm2spec.c
+	cp dtm2spec $(BIN)
 cimafits2spec: cimafits2spec.c cimafits2.h
 	$(CC) $(CFLAGS) -lm -o cimafits2spec cimafits2spec.c
 	cp cimafits2spec $(BIN)

@@ -53,6 +53,9 @@ http://www2.naic.edu/~tghosh/a1947/continuum_pointing.inc
  *
  *
  * $Log$
+ * Revision 1.5  2009/02/26 21:39:50  sguram
+ * removed the nSpec structures, since code has been made compatible with the Spec structures.
+ *
  * Revision 1.4  2008/11/15 20:45:30  csmith
  * changed to 600/4096  --christian
  *
@@ -294,7 +297,7 @@ typedef struct {
 	short int satCntAshftS0S1;
 }pdev_stat;
 
-/*Data help struture */
+/*Data help structure */
 typedef struct {
 	unsigned short int pol_A[RAW_CHANNELS];
 	unsigned short int pol_B[RAW_CHANNELS];
@@ -306,7 +309,7 @@ typedef struct {
 Object to contain the data from the .cfg file.
 Describes the metadata from the observation.
 */
-typedef struct {
+/*typedef struct {
 	float integrationTime; //miliseconds
 	int stokesSetSize; //#bytes per stokes set
 	float centerMHz; //MHz
@@ -326,7 +329,7 @@ typedef struct {
 	char observatoryCode[16]; //Observatory code
 	int bandFlip; //flag to indicate band-flip (-1 does indicate band inversion, +1: no flip)
 } ConfigData;
-
+*/
 
 /* 
 CentralBeamBlock
@@ -334,7 +337,7 @@ Contains the pointing information for the primary beam, (beam0), along with
 some common info that is general to the position of the receiver on the sky,
 as opposed to a particular beam.
 */
-typedef struct {
+/*typedef struct {
     double raj_true_in_degrees;
     double decj_true_in_degrees;
     double arecibo_local_mean_sidereal_time_in_sec;
@@ -344,7 +347,7 @@ typedef struct {
     double raj_requested_in_degrees;
     double decj_requested_in_degrees;
     double alfa_rotation_angle_in_degrees;
-} nSpecPointingBlock;
+} nSpecPointingBlock;*/
 
 typedef struct {
 	unsigned  int *A;

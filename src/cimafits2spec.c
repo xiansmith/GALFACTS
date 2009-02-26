@@ -154,23 +154,23 @@ int main(int argc,char* argv[])
 	float *XYon_lths,*XYoff_lths,*YXon_lths,*YXoff_lths;
 
 
-	*XXon_htls = (float *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(float));
-	*XXoff_htls = (float *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(float));	
-	*XYon_htls = (float *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(float));
-	*XYoff_htls = (float *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(float));
-	*YXon_htls = (float *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(float));
-	*YXoff_htls = (float *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(float));	
-	*YYon_htls = (float *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(float));	
-	*YYoff_htls = (float *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(float));	
+	XXon_htls = (float *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(float));
+	XXoff_htls = (float *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(float));	
+	XYon_htls = (float *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(float));
+	XYoff_htls = (float *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(float));
+	YXon_htls = (float *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(float));
+	YXoff_htls = (float *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(float));	
+	YYon_htls = (float *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(float));	
+	YYoff_htls = (float *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(float));	
 
-	*XXon_lths = (float *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(float));
-	*XXoff_lths = (float *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(float));	
-	*XYon_lths = (float *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(float));
-	*XYoff_lths = (float *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(float));
-	*YXon_lths = (float *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(float));
-	*YXoff_lths = (float *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(float));	
-	*YYon_lths = (float *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(float));	
-	*YYoff_lths = (float *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(float));
+	XXon_lths = (float *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(float));
+	XXoff_lths = (float *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(float));	
+	XYon_lths = (float *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(float));
+	XYoff_lths = (float *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(float));
+	YXon_lths = (float *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(float));
+	YXoff_lths = (float *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(float));	
+	YYon_lths = (float *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(float));	
+	YYoff_lths = (float *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(float));
 			
 	int h;
 	for(h = 0;h < DUMPS_PER_ROW/(htls_time_comp*2);h++)			

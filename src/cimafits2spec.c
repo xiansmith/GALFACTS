@@ -10,6 +10,7 @@
 #include<stdio.h>
 #include<string.h>
 #include"cimafits2.h"
+#include"spec.h"
 #include"programs/fitsio.h"
 #include<malloc.h>
 #include<stdlib.h>
@@ -64,10 +65,10 @@ int main(int argc,char* argv[])
 	int start_file;
 	int ignore_rows;
 	float dec_min,dec_max;	
-	if(argc !=15)
+	if(argc !=10)
 	{
-		printf("usage: cimafits2spec <num_files> <beam> \n <lths_time_comp> <lths_spec_comp> <htls_time_comp> <htls_spec_comp> \n\
-		<proj_code> <date> <band> <datadir> <start_file nnnnn> <ignore_rows> <dec_min> <dec_max>\n");
+		printf("usage: cimafits2spec <num_files> <beam> \n <lths_time_comp> <htls_spec_comp> \
+		<proj_code> \n <date> <band> <datadir> <start_file nnnnn> \n");
 		return 0;
 	}
 	else
@@ -75,17 +76,19 @@ int main(int argc,char* argv[])
 		num_files = atoi(argv[1]);
 		beam = atoi(argv[2]);
 		lths_time_comp = atoi(argv[3]);
-		lths_spec_comp = atoi(argv[4]);
-		htls_time_comp = atoi(argv[5]);
-		htls_spec_comp = atoi(argv[6]);
-		proj_code = argv[7];
-		date = argv[8];
-		band = atoi(argv[9]);
-		datadir = argv[10];
-                start_file = atoi(argv[11]);
-                ignore_rows = atoi(argv[12]);
-                dec_min = atof(argv[13]);
-                dec_max = atof(argv[14]);
+		lths_spec_comp = 1;
+//		htls_time_comp = atoi(argv[5]);		
+		htls_time_comp = 1;
+		htls_spec_comp = atoi(argv[4]);
+		proj_code = argv[5];
+		date = argv[6];
+		band = atoi(argv[7]);
+		datadir = argv[8];
+        start_file = atoi(argv[9]);
+//      ignore_rows = atoi(argv[10]);
+		ignore_rows = 0;
+//      dec_min = atof(argv[11]);
+//      dec_max = atof(argv[12]);
 	}	
 
 	
@@ -114,7 +117,7 @@ int main(int argc,char* argv[])
 	int size_pstat = sizeof(pdev_stat);
 	int size_pdatum = sizeof(pdev_datum);
 	int size_int = sizeof(int);
-	int size_long = sizeof(long int);
+//	int size_long = sizeof(long int);
 //	pdev_stat pstat[DUMPS_PER_ROW];
 //	pdev_datum pdatum[DUMPS_PER_ROW];
 	pdev_stat *pstat;
@@ -123,10 +126,12 @@ int main(int argc,char* argv[])
 	pstat = (pdev_stat *)malloc(size_pstat*DUMPS_PER_ROW);
 	pdatum = (pdev_datum *)malloc(size_pdatum*DUMPS_PER_ROW);
 
-	
-	nSpecPointingBlock *spointing_htls,*spointing_lths;
-	spointing_htls = (nSpecPointingBlock *)malloc(sizeof(nSpecPointingBlock)*DUMPS_PER_ROW/(2*htls_time_comp));
-	spointing_lths = (nSpecPointingBlock *)malloc(sizeof(nSpecPointingBlock)*DUMPS_PER_ROW/(2*lths_time_comp));
+//	nSpecPointingBlock *spointing_htls,*spointing_lths;	
+	SpecPointingBlock *spointing_htls,*spointing_lths;
+//	spointing_htls = (nSpecPointingBlock *)malloc(sizeof(nSpecPointingBlock)*DUMPS_PER_ROW/(2*htls_time_comp));
+//	spointing_lths = (nSpecPointingBlock *)malloc(sizeof(nSpecPointingBlock)*DUMPS_PER_ROW/(2*lths_time_comp));
+	spointing_htls = (SpecPointingBlock *)malloc(sizeof(SpecPointingBlock)*DUMPS_PER_ROW/(2*htls_time_comp));
+	spointing_lths = (SpecPointingBlock *)malloc(sizeof(SpecPointingBlock)*DUMPS_PER_ROW/(2*lths_time_comp));	
 
 	Spec_PolSet *spolset_htls_on,*spolset_lths_on;
 	Spec_PolSet *spolset_htls_on_final,*spolset_lths_on_final;
@@ -142,6 +147,31 @@ int main(int argc,char* argv[])
 	spolset_lths_on_final = (Spec_PolSet *)malloc(sizeof(Spec_PolSet)*(DUMPS_PER_ROW/(2*lths_time_comp)));
 	spolset_lths_off_final = (Spec_PolSet *)malloc(sizeof(Spec_PolSet)*(DUMPS_PER_ROW/(2*lths_time_comp)));
 
+
+	float *XXon_htls,*XXoff_htls,*YYon_htls,*YYoff_htls;
+	float *XYon_htls,*XYoff_htls,*YXon_htls,*YXoff_htls;
+	float *XXon_lths,*XXoff_lths,*YYon_lths,*YYoff_lths;
+	float *XYon_lths,*XYoff_lths,*YXon_lths,*YXoff_lths;
+
+
+	*XXon_htls = (float *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(float));
+	*XXoff_htls = (float *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(float));	
+	*XYon_htls = (float *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(float));
+	*XYoff_htls = (float *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(float));
+	*YXon_htls = (float *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(float));
+	*YXoff_htls = (float *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(float));	
+	*YYon_htls = (float *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(float));	
+	*YYoff_htls = (float *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(float));	
+
+	*XXon_lths = (float *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(float));
+	*XXoff_lths = (float *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(float));	
+	*XYon_lths = (float *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(float));
+	*XYoff_lths = (float *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(float));
+	*YXon_lths = (float *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(float));
+	*YXoff_lths = (float *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(float));	
+	*YYon_lths = (float *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(float));	
+	*YYoff_lths = (float *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(float));
+			
 	int h;
 	for(h = 0;h < DUMPS_PER_ROW/(htls_time_comp*2);h++)			
 	{
@@ -273,7 +303,7 @@ int main(int argc,char* argv[])
 		else
 			naxis2_fix = naxis2 - 1;
 
-		int outside_bound;
+//		int outside_bound;
 		for(;g < naxis2_fix;g++)
 		{
 			printf("Reading row %d\n",g+1);
@@ -300,13 +330,13 @@ int main(int argc,char* argv[])
 			
 //			printf("RA:%f DEC:%f\n",c1.crval2,c1.crval3);
 		
-			if(c1.crval3 > dec_max || c1.crval3 < dec_min) //may not work always keep an eye
-			{
-				outside_bound = TRUE;
-				printf("Row outside normal DEC range\n");
-			}
-			else
-				outside_bound = FALSE;
+//			if(c1.crval3 > dec_max || c1.crval3 < dec_min) //may not always work keep an eye
+//			{
+//				outside_bound = TRUE;
+//				printf("Row outside normal DEC range\n");
+//			}
+//			else
+//				outside_bound = FALSE;
 
 			fseek(datafile,offset+theap+g*DUMPS_PER_ROW*size_pstat,SEEK_SET);
 			for(i = 0;i < DUMPS_PER_ROW;i++)
@@ -429,7 +459,7 @@ int main(int argc,char* argv[])
 			for(h = 0;h < DUMPS_PER_ROW/(htls_time_comp*2);h++)			
 			{
 //				printf("h %d\n",h);
-				spointing_htls[h].raj_true_in_degrees = c1.crval2 + h*(c2.crval2-c1.crval2)*(2*htls_time_comp)/(DUMPS_PER_ROW);
+/*				spointing_htls[h].raj_true_in_degrees = c1.crval2 + h*(c2.crval2-c1.crval2)*(2*htls_time_comp)/(DUMPS_PER_ROW);
 				spointing_htls[h].decj_true_in_degrees = c1.crval3 + h*(c2.crval3-c1.crval3)*(2*htls_time_comp)/(DUMPS_PER_ROW);
 				spointing_htls[h].arecibo_local_mean_sidereal_time_in_sec = c1.lst + h*(c2.lst-c1.lst)*(2*htls_time_comp)/(DUMPS_PER_ROW);
 				spointing_htls[h].az_cur_in_degrees = c1.azimuth + h*(c2.azimuth-c1.azimuth)*(2*htls_time_comp)/(DUMPS_PER_ROW);
@@ -438,7 +468,11 @@ int main(int argc,char* argv[])
 				spointing_htls[h].decj_requested_in_degrees = c1.req_decj + h*(c2.req_decj-c1.req_decj)*(2*htls_time_comp)/(DUMPS_PER_ROW);
 				spointing_htls[h].mjd_last_five_digits = c1.mjdxxobs;
 				spointing_htls[h].alfa_rotation_angle_in_degrees = c1.alfa_ang;
-			
+*/
+				spointing_htls[h].centralBeam.raj_true_in_hours=c1.crval2 + h*(c2.crval2-c1.crval2)*(2*htls_time_comp)/(DUMPS_PER_ROW)/15;
+				spointing_htls[h].centralBeam.decj_true_in_degrees=c1.crval3 + h*(c2.crval3-c1.crval3)*(2*htls_time_comp)/(DUMPS_PER_ROW);
+				spointing_htls[h].centralBeam.atlantic_solar_time_now_in_sec=\
+				c1.lst + h*(c2.lst-c1.lst)*(2*htls_time_comp)/(DUMPS_PER_ROW);			
 //				printf("%f %f %f\n",spointing_htls[h].raj_true_in_degrees,spointing_htls[h].decj_true_in_degrees, \
 				spointing_htls[h].arecibo_local_mean_sidereal_time_in_sec);
 
@@ -447,9 +481,9 @@ int main(int argc,char* argv[])
 				for(k = 0;k < htls_time_comp*2;k++)
 				{
 					cnvrt_end_sint(&pstat[h*htls_time_comp*2+k].calOn);
-					cnvrt_end_sint(&pstat[h*htls_time_comp*2+k+1].calOn);
+//					cnvrt_end_sint(&pstat[h*htls_time_comp*2+k+1].calOn);
 				//	printf("Cal:%d\n",pstat[h*htls_time_comp*2+k].calOn);
-					if(outside_bound)
+/*					if(outside_bound)
 					{
 						//onoff is 0 if writing to num_off
 						if(!onoff)
@@ -492,9 +526,10 @@ int main(int argc,char* argv[])
 						}//onoff else
 						onoff_count++;
 					}
-					else if(pstat[h*htls_time_comp*2+k].calOn == 0)
+					else*/
+					if(pstat[h*htls_time_comp*2+k].calOn == 0)
 					{
-						flag = 0;
+//						flag = 0;
 						//int l;
 						if(h1==DUMPS_PER_ROW/(htls_time_comp*2))
 							printf("Problematic h1 %d\n",h1);
@@ -516,7 +551,7 @@ int main(int argc,char* argv[])
 						}//l loop htls	
 						num_off++;
 					}//fi
-					else if(pstat[h*htls_time_comp*2+k].calOn == 1 && flag == 0)
+/*					else if(pstat[h*htls_time_comp*2+k].calOn == 1 && flag == 0)
 					{
 						flag = 1;
 						num_off++;
@@ -526,7 +561,7 @@ int main(int argc,char* argv[])
 						flag = 1;
 						num_on++;
 					}
-					else
+*/					else
 					{
 						if(h2==DUMPS_PER_ROW/(htls_time_comp*2))
 							printf("Problematic h2 %d\n",h2);
@@ -547,10 +582,10 @@ int main(int argc,char* argv[])
 							spolset_htls_on[h2].V[l] += (int)pdatum[h*htls_time_comp*2+k].stokes_V[l];
 						}//l loop htls	
 						num_on++;
-						flag = 1;
+//						flag = 1;
 					}//final else	
-					cnvrt_end_sint(&pstat[h*htls_time_comp*2+k+1].calOn);
-					if(onoff_count == 20) //cal on off cycle keep an eye on this hard coded value
+//					cnvrt_end_sint(&pstat[h*htls_time_comp*2+k+1].calOn);
+/*					if(onoff_count == 20) //cal on off cycle keep an eye on this hard coded value
 					{
 						if(onoff)
 							onoff = 0;
@@ -558,7 +593,7 @@ int main(int argc,char* argv[])
 							onoff = 1;
 						onoff_count = 0;
 					}
-					if(num_on == htls_time_comp)
+*/					if(num_on == htls_time_comp)
 					{
 	//					printf("num on %d \n",num_on);
 //						for(l=0;l<RAW_CHANNELS;l++)
@@ -626,10 +661,10 @@ int main(int argc,char* argv[])
 			h1 =0;
 			h2 =0;
 			flag=0;
-			onoff = 0;
+//			onoff = 0;
 			for(h = 0;h < DUMPS_PER_ROW/(lths_time_comp*2);h++)			
 			{
-				spointing_lths[h].raj_true_in_degrees = c1.crval2 + h*(c2.crval2-c1.crval2)*(2*lths_time_comp)/(DUMPS_PER_ROW);
+/*				spointing_lths[h].raj_true_in_degrees = c1.crval2 + h*(c2.crval2-c1.crval2)*(2*lths_time_comp)/(DUMPS_PER_ROW);
 				spointing_lths[h].decj_true_in_degrees = c1.crval3 + h*(c2.crval3-c1.crval3)*(2*lths_time_comp)/(DUMPS_PER_ROW);
 				spointing_lths[h].arecibo_local_mean_sidereal_time_in_sec = c1.lst + h*(c2.lst-c1.lst)*(2*lths_time_comp)/(DUMPS_PER_ROW);
 				spointing_lths[h].az_cur_in_degrees = c1.azimuth + h*(c2.azimuth-c1.azimuth)*(2*lths_time_comp)/(DUMPS_PER_ROW);
@@ -638,7 +673,11 @@ int main(int argc,char* argv[])
 				spointing_lths[h].decj_requested_in_degrees = c1.req_decj + h*(c2.req_decj-c1.req_decj)*(2*lths_time_comp)/(DUMPS_PER_ROW);
 				spointing_lths[h].mjd_last_five_digits = c1.mjdxxobs;
 				spointing_lths[h].alfa_rotation_angle_in_degrees = c1.alfa_ang;
-
+*/
+				spointing_lths[h].centralBeam.raj_true_in_hours=c1.crval2 + h*(c2.crval2-c1.crval2)*(2*lths_time_comp)/(DUMPS_PER_ROW)/15;
+				spointing_lths[h].centralBeam.decj_true_in_degrees=c1.crval3 + h*(c2.crval3-c1.crval3)*(2*lths_time_comp)/(DUMPS_PER_ROW);
+				spointing_lths[h].centralBeam.atlantic_solar_time_now_in_sec=\
+				c1.lst + h*(c2.lst-c1.lst)*(2*lths_time_comp)/(DUMPS_PER_ROW);		
 				//printf("%f %f\n",spointing_lths[h].raj_true_in_degrees,spointing_lths[h].decj_true_in_degrees);
 				//fwrite(&spointing_lths[h],sizeof(nSpecPointingBlock),1,lths_file);				
 
@@ -649,7 +688,7 @@ int main(int argc,char* argv[])
 				{
 
 					//cnvrt_end_sint(&pstat[h*lths_time_comp+k].calOn)
-					if(outside_bound)
+/*					if(outside_bound)
 					{
 						//onoff is 0 if writing to num_off
 						if(!onoff)
@@ -681,9 +720,10 @@ int main(int argc,char* argv[])
 							num_on++;
 						}//onoff else
 					}
-					else if(pstat[h*lths_time_comp*2+k].calOn == 0)
+					else*/
+					if(pstat[h*lths_time_comp*2+k].calOn == 0)
 					{
-						flag = 0;
+//						flag = 0;
 //						int l;
 						if(h1==DUMPS_PER_ROW/(lths_time_comp*2))
 							printf("Problematic h1 %d\n",h1);
@@ -697,7 +737,7 @@ int main(int argc,char* argv[])
 						}//l loop htls	
 						num_off++;
 					}//fi
-					else if(pstat[h*lths_time_comp*2+k].calOn == 1 && flag == 0)
+/*					else if(pstat[h*lths_time_comp*2+k].calOn == 1 && flag == 0)
 					{
 						flag = 1;
 						num_off++;
@@ -707,9 +747,8 @@ int main(int argc,char* argv[])
 						flag = 1;
 						num_on++;
 					}
-					else
+*/					else
 					{
-					
 //						int l;
 						if(h2==DUMPS_PER_ROW/(lths_time_comp*2))
 							printf("Problematic h2 %d\n",h2);
@@ -722,7 +761,7 @@ int main(int argc,char* argv[])
 							spolset_lths_on[h2].V[l] += pdatum[h*lths_time_comp*2+k].stokes_V[l];
 						}//l loop htls	
 						num_on++;
-						flag = 1;
+//						flag = 1;
 					}//final else
 //					int l;
 					if(num_on == lths_time_comp)
@@ -736,7 +775,7 @@ int main(int argc,char* argv[])
 //						}
 						num_on = 0;
 						h2++;
-						onoff = 0;
+//						onoff = 0;
 					}
 					if(num_off == lths_time_comp)
 					{
@@ -747,9 +786,9 @@ int main(int argc,char* argv[])
 //							spolset_lths_off[h1].U[l] /= spolset_lths_off[h1].fft_weight;
 //							spolset_lths_off[h1].V[l] /= spolset_lths_off[h1].fft_weight;
 //						}
-						num_off = 0;
+//						num_off = 0;
 						h1++;
-						onoff = 1;
+//						onoff = 1;
 					}
 				}//k loop lths
 				
@@ -763,6 +802,17 @@ int main(int argc,char* argv[])
 			{
 				for(m = 0;m < RAW_CHANNELS/htls_spec_comp;m++)
 				{
+					XXoff_htls[m] = 0;
+					YYoff_htls[m] = 0;
+					XYoff_htls[m] = 0;
+					YXoff_htls[m] = 0;
+					XXon_htls[m] = 0;
+					YYon_htls[m] = 0;
+					XYon_htls[m] = 0;
+					YXon_htls[m] = 0;
+				}					
+				for(m = 0;m < RAW_CHANNELS/htls_spec_comp;m++)
+				{
 					for(n=0;n<htls_spec_comp;n++)
 					{
 						spolset_htls_off_final[p].A[m] += spolset_htls_off[p].A[m*htls_spec_comp+n];
@@ -774,7 +824,6 @@ int main(int argc,char* argv[])
 						spolset_htls_on_final[p].U[m] += spolset_htls_on[p].U[m*htls_spec_comp+n];
 						spolset_htls_on_final[p].V[m] += spolset_htls_on[p].V[m*htls_spec_comp+n];
 					}//n loop
-				
 					spolset_htls_off_final[p].A[m] /= htls_spec_comp;
 					spolset_htls_off_final[p].B[m] /= htls_spec_comp;
 					spolset_htls_off_final[p].U[m] /= htls_spec_comp;	
@@ -783,9 +832,30 @@ int main(int argc,char* argv[])
 					spolset_htls_on_final[p].B[m] /= htls_spec_comp;
 					spolset_htls_on_final[p].U[m] /= htls_spec_comp;	
 					spolset_htls_on_final[p].V[m] /= htls_spec_comp;
+					XXoff_htls[m] = (float)(spolset_htls_off_final[p].A[m]/(spolset_htls_off_final[p].fft_weight*2));				
+					YYoff_htls[m] = (float)(spolset_htls_off_final[p].B[m]/(spolset_htls_off_final[p].fft_weight*2));
+					XYoff_htls[m] = (float)((spolset_htls_off_final[p].U[m]+spolset_htls_off_final[p].V[m])/(spolset_htls_off_final[p].fft_weight*2));
+					YXoff_htls[m] = (float)((spolset_htls_off_final[p].U[m]-spolset_htls_off_final[p].V[m])/(spolset_htls_off_final[p].fft_weight*2));
+					XXon_htls[m] = (float)(spolset_htls_on_final[p].A[m]/(spolset_htls_on_final[p].fft_weight*2));				
+					YYon_htls[m] = (float)(spolset_htls_on_final[p].B[m]/(spolset_htls_on_final[p].fft_weight*2));
+					XYon_htls[m] = (float)((spolset_htls_on_final[p].U[m]+spolset_htls_on_final[p].V[m])/(spolset_htls_on_final[p].fft_weight*2));
+					YXon_htls[m] = (float)((spolset_htls_on_final[p].U[m]-spolset_htls_on_final[p].V[m])/(spolset_htls_on_final[p].fft_weight*2));										
+
 				}//m loop
-				fwrite(&spointing_htls[p],sizeof(nSpecPointingBlock),1,htls_file);				
-				fwrite(spolset_htls_on_final[p].A,size_int,RAW_CHANNELS/htls_spec_comp,htls_file);				
+
+//				fwrite(&spointing_htls[p],sizeof(nSpecPointingBlock),1,htls_file);
+				fwrite(&spointing_htls[p],sizeof(SpecPointingBlock),1,htls_file);
+				fwrite(&XXon_htls,sizeof(float),RAW_CHANNELS/htls_spec_comp,htls_file);
+				fwrite(&YYon_htls,sizeof(float),RAW_CHANNELS/htls_spec_comp,htls_file);			
+				fwrite(&XYon_htls,sizeof(float),RAW_CHANNELS/htls_spec_comp,htls_file);			
+				fwrite(&YXon_htls,sizeof(float),RAW_CHANNELS/htls_spec_comp,htls_file);			
+				fwrite(&XXoff_htls,sizeof(float),RAW_CHANNELS/htls_spec_comp,htls_file);
+				fwrite(&YYoff_htls,sizeof(float),RAW_CHANNELS/htls_spec_comp,htls_file);			
+				fwrite(&XYoff_htls,sizeof(float),RAW_CHANNELS/htls_spec_comp,htls_file);							
+				fwrite(&YXoff_htls,sizeof(float),RAW_CHANNELS/htls_spec_comp,htls_file);
+								
+								
+/*				fwrite(spolset_htls_on_final[p].A,size_int,RAW_CHANNELS/htls_spec_comp,htls_file);				
 				fwrite(spolset_htls_on_final[p].B,size_int,RAW_CHANNELS/htls_spec_comp,htls_file);				
 				fwrite(spolset_htls_on_final[p].U,size_int,RAW_CHANNELS/htls_spec_comp,htls_file);				
 				fwrite(spolset_htls_on_final[p].V,size_int,RAW_CHANNELS/htls_spec_comp,htls_file);				
@@ -795,11 +865,23 @@ int main(int argc,char* argv[])
 				fwrite(spolset_htls_off_final[p].U,size_int,RAW_CHANNELS/htls_spec_comp,htls_file);				
 				fwrite(spolset_htls_off_final[p].V,size_int,RAW_CHANNELS/htls_spec_comp,htls_file);				
 				fwrite(&spolset_htls_off_final[p].fft_weight,size_int,1,htls_file);				
-			}// p loop
+*/			}// p loop
 		
 
 			for(p=0;p<DUMPS_PER_ROW/(2*lths_time_comp);p++)
 			{
+				for(m = 0;m < RAW_CHANNELS/lths_spec_comp;m++)
+				{
+					XXoff_lths[m] = 0;
+					YYoff_lths[m] = 0;
+					XYoff_lths[m] = 0;
+					YXoff_lths[m] = 0;
+					XXon_lths[m] = 0;
+					YYon_lths[m] = 0;
+					XYon_lths[m] = 0;
+					YXon_lths[m] = 0;
+				}	
+								
 				for(m = 0;m < RAW_CHANNELS/lths_spec_comp;m++)
 				{
 					for(n=0;n<lths_spec_comp;n++)
@@ -822,9 +904,30 @@ int main(int argc,char* argv[])
 					spolset_lths_on_final[p].B[m] /= lths_spec_comp;
 					spolset_lths_on_final[p].U[m] /= lths_spec_comp;	
 					spolset_lths_on_final[p].V[m] /= lths_spec_comp;
+
+					XXoff_lths[m] = (float)(spolset_lths_off_final[p].A[m]/(spolset_lths_off_final[p].fft_weight*2));				
+					YYoff_lths[m] = (float)(spolset_lths_off_final[p].B[m]/(spolset_lths_off_final[p].fft_weight*2));
+					XYoff_lths[m] = (float)((spolset_lths_off_final[p].U[m]+spolset_lths_off_final[p].V[m])/(spolset_lths_off_final[p].fft_weight*2));
+					YXoff_lths[m] = (float)((spolset_lths_off_final[p].U[m]-spolset_lths_off_final[p].V[m])/(spolset_lths_off_final[p].fft_weight*2));
+					XXon_lths[m] = (float)(spolset_lths_on_final[p].A[m]/(spolset_lths_on_final[p].fft_weight*2));				
+					YYon_lths[m] = (float)(spolset_lths_on_final[p].B[m]/(spolset_lths_on_final[p].fft_weight*2));
+					XYon_lths[m] = (float)((spolset_lths_on_final[p].U[m]+spolset_lths_on_final[p].V[m])/(spolset_lths_on_final[p].fft_weight*2));
+					YXon_lths[m] = (float)((spolset_lths_on_final[p].U[m]-spolset_lths_on_final[p].V[m])/(spolset_lths_on_final[p].fft_weight*2));
 				}//m loop
-				fwrite(&spointing_lths[p],sizeof(nSpecPointingBlock),1,lths_file);				
-				fwrite(spolset_lths_on_final[p].A,size_int,RAW_CHANNELS/lths_spec_comp,lths_file);				
+
+
+
+//				fwrite(&spointing_lths[p],sizeof(nSpecPointingBlock),1,lths_file);				
+				fwrite(&spointing_lths[p],sizeof(SpecPointingBlock),1,lths_file);	
+				fwrite(&XXon_lths,sizeof(float),RAW_CHANNELS/lths_spec_comp,lths_file);
+				fwrite(&YYon_lths,sizeof(float),RAW_CHANNELS/lths_spec_comp,lths_file);			
+				fwrite(&XYon_lths,sizeof(float),RAW_CHANNELS/lths_spec_comp,lths_file);			
+				fwrite(&YXon_lths,sizeof(float),RAW_CHANNELS/lths_spec_comp,lths_file);			
+				fwrite(&XXoff_lths,sizeof(float),RAW_CHANNELS/lths_spec_comp,lths_file);
+				fwrite(&YYoff_lths,sizeof(float),RAW_CHANNELS/lths_spec_comp,lths_file);			
+				fwrite(&XYoff_lths,sizeof(float),RAW_CHANNELS/lths_spec_comp,lths_file);							
+				fwrite(&YXoff_lths,sizeof(float),RAW_CHANNELS/lths_spec_comp,lths_file);
+/*				fwrite(spolset_lths_on_final[p].A,size_int,RAW_CHANNELS/lths_spec_comp,lths_file);				
 				fwrite(spolset_lths_on_final[p].B,size_int,RAW_CHANNELS/lths_spec_comp,lths_file);				
 				fwrite(spolset_lths_on_final[p].U,size_int,RAW_CHANNELS/lths_spec_comp,lths_file);				
 				fwrite(spolset_lths_on_final[p].V,size_int,RAW_CHANNELS/lths_spec_comp,lths_file);				
@@ -834,7 +937,7 @@ int main(int argc,char* argv[])
 				fwrite(spolset_lths_off_final[p].U,size_int,RAW_CHANNELS/lths_spec_comp,lths_file);				
 				fwrite(spolset_lths_off_final[p].V,size_int,RAW_CHANNELS/lths_spec_comp,lths_file);
 				fwrite(&spolset_lths_off_final[p].fft_weight,size_int,1,lths_file);				
-			}// p loop
+*/			}// p loop
 	
 		}//naxis2 loop
 

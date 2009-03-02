@@ -63,26 +63,26 @@ int main(int argc,char* argv[])
 	char *datadir;
 	int band;
 	int start_file;
-
-	if(argc !=10)
+	char *crow_id;
+	if(argc !=11)
 	{
-		printf("usage: cimafits2spec <num_files> <beam> \n <lths_time_comp> <htls_spec_comp> \
-		<proj_code> \n <date> <band> <datadir> <start_file nnnnn> \n");
+		printf("usage: cimafits2spec <proj_code> <date> <beam> <band>\n <datadir> <num_files> <start_file nnnnn> <crow_id>\n <htls_spec_comp> <lths_time_comp>");
 		return 0;
 	}
 	else
 	{
-		num_files = atoi(argv[1]);
-		beam = atoi(argv[2]);
-		lths_time_comp = atoi(argv[3]);
+		num_files = atoi(argv[6]);
+		beam = atoi(argv[3]);
+		lths_time_comp = atoi(argv[10]);
 		lths_spec_comp = 1;	
 		htls_time_comp = 1;
-		htls_spec_comp = atoi(argv[4]);
-		proj_code = argv[5];
-		date = argv[6];
-		band = atoi(argv[7]);
-		datadir = argv[8];
-        start_file = atoi(argv[9]);
+		htls_spec_comp = atoi(argv[9]);
+		proj_code = argv[1];
+		date = argv[2];
+		band = atoi(argv[4]);
+		datadir = argv[5];
+	        start_file = atoi(argv[7]);
+		crow_id = argv[8];
 	}	
 
 	
@@ -91,7 +91,9 @@ int main(int argc,char* argv[])
 	FILE *datafile,*lths_file,*htls_file;
 	char datafilename[100+1],lthsfilename[40+1],htlsfilename[40+1];
 	FILE *calfile;
-	fopen(calfile,"Calfile.dat","a");
+	char calfilename[24];
+	sprintf(calfilename,"calfile_%s.dat",crow_id);
+	calfile = fopen(calfilename,"a");
 	sprintf(htlsfilename,"%s.%s.b%1ds%1d.htls.spec",proj_code,date,beam,band);
 	if ( (htls_file = fopen(htlsfilename, "wb") ) == NULL )
 	{ 
@@ -113,8 +115,8 @@ int main(int argc,char* argv[])
 	pdev_stat *pstat;
 	pdev_datum *pdatum;
 
-	pstat = (pdev_stat *)malloc(size_pstat*DUMPS_PER_ROW);
-	pdatum = (pdev_datum *)malloc(size_pdatum*DUMPS_PER_ROW);
+	pstat = (pdev_stat *)malloc(sizeof(pdev_stat)*DUMPS_PER_ROW);
+	pdatum = (pdev_datum *)malloc(sizeof(pdev_datum)*DUMPS_PER_ROW);
 
 
 	SpecPointingBlock *spointing_htls,*spointing_lths;
@@ -164,56 +166,56 @@ int main(int argc,char* argv[])
 	int h;
 	for(h = 0;h < DUMPS_PER_ROW/(htls_time_comp*2);h++)			
 	{
-		spolset_htls_on[h].A = (unsigned int *)calloc((RAW_CHANNELS),size_int);
-		spolset_htls_on[h].B = (unsigned int *)calloc((RAW_CHANNELS),size_int);
-		spolset_htls_on[h].V = ( int *)calloc((RAW_CHANNELS),size_int);
-		spolset_htls_on[h].U = ( int *)calloc((RAW_CHANNELS),size_int);
-		spolset_htls_off[h].A = (unsigned  int *)calloc((RAW_CHANNELS),size_int);
-		spolset_htls_off[h].B = (unsigned  int *)calloc((RAW_CHANNELS),size_int);
-		spolset_htls_off[h].V = (int *)calloc((RAW_CHANNELS),size_int);
-		spolset_htls_off[h].U = (int *)calloc((RAW_CHANNELS),size_int);
-		spolset_htls_on_final[h].A = (unsigned int *)calloc((RAW_CHANNELS/htls_spec_comp),size_int);
-		spolset_htls_on_final[h].B = (unsigned int *)calloc((RAW_CHANNELS/htls_spec_comp),size_int);
-		spolset_htls_on_final[h].V = (int *)calloc((RAW_CHANNELS/htls_spec_comp),size_int);
-		spolset_htls_on_final[h].U = (int *)calloc((RAW_CHANNELS/htls_spec_comp),size_int);
-		spolset_htls_off_final[h].A = (unsigned int *)calloc((RAW_CHANNELS/htls_spec_comp),size_int);
-		spolset_htls_off_final[h].B = (unsigned int *)calloc((RAW_CHANNELS/htls_spec_comp),size_int);
-		spolset_htls_off_final[h].V = (int *)calloc((RAW_CHANNELS/htls_spec_comp),size_int);
-		spolset_htls_off_final[h].U = (int *)calloc((RAW_CHANNELS/htls_spec_comp),size_int);
+		spolset_htls_on[h].A = (unsigned int *)calloc((RAW_CHANNELS),sizeof(int));
+		spolset_htls_on[h].B = (unsigned int *)calloc((RAW_CHANNELS),sizeof(int));
+		spolset_htls_on[h].V = ( int *)calloc((RAW_CHANNELS),sizeof(int));
+		spolset_htls_on[h].U = ( int *)calloc((RAW_CHANNELS),sizeof(int));
+		spolset_htls_off[h].A = (unsigned  int *)calloc((RAW_CHANNELS),sizeof(int));
+		spolset_htls_off[h].B = (unsigned  int *)calloc((RAW_CHANNELS),sizeof(int));
+		spolset_htls_off[h].V = (int *)calloc((RAW_CHANNELS),sizeof(int));
+		spolset_htls_off[h].U = (int *)calloc((RAW_CHANNELS),sizeof(int));
+		spolset_htls_on_final[h].A = (unsigned int *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(int));
+		spolset_htls_on_final[h].B = (unsigned int *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(int));
+		spolset_htls_on_final[h].V = (int *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(int));
+		spolset_htls_on_final[h].U = (int *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(int));
+		spolset_htls_off_final[h].A = (unsigned int *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(int));
+		spolset_htls_off_final[h].B = (unsigned int *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(int));
+		spolset_htls_off_final[h].V = (int *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(int));
+		spolset_htls_off_final[h].U = (int *)calloc((RAW_CHANNELS/htls_spec_comp),sizeof(int));
 	}
 
 	for(h = 0;h < DUMPS_PER_ROW/(lths_time_comp*2);h++)			
 	{
-		spolset_lths_on[h].A = (unsigned int *)calloc((RAW_CHANNELS),size_int);
-		spolset_lths_on[h].B = (unsigned int *)calloc((RAW_CHANNELS),size_int);
-		spolset_lths_on[h].V = (int *)calloc((RAW_CHANNELS),size_int);
-		spolset_lths_on[h].U = (int *)calloc((RAW_CHANNELS),size_int);
-		spolset_lths_off[h].A = (unsigned int *)calloc((RAW_CHANNELS),size_int);
-		spolset_lths_off[h].B = (unsigned  int *)calloc((RAW_CHANNELS),size_int);
-		spolset_lths_off[h].V = ( int *)calloc((RAW_CHANNELS),size_int);
-		spolset_lths_off[h].U = ( int *)calloc((RAW_CHANNELS),size_int);
-		spolset_lths_on_final[h].A = (unsigned int *)calloc((RAW_CHANNELS/lths_spec_comp),size_int);
-		spolset_lths_on_final[h].B = (unsigned  int *)calloc((RAW_CHANNELS/lths_spec_comp),size_int);
-		spolset_lths_on_final[h].V = (int *)calloc((RAW_CHANNELS/lths_spec_comp),size_int);
-		spolset_lths_on_final[h].U = (int *)calloc((RAW_CHANNELS/lths_spec_comp),size_int);
-		spolset_lths_off_final[h].A = (unsigned int *)calloc((RAW_CHANNELS/lths_spec_comp),size_int);
-		spolset_lths_off_final[h].B = (unsigned int *)calloc((RAW_CHANNELS/lths_spec_comp),size_int);
-		spolset_lths_off_final[h].V = (int *)calloc((RAW_CHANNELS/lths_spec_comp),size_int);
-		spolset_lths_off_final[h].U = (int *)calloc((RAW_CHANNELS/lths_spec_comp),size_int);
+		spolset_lths_on[h].A = (unsigned int *)calloc((RAW_CHANNELS),sizeof(int));
+		spolset_lths_on[h].B = (unsigned int *)calloc((RAW_CHANNELS),sizeof(int));
+		spolset_lths_on[h].V = (int *)calloc((RAW_CHANNELS),sizeof(int));
+		spolset_lths_on[h].U = (int *)calloc((RAW_CHANNELS),sizeof(int));
+		spolset_lths_off[h].A = (unsigned int *)calloc((RAW_CHANNELS),sizeof(int));
+		spolset_lths_off[h].B = (unsigned  int *)calloc((RAW_CHANNELS),sizeof(int));
+		spolset_lths_off[h].V = ( int *)calloc((RAW_CHANNELS),sizeof(int));
+		spolset_lths_off[h].U = ( int *)calloc((RAW_CHANNELS),sizeof(int));
+		spolset_lths_on_final[h].A = (unsigned int *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(int));
+		spolset_lths_on_final[h].B = (unsigned  int *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(int));
+		spolset_lths_on_final[h].V = (int *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(int));
+		spolset_lths_on_final[h].U = (int *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(int));
+		spolset_lths_off_final[h].A = (unsigned int *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(int));
+		spolset_lths_off_final[h].B = (unsigned int *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(int));
+		spolset_lths_off_final[h].V = (int *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(int));
+		spolset_lths_off_final[h].U = (int *)calloc((RAW_CHANNELS/lths_spec_comp),sizeof(int));
 	}
 
+	int calcount = 0;
 	int f,found = FALSE;
 	for(f=0;f<num_files;f++)
 	{
 		int pcount,pcounts,theap,naxis1,naxis2;
-	
 		sprintf(datafilename,"%s/%s.%s.b%1ds%1dg0.%.5d.fits",datadir,proj_code,date,beam,band,start_file+f);
 		if ( (datafile = fopen(datafilename, "r") ) == NULL )
 		{ 
 			printf("ERROR: can't open data file for reading '%s'\n", datafilename);
 			return 0;
 		}
-		printf("#Opened the datafile:%s\n",datafilename);
+		printf("Opened the datafile:%s\n",datafilename);
 		if(f==0)
 				fprintf(calfile,"%s: ",datafilename);	
 		do
@@ -223,7 +225,7 @@ int main(int argc,char* argv[])
 			if(strncmp(buf,"NAXIS1  ",8)==0)
 			{
 				sscanf(&buf[10],"%d",&naxis1);
-				printf("#NAXIS1: %d\n",naxis1);
+				printf("NAXIS1: %d\n",naxis1);
 				found = TRUE;
 			}
 		}while(!found);
@@ -236,7 +238,7 @@ int main(int argc,char* argv[])
 			if(strncmp(buf,"NAXIS2  ",8)==0)
 			{
 				sscanf(&buf[10],"%d",&naxis2);
-				printf("#NAXIS2: %d\n",naxis2);
+				printf("NAXIS2: %d\n",naxis2);
 				found = TRUE;
 			}
 		}while(!found);
@@ -249,7 +251,7 @@ int main(int argc,char* argv[])
 			if(strncmp(buf,"PCOUNT  ",8)==0)
 			{
 				sscanf(&buf[10],"%d",&pcount);
-				printf("#PCOUNT: %d\n",pcount);
+				printf("PCOUNT: %d\n",pcount);
 				found = TRUE;
 			}
 		}while(!found);
@@ -262,7 +264,7 @@ int main(int argc,char* argv[])
 			if(strncmp(buf,"THEAP   ",8)==0)
 			{
 				sscanf(&buf[10],"%d",&theap);
-				printf("#THEAP: %d\n",theap);
+				printf("THEAP: %d\n",theap);
 				found = TRUE;
 			}
 		}while(!found);
@@ -275,7 +277,7 @@ int main(int argc,char* argv[])
 			if(strncmp(buf,"PCOUNTS ",8)==0)
 			{
 				sscanf(&buf[10],"%d",&pcounts);
-				printf("#PCOUNTS: %d\n",pcounts);
+				printf("PCOUNTS: %d\n",pcounts);
 				found = TRUE;
 			}
 		}while(!found);		
@@ -285,7 +287,7 @@ int main(int argc,char* argv[])
 		
 		for(g=0;g < naxis2-1;g++)
 		{
-			printf("#Reading row %d\n",g+1);
+			//printf("#Reading row %d\n",g+1);
 			fseek(datafile,offset+g*naxis1,SEEK_SET);
 			fread(&c1,sizeof(cimafits_row),1,datafile);
 			fread(&c2,sizeof(cimafits_row),1,datafile);
@@ -308,15 +310,16 @@ int main(int argc,char* argv[])
 			cnvrt_end_db(&c1.alfa_ang);
 			
 
-			fseek(datafile,offset+theap+g*DUMPS_PER_ROW*size_pstat,SEEK_SET);
+			fseek(datafile,offset+theap+g*DUMPS_PER_ROW*sizeof(pdev_stat),SEEK_SET);
 			for(i = 0;i < DUMPS_PER_ROW;i++)
 			{
-				fread(&pstat[i],size_pstat,1,datafile);
+				fread(&pstat[i],sizeof(pdev_stat),1,datafile);
 			}
-			fseek(datafile,offset+theap+MAX_ROWS*size_pstat*DUMPS_PER_ROW+g*DUMPS_PER_ROW*size_pdatum,SEEK_SET); 
+			fseek(datafile,offset+theap+MAX_ROWS*sizeof(pdev_stat)*DUMPS_PER_ROW+g*DUMPS_PER_ROW*sizeof(pdev_datum),SEEK_SET); 
+//			fseek(datafile,offset+naxis1*naxis2+pcounts+g*DUMPS_PER_ROW*sizeof(pdev_datum),SEEK_SET); 
 			for(i = 0;i < DUMPS_PER_ROW;i++)
 			{
-				fread(&pdatum[i],size_pdatum,1,datafile);
+				fread(&pdatum[i],sizeof(pdev_datum),1,datafile);
 			}
 			FILE * htls_cfg_file;
 			
@@ -330,7 +333,7 @@ int main(int argc,char* argv[])
 				}
 
 				cnvrt_end_db(&c1.cdelt5);
-				fprintf(htls_cfg_file,"%f\n",c1.cdelt5*htls_time_comp*1000);
+				fprintf(htls_cfg_file,"%f\n",c1.cdelt5*htls_time_comp*1000*2);
 				fprintf(htls_cfg_file,"%i\n",RAW_CHANNELS*4/htls_spec_comp);
 				cnvrt_end_db(&c1.crval1);
 				fprintf(htls_cfg_file,"%f\n",c1.crval1/1000000);
@@ -340,7 +343,7 @@ int main(int argc,char* argv[])
 				fprintf(htls_cfg_file,"%s\n",proj_code);
 				fprintf(htls_cfg_file,"%f\n",c1.mjdxxobs);
 				fprintf(htls_cfg_file,"AO\n");
-				fprintf(htls_cfg_file,"Integration time (ms):%f\n",c1.cdelt5*htls_time_comp*1000);
+				fprintf(htls_cfg_file,"Integration time (ms):%f\n",c1.cdelt5*htls_time_comp*1000*2);
 				fprintf(htls_cfg_file,"MJD: %f\n",c1.mjdxxobs);
 				fprintf(htls_cfg_file,"Center freq (MHz): %f\n",c1.crval1/1000000);
 				fprintf(htls_cfg_file,"Channel band (kHz): %f\n",-1*c1.cdelt1*htls_spec_comp/1000);
@@ -366,7 +369,7 @@ int main(int argc,char* argv[])
 					return 0;
 				}
 
-				fprintf(lths_cfg_file,"%f\n",c1.cdelt5*lths_time_comp*1000);
+				fprintf(lths_cfg_file,"%f\n",c1.cdelt5*lths_time_comp*1000*2);
 				fprintf(lths_cfg_file,"%i\n",RAW_CHANNELS*4/lths_spec_comp);
 				fprintf(lths_cfg_file,"%f\n",c1.crval1/1000000);
 				fprintf(lths_cfg_file,"%f\n",-1*c1.cdelt1*lths_spec_comp/1000);
@@ -374,7 +377,7 @@ int main(int argc,char* argv[])
 				fprintf(lths_cfg_file,"%s\n",proj_code);
 				fprintf(lths_cfg_file,"%f\n",c1.mjdxxobs);
 				fprintf(lths_cfg_file,"AO\n");
-				fprintf(lths_cfg_file,"Integration time (ms):%f\n",c1.cdelt5*lths_time_comp*1000);
+				fprintf(lths_cfg_file,"Integration time (ms):%f\n",c1.cdelt5*lths_time_comp*1000*2);
 				fprintf(lths_cfg_file,"MJD: %f\n",c1.mjdxxobs);
 				fprintf(lths_cfg_file,"Center freq (MHz): %f\n",c1.crval1/1000000);
 				fprintf(lths_cfg_file,"Channel band (kHz): %f\n",-1*c1.cdelt1*lths_spec_comp/1000);
@@ -391,8 +394,9 @@ int main(int argc,char* argv[])
 			//init to zero
 			for(h = 0;h < DUMPS_PER_ROW/(htls_time_comp*2);h++)			
 			{
-				int l,int calcount = 0;
-				memset(spolset_htls_on[h].A,0,RAW_CHANNELS);
+				//int l,int calcount = 0;
+				int l;
+/*				memset(spolset_htls_on[h].A,0,RAW_CHANNELS);
 				memset(spolset_htls_on[h].B,0,RAW_CHANNELS);
 				memset(spolset_htls_on[h].U,0,RAW_CHANNELS);
 				memset(spolset_htls_on[h].V,0,RAW_CHANNELS);
@@ -400,8 +404,8 @@ int main(int argc,char* argv[])
 				memset(spolset_htls_off[h].B,0,RAW_CHANNELS);
 				memset(spolset_htls_off[h].U,0,RAW_CHANNELS);
 				memset(spolset_htls_off[h].V,0,RAW_CHANNELS);
-					
-				/*for(l=0;l<RAW_CHANNELS;l++)
+*/					
+				for(l=0;l<RAW_CHANNELS;l++)
 				{
 					spolset_htls_on[h].A[l] =0;
 					spolset_htls_on[h].B[l] =0;
@@ -411,10 +415,10 @@ int main(int argc,char* argv[])
 					spolset_htls_off[h].B[l] =0;
 					spolset_htls_off[h].U[l] =0;
 					spolset_htls_off[h].V[l] =0;
-				}*/
+				}
 				spolset_htls_on[h].fft_weight = 0;	
 				spolset_htls_off[h].fft_weight = 0;	
-				/*for(l=0;l<RAW_CHANNELS/htls_spec_comp;l++)
+				for(l=0;l<RAW_CHANNELS/htls_spec_comp;l++)
 				{
 					spolset_htls_on_final[h].A[l] =0;
 					spolset_htls_on_final[h].B[l] =0;
@@ -424,8 +428,8 @@ int main(int argc,char* argv[])
 					spolset_htls_off_final[h].B[l] =0;
 					spolset_htls_off_final[h].U[l] =0;
 					spolset_htls_off_final[h].V[l] =0;
-				}*/	
-				memset(spolset_htls_on_final[h].A,0,RAW_CHANNELS/htls_spec_comp);
+				}	
+/*				memset(spolset_htls_on_final[h].A,0,RAW_CHANNELS/htls_spec_comp);
 				memset(spolset_htls_on_final[h].B,0,RAW_CHANNELS/htls_spec_comp);
 				memset(spolset_htls_on_final[h].U,0,RAW_CHANNELS/htls_spec_comp);
 				memset(spolset_htls_on_final[h].V,0,RAW_CHANNELS/htls_spec_comp);
@@ -433,13 +437,13 @@ int main(int argc,char* argv[])
 				memset(spolset_htls_off_final[h].B,0,RAW_CHANNELS/htls_spec_comp);
 				memset(spolset_htls_off_final[h].U,0,RAW_CHANNELS/htls_spec_comp);
 				memset(spolset_htls_off_final[h].V,0,RAW_CHANNELS/htls_spec_comp);	
-				spolset_htls_on_final[h].fft_weight = 0;	
+*/				spolset_htls_on_final[h].fft_weight = 0;	
 				spolset_htls_off_final[h].fft_weight = 0;	
 			}
 			
 
 
-			int h1 =0,h2 =0,flag=0;
+			int h1 =0,h2 =0;
 			int num_on=0,num_off=0,onoff=0,oncount=0,offcount=0;
 			for(h = 0;h < DUMPS_PER_ROW/(htls_time_comp*2);h++)			
 			{
@@ -453,8 +457,12 @@ int main(int argc,char* argv[])
 				for(k = 0;k < htls_time_comp*2;k++)
 				{
 					cnvrt_end_sint(&pstat[h*htls_time_comp*2+k].calOn);
-					if(h == 0 && f == 0 && pstat[h*htls_time_comp*2+k].calOn == 1)
+					if(g == 0 && f == 0 && pstat[h*htls_time_comp*2+k].calOn == 1)
+//					if(pstat[h*htls_time_comp*2+k].calOn == 1)
+					{
+//						printf("h %d f %d\n",h,f);
 						calcount++;
+					}
 					if(!onoff)					
 					{
 
@@ -512,9 +520,9 @@ int main(int argc,char* argv[])
 							onoff = 0;
 						}
 					}//final else	
-					cnvrt_end_sint(&pstat[h*htls_time_comp*2+k+1].calOn);
+//					cnvrt_end_sint(&pstat[h*htls_time_comp*2+k+1].calOn);
 
-*/					if(num_on == htls_time_comp)
+					if(num_on == htls_time_comp)
 					{
 						num_on = 0;
 						h2++;
@@ -532,16 +540,16 @@ int main(int argc,char* argv[])
 			//init to zero
 			for(h = 0;h < DUMPS_PER_ROW/(lths_time_comp*2);h++)			
 			{
-				int l;
-				memset(spolset_lths_on[h].A,0,RAW_CHANNELS);
+/*				memset(spolset_lths_on[h].A,0,RAW_CHANNELS);
 				memset(spolset_lths_on[h].B,0,RAW_CHANNELS);
 				memset(spolset_lths_on[h].U,0,RAW_CHANNELS);
 				memset(spolset_lths_on[h].V,0,RAW_CHANNELS);
 				memset(spolset_lths_off[h].A,0,RAW_CHANNELS);
 				memset(spolset_lths_off[h].B,0,RAW_CHANNELS);
 				memset(spolset_lths_off[h].U,0,RAW_CHANNELS);
-				memset(spolset_lths_off[h].V,0,RAW_CHANNELS);
-/*				for(l=0;l<RAW_CHANNELS;l++)
+				memset(spolset_lths_off[h].V,0,RAW_CHANNELS);*/
+				int l;
+				for(l=0;l<RAW_CHANNELS;l++)
 				{
 					spolset_lths_on[h].A[l] =0;
 					spolset_lths_on[h].B[l] =0;
@@ -551,10 +559,10 @@ int main(int argc,char* argv[])
 					spolset_lths_off[h].B[l] =0;
 					spolset_lths_off[h].U[l] =0;
 					spolset_lths_off[h].V[l] =0;
-				}*/	
+				}	
 				spolset_lths_on[h].fft_weight = 0;	
 				spolset_lths_off[h].fft_weight = 0;	
-/*				for(l=0;l<RAW_CHANNELS/lths_spec_comp;l++)
+				for(l=0;l<RAW_CHANNELS/lths_spec_comp;l++)
 				{
 					spolset_lths_on_final[h].A[l] =0;
 					spolset_lths_on_final[h].B[l] =0;
@@ -564,15 +572,15 @@ int main(int argc,char* argv[])
 					spolset_lths_off_final[h].B[l] =0;
 					spolset_lths_off_final[h].U[l] =0;
 					spolset_lths_off_final[h].V[l] =0;
-				}*/	
-				memset(spolset_lths_on_final[h].A,0,RAW_CHANNELS/lths_spec_comp);
+				}	
+/*				memset(spolset_lths_on_final[h].A,0,RAW_CHANNELS/lths_spec_comp);
 				memset(spolset_lths_on_final[h].B,0,RAW_CHANNELS/lths_spec_comp);
 				memset(spolset_lths_on_final[h].U,0,RAW_CHANNELS/lths_spec_comp);
 				memset(spolset_lths_on_final[h].V,0,RAW_CHANNELS/lths_spec_comp);
 				memset(spolset_lths_off_final[h].A,0,RAW_CHANNELS/lths_spec_comp);
 				memset(spolset_lths_off_final[h].B,0,RAW_CHANNELS/lths_spec_comp);
 				memset(spolset_lths_off_final[h].U,0,RAW_CHANNELS/lths_spec_comp);
-				memset(spolset_lths_off_final[h].V,0,RAW_CHANNELS/lths_spec_comp);	
+				memset(spolset_lths_off_final[h].V,0,RAW_CHANNELS/lths_spec_comp);	*/
 				spolset_lths_on_final[h].fft_weight = 0;	
 				spolset_lths_off_final[h].fft_weight = 0;	
 			}
@@ -611,13 +619,12 @@ int main(int argc,char* argv[])
 							}//l loop htls	
 						}
 						num_off++;
-	                    offcount++;     
-                        offcount == 10)
-                        {                                                                                                                                    onoff = 1;
-                        	     offcount = 0;     
-                        	     onoff = 1
-                        }                                                                                                   }
-
+			                	offcount++;     
+                			        if(offcount == 10)
+			                        {
+                        			     onoff = 1;
+			                             offcount = 0;     
+			                        }              
 					}//fi
 					else
 					{
@@ -635,12 +642,12 @@ int main(int argc,char* argv[])
 							}//l loop htls	
 						}
 						num_on++;
-           	   			oncount++; 
-                        if(oncount == 10)
-                    	{                 
-                     		onoff = 0;
-                            oncount = 0;                        
-                     	}
+	           	   			oncount++; 
+        			                if(oncount == 10)
+			                    	{                 
+                  					onoff = 0;
+			                            	oncount = 0;                        
+                     				}
 					}//final else
 
 					if(num_on == lths_time_comp)
@@ -726,7 +733,7 @@ int main(int argc,char* argv[])
 								
 				for(m = 0;m < RAW_CHANNELS/lths_spec_comp;m++)
 				{
-/*					for(n=0;n<lths_spec_comp;n++)
+					for(n=0;n<lths_spec_comp;n++)
 					{
 						spolset_lths_off_final[p].A[m] += spolset_lths_off[p].A[m*lths_spec_comp+n];
 						spolset_lths_off_final[p].B[m] += spolset_lths_off[p].B[m*lths_spec_comp+n];
@@ -737,7 +744,7 @@ int main(int argc,char* argv[])
 						spolset_lths_on_final[p].U[m] += spolset_lths_on[p].U[m*lths_spec_comp+n];
 						spolset_lths_on_final[p].V[m] += spolset_lths_on[p].V[m*lths_spec_comp+n];
 					}//n loop
-*/				
+	
 					XXoff_lths[m] = ((float)spolset_lths_off[p].A[m]/((float)spolset_lths_off[p].fft_weight*2));				
 					YYoff_lths[m] = ((float)spolset_lths_off[p].B[m]/((float)spolset_lths_off[p].fft_weight*2));
 					XYoff_lths[m] = (((float)spolset_lths_off[p].U[m]+(float)spolset_lths_off[p].V[m])/((float)spolset_lths_off[p].fft_weight*2));
@@ -776,7 +783,7 @@ int main(int argc,char* argv[])
 //	free(&spolset_htls_off_final);
 //	free(&spolset_lths_on_final);
 //	free(&spolset_lths_off_final);
-	fprintf("%d calons in first row out of %d\n",calcount,DUMPS_PER_ROW);
+	fprintf(calfile,"%d calons in first row out of %d\n",calcount,DUMPS_PER_ROW);
 	fclose(calfile);
 	fclose(htls_file);
 	fclose(lths_file);

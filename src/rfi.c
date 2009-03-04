@@ -342,6 +342,10 @@ void rfi_detection(SpecRecord dataset[], int size, int lowchan, int highchan, fl
 			outlierFound = FALSE;
 			for (chan=lowchan; chan<highchan; chan++) 
 			{
+				if ((chan >= ignoreA_low && chan <= ignoreA_high) ||
+					(chan >= ignoreB_low && chan <= ignoreB_high)) {
+					continue;
+			}
 				if (pRec->flagRFI[chan] == RFI_NONE)
 				{
 					if ( (fabs(pStat->meanOffXX - pDiff->OffXX[chan]) > (numSigma * pStat->sigmaOffXX)) 

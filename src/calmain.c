@@ -63,22 +63,22 @@ void write_cal_fits(SpecRecord dataset[], int size, float fcen, float df, int lo
 	const char * calxyfile = "calxy2.fits";
 	const char * calyxfile = "calyx2.fits";
 	
-	printf("Requesting malloc for %ld bytes of memory\n.",(highchan-lowchan) * size * sizeof(float));
+	printf("Requesting malloc for %ld bytes of memory\n",(highchan-lowchan) * size * sizeof(float));
 	float *caldataxx  = (float *) malloc ((highchan-lowchan) * size * sizeof(float));
 	if (caldataxx == NULL) {
 		printf("ERROR: malloc failed in write_cal_fits() !\n");
 	}
-	printf("Requesting malloc for %ld bytes of memory\n.",(highchan-lowchan) * size * sizeof(float));
+	printf("Requesting malloc for %ld bytes of memory\n",(highchan-lowchan) * size * sizeof(float));
 	float *caldatayy  = (float *) malloc ((highchan-lowchan)* size * sizeof(float));
 	if (caldatayy == NULL) {
 		printf("ERROR: malloc failed in write_cal_fits() !\n");
 	}
-	printf("Requesting malloc for %ld bytes of memory\n.",(highchan-lowchan) * size * sizeof(float));
+	printf("Requesting malloc for %ld bytes of memory\n",(highchan-lowchan) * size * sizeof(float));
 	float *caldatayx  = (float *) malloc ((highchan-lowchan) * size * sizeof(float));
 	if (caldatayx == NULL) {
 		printf("ERROR: malloc failed in write_cal_fits() !\n");
 	}
-	printf("Requesting malloc for %ld bytes of memory\n.",(highchan-lowchan) * size * sizeof(float));
+	printf("Requesting malloc for %ld bytes of memory\n",(highchan-lowchan) * size * sizeof(float));
 	float *caldataxy  = (float *) malloc ((highchan-lowchan)* size * sizeof(float));
 	if (caldataxy == NULL) {
 		printf("ERROR: malloc failed in write_cal_fits() !\n");
@@ -222,7 +222,7 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 
 	//fix to allow for both precursor and main run files to be run
 	if(band == -1)
-		sprintf(globpattern, "%s/%s/*.*.b*%i.*.spec", datadirname, datedir, beam);
+		sprintf(globpattern, "%s/%s/A2186.*d*.beam%i.*.spec", datadirname, datedir, beam);
 	else
 		sprintf(globpattern, "%s/%s/*.*.b*%is*%i.*.spec", datadirname, datedir, beam, band);
 		
@@ -249,7 +249,7 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 //	sprintf(globpattern, "%s/%s/*.za_scan*.%s.%s.spec_cfg", datadirname, datedir, subdir, datedir);
 	//fix to allow for both precursor and main run files to be run
 	if(band == -1)
-		sprintf(globpattern, "%s/%s/*.*.b*%i.*.spec_cfg", datadirname, datedir, beam);
+		sprintf(globpattern, "%s/%s/A2186.*d*.beam%i.*.spec_cfg", datadirname, datedir, beam);
 	else
 		sprintf(globpattern, "%s/%s/*.*.b*%is*%i.*.spec_cfg", datadirname, datedir, beam, band);
 		

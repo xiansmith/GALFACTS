@@ -161,12 +161,12 @@ void hanning_smooth_data(double A[], int size, int n)
 	double *B, *H;
 	int i;
 
-	printf("Requesting malloc for %ld bytes of memory\n.",sizeof(double)*size);
+	printf("Requesting malloc for %ld bytes of memory\n",sizeof(double)*size);
 	B = calloc(size, sizeof(double));
 	if (B == NULL) {
 		printf("ERROR: malloc failed in hanning_smooth_data() !\n");
 	}
-	printf("Requesting malloc for %ld bytes of memory\n.",sizeof(double)*n);
+	printf("Requesting malloc for %ld bytes of memory\n",sizeof(double)*n);
 	H = calloc(n, sizeof(double));
 	if (H == NULL) {
 		printf("ERROR: malloc failed in hanning_smooth_data() !\n");

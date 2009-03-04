@@ -67,7 +67,7 @@ int read_datafile(FILE * pFile, SpecRecord ** pDataset, int beam)
 
 	// malloc the memory for the expected umber of records
 	numExpected = fileSize / (512 + ((MAX_CHANNELS*4*4) * 2));
-	printf("Requesting malloc for %ld bytes of memory\n.",sizeof(SpecRecord)*numExpected);
+	printf("Requesting malloc for %ld bytes of memory\n",sizeof(SpecRecord)*numExpected);
 	*pDataset = (SpecRecord *)malloc(sizeof(SpecRecord) * numExpected);
 	if (*pDataset == NULL) {
 		printf("ERROR: malloc failed in read_datafile() !\n");

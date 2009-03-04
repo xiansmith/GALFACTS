@@ -143,7 +143,7 @@ void curve_fit_cal(SpecRecord dataset[], int size, int lowchan, int highchan, in
 	}
 
 
-	/* normalize the x values for the curve fit */
+	// normalize the x values for the curve fit 
 	double min, max;
 	jsd_minmax(Xast, size, &min, &max);
 	jsd_normalize(Xast, size, min, max);

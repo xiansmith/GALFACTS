@@ -65,22 +65,22 @@ void write_cal_fits(SpecRecord dataset[], int size, float fcen, float df, int lo
 	
 	printf("Requesting malloc for %ld bytes of memory\n.",(highchan-lowchan) * size * sizeof(float));
 	float *caldataxx  = (float *) malloc ((highchan-lowchan) * size * sizeof(float));
-	if (*caldataxx == NULL) {
+	if (caldataxx == NULL) {
 		printf("ERROR: malloc failed in write_cal_fits() !\n");
 	}
 	printf("Requesting malloc for %ld bytes of memory\n.",(highchan-lowchan) * size * sizeof(float));
 	float *caldatayy  = (float *) malloc ((highchan-lowchan)* size * sizeof(float));
-	if (*caldatayy == NULL) {
+	if (caldatayy == NULL) {
 		printf("ERROR: malloc failed in write_cal_fits() !\n");
 	}
 	printf("Requesting malloc for %ld bytes of memory\n.",(highchan-lowchan) * size * sizeof(float));
 	float *caldatayx  = (float *) malloc ((highchan-lowchan) * size * sizeof(float));
-	if (*caldatayx == NULL) {
+	if (caldatayx == NULL) {
 		printf("ERROR: malloc failed in write_cal_fits() !\n");
 	}
 	printf("Requesting malloc for %ld bytes of memory\n.",(highchan-lowchan) * size * sizeof(float));
 	float *caldataxy  = (float *) malloc ((highchan-lowchan)* size * sizeof(float));
-	if (*caldataxy == NULL) {
+	if (caldataxy == NULL) {
 		printf("ERROR: malloc failed in write_cal_fits() !\n");
 	}
 
@@ -197,7 +197,7 @@ static void create_annotations(SpecRecord dataset[], int size)
 
 
 
-static void process_dataset(const char * datadirname, const char * datedir, const char * subdir, int beam, int band, float numSigma, float numSigmaThresh, int lowchan, int highchan, int tsmooth, int ignoreRFI, int rfiTolerance, int rfiSpan, int ignoreA_low, int ignoreA_high, float decmin, float decmax, int scan_count_thresh, float Tcalx[], float Tcaly[])
+static void process_dataset(const char * datadirname, const char * datedir, const char * subdir, int beam, int band, float numSigma, float numSigmaThresh, int lowchan, int highchan, int tsmooth, int ignoreRFI, int rfiTolerance, int rfiSpan, int ignoreA_low, int ignoreA_high, float Tcalx[], float Tcaly[])
 {	
 	
 	FILE * datafile, *cfgfile;
@@ -391,7 +391,7 @@ int main(int argc, char *argv[])
 	int ignoreA_low;
 	int ignoreA_high;
 	int numdirs;
-	float decmin, decmax;
+//	float decmin, decmax;
 	int scan_count_thresh;
 	char subdirname[5+1];//SSG
 	int beamcounter;//SSG
@@ -407,10 +407,10 @@ int main(int argc, char *argv[])
 	int mjd, i, j;
 	char *subdir;
 
-	if (argc != 18) {
-		printf("Usage: %s <datadir> <subdir> <beam> <band> <lowchan> <highchan> <ignoreRFI> \n <RFITolerance> <ignoreA_low> \
-		<ignoreA_high> <numsigma> <numsigmathresh> <tsmooth> <rfispan> \n <decmin> <decmax> \
-		<scan_count_thresh>\n", argv[0]);
+	if (argc != 15) {
+		printf("Usage: %s <datadir> <subdir> <beam> <band> <lowchan> <highchan> <ignoreRFI> \n\
+		 <RFITolerance> <ignoreA_low> <ignoreA_high> <numsigma> <numsigmathresh> <tsmooth>  \n\
+		<rfispan> \n", argv[0]);
 //		printf("eg: %s /n/swift2/galfacts/data/A1863/SPEC beam1 1 3.5 25 230 0 25 0 0 3.5 0.03 5 10\n", argv[0]);
 		return EXIT_FAILURE;
 	} 
@@ -418,8 +418,8 @@ int main(int argc, char *argv[])
 	{
 		datadirname = argv[1];
 		subdir = argv[2];
-        beam = atoi(argv[3]);
-        band = atoi(argv[4]);
+	        beam = atoi(argv[3]);
+	        band = atoi(argv[4]);
 		lowchan = atoi(argv[5]);
 		highchan = atoi(argv[6]);
 		ignoreRFI = atoi(argv[7]);
@@ -430,9 +430,9 @@ int main(int argc, char *argv[])
 		numSigmaThresh = atof(argv[12]);
 		tsmooth = atoi(argv[13]);
 		rfiSpan = atoi(argv[14]);
-		decmin = atof(argv[15]);
-		decmax = atof(argv[16]);
-		scan_count_thresh = atoi(argv[17]);
+//		decmin = atof(argv[15]);
+//		decmax = atof(argv[16]);
+//		scan_count_thresh = atoi(argv[17]);
 		if(beam == MULTIBEAM) //SSG
 			multibeam = 1; //SSG
 		else
@@ -445,7 +445,7 @@ int main(int argc, char *argv[])
 	{
 		printf("ERROR: unable to read %s\n", tcalfilename);
 		printf("Setting all Tcal parameters to 1.00\n");
-		for(int i = 0;i < MAX_CHANNELS;i++)
+		for(i = 0;i < MAX_CHANNELS;i++)
 		{
 			Tcalx[i] = 0.0;
 			Tcaly[i] = 0.0;
@@ -457,7 +457,7 @@ int main(int argc, char *argv[])
 		printf("ERROR: Only read %i factors from %s, but require %i\n", 
 		num_tcal, tcalfilename, MAX_CHANNELS);
 		printf("Setting all Tcal parameters to 1.00\n");
-		for(int i = 0;i < MAX_CHANNELS;i++)
+		for(i = 0;i < MAX_CHANNELS;i++)
 		{
 			Tcalx[i] = 0.0;
 			Tcaly[i] = 0.0;
@@ -509,7 +509,7 @@ int main(int argc, char *argv[])
 				mkdir(subdir, mode);
 				chdir(subdir);
 				printf("Processing %s\n",subdirname); //SSG
-				process_dataset(datadirname, datedir, subdir, beamcounter, band, numSigma, numSigmaThresh, lowchan, highchan, tsmooth, ignoreRFI, rfiTolerance, rfiSpan, ignoreA_low, ignoreA_high, decmin, decmax, scan_count_thresh, Tcalx, Tcaly); //SSG
+				process_dataset(datadirname, datedir, subdir, beamcounter, band, numSigma, numSigmaThresh, lowchan, highchan, tsmooth, ignoreRFI, rfiTolerance, rfiSpan, ignoreA_low, ignoreA_high, Tcalx, Tcaly); //SSG
 				chdir("..");
 			}
 		}
@@ -518,7 +518,7 @@ int main(int argc, char *argv[])
 			beamcounter = beam;
 			mkdir(subdir, mode);
 			chdir(subdir);
-			process_dataset(datadirname, datedir, subdir, beamcounter, band, numSigma, numSigmaThresh, lowchan, highchan, tsmooth, ignoreRFI, rfiTolerance, rfiSpan, ignoreA_low, ignoreA_high, decmin, decmax, scan_count_thresh, Tcalx, Tcaly); //SSG
+			process_dataset(datadirname, datedir, subdir, beamcounter, band, numSigma, numSigmaThresh, lowchan, highchan, tsmooth, ignoreRFI, rfiTolerance, rfiSpan, ignoreA_low, ignoreA_high, Tcalx, Tcaly); //SSG
 			chdir("..");
 		}
 

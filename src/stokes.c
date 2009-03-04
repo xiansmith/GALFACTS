@@ -218,7 +218,7 @@ void calculate_stokes(SpecRecord dataset[], int size, int lowchan, int highchan,
 
 	FILE * skyfile;
 	FILE * calfile;
-	FILE * gainfile;
+//	FILE * gainfile;
 	calfile = fopen("calfile.dat", "w");
 	fprintf(calfile, "# Chan ObsCalI ObsCalQ ObsCalU ObsCalV CalCalI CalCalQ CalCalU CalCalV "
 			"GainX GainY GainPhi\n");

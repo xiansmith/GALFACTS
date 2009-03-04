@@ -29,7 +29,7 @@ void compute_raw_cal(SpecRecord dataset[], int size, int lowchan, int highchan)
 /* Averages up the cal in frequency, does a curve fit, and then applies it.
  * TODO: the curve fits fail on the typical data.  I hate NR!
  */
-#define FIT_ORDER (8)
+/*#define FIT_ORDER (8)
 void curve_fit_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int ignoreRFI)
 {
 	int n, chan;
@@ -216,7 +216,7 @@ void curve_fit_cal(SpecRecord dataset[], int size, int lowchan, int highchan, in
 	free(Kyx);
 
 }
-
+*/
 /*
  * Normalizes the data array by its average.
  */
@@ -280,7 +280,7 @@ static void compute_avg_spectra(SpecRecord dataset[], double * xxf, double * yyf
  */
 void smooth_cal_bandaverage(SpecRecord dataset[], int size, int lowchan, int highchan, int t_smooth_width, float nsigma)
 {
-	const int f_smooth_width = 3;
+//	const int f_smooth_width = 3;
 	double *xx, *yy, *xy, *yx, *ast;
 	double xxf[MAX_CHANNELS];
 	double yyf[MAX_CHANNELS];

@@ -6,7 +6,7 @@
 /*
  * Computes the statistical mean of the given data array
  */
-double compute_mean(double data[], int size)
+double compute_mean(double data[], int start, int end)
 {
 	double sum;
 	int count;
@@ -14,7 +14,7 @@ double compute_mean(double data[], int size)
 
 	sum = 0.0;
 	count = 0;
-	for (i=0; i<size; i++) {
+	for (i=start; i<end; i++) {
 		if (isfinite(data[i])) {
 			sum += data[i];
 			count++;
@@ -52,7 +52,7 @@ int reject_outliers(double data[], int size, float nsigma)
 	double mean, sigma;
 	int i, reject_count;
 
-	mean = compute_mean(data, size);
+	mean = compute_mean(data, 0,size);
 	sigma = compute_sigma(data, size, mean);
 	reject_count = 0;
 	for (i=0; i<size; i++) {
@@ -68,6 +68,6 @@ int reject_outliers(double data[], int size, float nsigma)
 double compute_clean_mean(double data[], int size, float nsigma)
 {
 	do {} while (reject_outliers(data, size, nsigma) > 0);
-	return compute_mean(data, size);
+	return compute_mean(data, 0,size);
 }
 

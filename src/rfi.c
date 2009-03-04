@@ -295,8 +295,16 @@ void rfi_detection(SpecRecord dataset[], int size, int lowchan, int highchan, fl
 	sigmathreshfile = fopen("sigmathresh.dat", "w");
 	fprintf(sigmathreshfile, "# offXX offYY onXX onYY\n");
 
+	printf("Requesting malloc for %ld bytes of memory\n.",sizeof(PolStatistics)*size);
 	stats = (PolStatistics *)malloc(sizeof(PolStatistics) * size);
+	if (stats == NULL) {
+		printf("ERROR: malloc failed in rfi_detection() !\n");
+	}
+	printf("Requesting malloc for %ld bytes of memory\n.",sizeof(PolDifferences)*size);
 	diffs = (PolDifferences *)malloc(sizeof(PolDifferences) * size);
+	if (diffs == NULL) {
+		printf("ERROR: malloc failed in rfi_detection() !\n");
+	}
 
 	//iterate over each time step and calculate a final sigma over the
 	//frequency domain
@@ -453,9 +461,21 @@ void aerostat_rfi_blanking(SpecRecord dataset[], int size, int lowchan, int high
 
 	//average up the channels to reduce noise as these signals are broadband
 	//they peak on the middle channel (128) which could also be used 
+	printf("Requesting malloc for %ld bytes of memory\n.",sizeof(double)*size);
 	offxx = calloc(size, sizeof(double));
+	if (offxx == NULL) {
+		printf("ERROR: malloc failed in aerostat_rfi_blanking() !\n");
+	}
+	printf("Requesting malloc for %ld bytes of memory\n.",sizeof(float)*size);	
 	diff1 = calloc(size, sizeof(float));
+	if (diff1 == NULL) {
+		printf("ERROR: malloc failed in aerostat_rfi_blanking() !\n");
+	}
+	printf("Requesting malloc for %ld bytes of memory\n.",sizeof(float)*size);	
 	diff2 = calloc(size, sizeof(float));
+	if (diff2 == NULL) {
+		printf("ERROR: malloc failed in aerostat_rfi_blanking() !\n");
+	}
 
 	for (i=0; i<size; i++)
 	{
@@ -499,7 +519,7 @@ void aerostat_rfi_blanking(SpecRecord dataset[], int size, int lowchan, int high
 		if ((diff2[i] > 0.07 || diff2[i] < -0.07) && i>0) //ssg fixed i > 0 
 		{
 
-			printf("outofband rfi with diff %f %f\n", diff1[i], diff2[i]);
+			printf("Outofband rfi with diff %f %f\n", diff1[i], diff2[i]);
 			fprintf(file, "LINE W %i %f %i %f\n", 0, dataset[i+1].AST, 30, dataset[i+1].AST);
 			for (j=i-1; j<i+12*5 && j<size; j++) 
 			{

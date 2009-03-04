@@ -23,7 +23,7 @@ static void compute_dirty_bins (double **binarrayX, int countX[], double binX[],
 	int b;
 	for (b=0; b<num_bins; b++)
 	{
-		binX[b] = compute_mean(binarrayX[b], countX[b]);
+		binX[b] = compute_mean(binarrayX[b], 0,countX[b]);
 	}
 }
 
@@ -43,7 +43,7 @@ static void compute_clean_bins (double **binarrayX, int *countX, double *binX, i
 			outlier = 0;
 			binarray = binarrayX[b];
 			count = countX[b];
-			mean = compute_mean(binarray, count);
+			mean = compute_mean(binarray, 0,count);
 			sigma = compute_sigma(binarray, count, mean);
 
 			//do the cleaning by setting outliers to NAN

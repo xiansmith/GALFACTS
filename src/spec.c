@@ -58,7 +58,7 @@ int read_datafile(FILE * pFile, SpecRecord ** pDataset, int beam)
 
 	assert(sizeof(SpecPointingBlock) == SIZEOF_SPECPOINTINGBLOCK);
 
-    printf("Using pointing from beam %i\n", beam);
+//  printf("Using pointing from beam %i\n", beam);
 
 	// obtain file size.			for (i=0; i<numRecords; i++) {
 	fseek (pFile , 0 , SEEK_END);
@@ -67,9 +67,10 @@ int read_datafile(FILE * pFile, SpecRecord ** pDataset, int beam)
 
 	// malloc the memory for the expected umber of records
 	numExpected = fileSize / (512 + ((MAX_CHANNELS*4*4) * 2));
+	printf("Requesting malloc for %ld bytes of memory\n.",sizeof(SpecRecord)*numExpected);
 	*pDataset = (SpecRecord *)malloc(sizeof(SpecRecord) * numExpected);
 	if (*pDataset == NULL) {
-		printf("ERROR: malloc failed!\n");
+		printf("ERROR: malloc failed in read_datafile() !\n");
 		return 0;
 	}
 

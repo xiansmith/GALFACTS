@@ -9,12 +9,12 @@
 
 //pre-compute the raw cal for every channel
 //void compute_raw_cal(SpecRecord dataset[], int size)
-void compute_raw_cal(SpecRecord dataset[], int size)
+void compute_raw_cal(SpecRecord dataset[], int size, int lowchan, int highchan)
 {
 	int n, i;
 	for (n=0; n<size; n++)
 	{
-		for (i=0; i<MAX_CHANNELS; i++)
+		for (i=lowchan; i<highchan; i++)
 		{
 			dataset[n].cal.xx[i] = dataset[n].calon.xx[i] - dataset[n].caloff.xx[i];
 			dataset[n].cal.yy[i] = dataset[n].calon.yy[i] - dataset[n].caloff.yy[i];
@@ -93,10 +93,10 @@ void curve_fit_cal(SpecRecord dataset[], int size, int lowchan, int highchan, in
 	}
 
 	//compute the scalar average tcals 
-	Txxavg = compute_mean(Txx, size);
-	Tyyavg = compute_mean(Tyy, size);
-	Tyxavg = compute_mean(Tyx, size);
-	Txyavg = compute_mean(Txy, size);
+	Txxavg = compute_mean(Txx, 0,size);
+	Tyyavg = compute_mean(Tyy, 0,size);
+	Tyxavg = compute_mean(Tyx, 0,size);
+	Txyavg = compute_mean(Txy, 0,size);
 	printf("Txxavg:%g  Tyyavg:%g  Txyavg:%g  Tyxavg:%g \n", Txxavg, Tyyavg, Txyavg, Tyxavg);
 
 
@@ -220,13 +220,13 @@ void curve_fit_cal(SpecRecord dataset[], int size, int lowchan, int highchan, in
 /*
  * Normalizes the data array by its average.
  */
-static void normalize_data(double * data, int size)
+static void normalize_data(double * data, int start, int end)
 {
 	double avg;
 	int i;
 
-	avg = compute_mean(data, size);
-	for (i=0; i<size; i++) {
+	avg = compute_mean(data, start, end);
+	for (i=start; i<end; i++) {
 		data[i] /= avg;
 	}
 }
@@ -244,6 +244,7 @@ static void compute_avg_spectra(SpecRecord dataset[], double * xxf, double * yyf
 	memset(yyf, 0, highchan*sizeof(double));
 	memset(xyf, 0, highchan*sizeof(double));
 	memset(yxf, 0, highchan*sizeof(double));
+//	for (chan=0; chan<MAX_CHANNELS; chan++)
 	for (chan=lowchan; chan<highchan; chan++) 
 	{
 		count = 0;
@@ -289,13 +290,32 @@ void smooth_cal_bandaverage(SpecRecord dataset[], int size, int lowchan, int hig
 	int i, chan;
 	const char *filename = "calfile.dat";
 	FILE *calfile;
-
+	printf("Requesting malloc for %ld bytes of memory\n.",sizeof(double)*size);
 	xx = (double*) calloc(size, sizeof(double));
+	if (xx == NULL) {
+		printf("ERROR: malloc failed in smooth_cal_bandaverage() !\n");
+	}
+	printf("Requesting malloc for %ld bytes of memory\n.",sizeof(double)*size);
 	yy = (double*) calloc(size, sizeof(double));
+	if (yy == NULL) {
+		printf("ERROR: malloc failed in smooth_cal_bandaverage() !\n");
+	}
+	printf("Requesting malloc for %ld bytes of memory\n.",sizeof(double)*size);
 	xy = (double*) calloc(size, sizeof(double));
+	if (xy == NULL) {
+		printf("ERROR: malloc failed in smooth_cal_bandaverage() !\n");
+	}
+	printf("Requesting malloc for %ld bytes of memory\n.",sizeof(double)*size);
 	yx = (double*) calloc(size, sizeof(double));
+	if (yx == NULL) {
+		printf("ERROR: malloc failed in smooth_cal_bandaverage() !\n");
+	}
+	printf("Requesting malloc for %ld bytes of memory\n.",sizeof(double)*size);
 	ast = (double*) calloc(size, sizeof(double));
-
+	if (ast == NULL) {
+		printf("ERROR: malloc failed in smooth_cal_bandaverage() !\n");
+	}
+	
 	//average up the cal in frequency to produce an average cal amplitude
 	for (i=0; i<size; i++) 
 	{
@@ -304,7 +324,8 @@ void smooth_cal_bandaverage(SpecRecord dataset[], int size, int lowchan, int hig
 			continue;
 		}
 		count = 0;
-		for (chan=0; chan<MAX_CHANNELS; chan++) 
+//		for (chan=0; chan<MAX_CHANNELS; chan++)
+		for (chan=lowchan; chan<highchan; chan++) 
 		{
 			if ((dataset[i].flagRFI[chan] != RFI_NONE)) {
 				continue;
@@ -335,8 +356,8 @@ void smooth_cal_bandaverage(SpecRecord dataset[], int size, int lowchan, int hig
 
 
 	//determine the average spectra
-	compute_avg_spectra(dataset, xxf, yyf, xyf, yxf, 0, MAX_CHANNELS, 0, size);
-
+//	compute_avg_spectra(dataset, xxf, yyf, xyf, yxf, 0, MAX_CHANNELS, 0, size);
+	compute_avg_spectra(dataset, xxf, yyf, xyf, yxf, lowchan, highchan, 0, size);
 	//smooth the data values in frequency
 	//hanning_smooth_data(xxf, MAX_CHANNELS, f_smooth_width);
 	//hanning_smooth_data(xyf, MAX_CHANNELS, f_smooth_width);
@@ -344,11 +365,15 @@ void smooth_cal_bandaverage(SpecRecord dataset[], int size, int lowchan, int hig
 	//hanning_smooth_data(yyf, MAX_CHANNELS, f_smooth_width);
 
 	//normalize the data values to 1
-	normalize_data(xxf, MAX_CHANNELS);
-	normalize_data(yyf, MAX_CHANNELS);
-	normalize_data(xyf, MAX_CHANNELS);
-	normalize_data(yxf, MAX_CHANNELS);
-
+//	normalize_data(xxf, MAX_CHANNELS);
+//	normalize_data(yyf, MAX_CHANNELS);
+//	normalize_data(xyf, MAX_CHANNELS);
+//	normalize_data(yxf, MAX_CHANNELS);
+	normalize_data(xxf, lowchan, highchan);
+	normalize_data(yyf, lowchan, highchan);
+	normalize_data(xyf, lowchan, highchan);
+	normalize_data(yxf, lowchan, highchan);
+	
 	{
 		double xxf1[MAX_CHANNELS], yyf1[MAX_CHANNELS], xyf1[MAX_CHANNELS], yxf1[MAX_CHANNELS];
 		double xxf2[MAX_CHANNELS], yyf2[MAX_CHANNELS], xyf2[MAX_CHANNELS], yxf2[MAX_CHANNELS];
@@ -356,12 +381,16 @@ void smooth_cal_bandaverage(SpecRecord dataset[], int size, int lowchan, int hig
 		double xxf4[MAX_CHANNELS], yyf4[MAX_CHANNELS], xyf4[MAX_CHANNELS], yxf4[MAX_CHANNELS];
 		FILE * caldat;
 
-		compute_avg_spectra(dataset, xxf1, yyf1, xyf1, yxf1, 0, MAX_CHANNELS, 0, size/4);
-		compute_avg_spectra(dataset, xxf2, yyf2, xyf2, yxf2, 0, MAX_CHANNELS, size/4, 2*size/4);
-		compute_avg_spectra(dataset, xxf3, yyf3, xyf3, yxf3, 0, MAX_CHANNELS, 2*size/4, 3*size/4);
-		compute_avg_spectra(dataset, xxf4, yyf4, xyf4, yxf4, 0, MAX_CHANNELS, 3*size/4, size);
+//		compute_avg_spectra(dataset, xxf1, yyf1, xyf1, yxf1, 0, MAX_CHANNELS, 0, size/4);
+//		compute_avg_spectra(dataset, xxf2, yyf2, xyf2, yxf2, 0, MAX_CHANNELS, size/4, 2*size/4);
+//		compute_avg_spectra(dataset, xxf3, yyf3, xyf3, yxf3, 0, MAX_CHANNELS, 2*size/4, 3*size/4);
+//		compute_avg_spectra(dataset, xxf4, yyf4, xyf4, yxf4, 0, MAX_CHANNELS, 3*size/4, size);
+		compute_avg_spectra(dataset, xxf1, yyf1, xyf1, yxf1, lowchan, highchan, 0, size/4);
+		compute_avg_spectra(dataset, xxf2, yyf2, xyf2, yxf2, lowchan, highchan, size/4, 2*size/4);
+		compute_avg_spectra(dataset, xxf3, yyf3, xyf3, yxf3, lowchan, highchan, 2*size/4, 3*size/4);
+		compute_avg_spectra(dataset, xxf4, yyf4, xyf4, yxf4, lowchan, highchan, 3*size/4, size);
 
-		normalize_data(xxf1, MAX_CHANNELS);
+/*		normalize_data(xxf1, MAX_CHANNELS);
 		normalize_data(xxf2, MAX_CHANNELS);
 		normalize_data(xxf3, MAX_CHANNELS);
 		normalize_data(xxf4, MAX_CHANNELS);
@@ -370,10 +399,20 @@ void smooth_cal_bandaverage(SpecRecord dataset[], int size, int lowchan, int hig
 		normalize_data(yyf2, MAX_CHANNELS);
 		normalize_data(yyf3, MAX_CHANNELS);
 		normalize_data(yyf4, MAX_CHANNELS);
+*/
+		normalize_data(xxf1, lowchan, highchan);
+		normalize_data(xxf2, lowchan, highchan);
+		normalize_data(xxf3, lowchan, highchan);
+		normalize_data(xxf4, lowchan, highchan);
+
+		normalize_data(yyf1, lowchan, highchan);
+		normalize_data(yyf2, lowchan, highchan);
+		normalize_data(yyf3, lowchan, highchan);
+		normalize_data(yyf4, lowchan, highchan);
 
 		caldat = fopen("calspectra.dat", "w");
 		fprintf(caldat, "#xxf xxf1 xxf2 xxf3 xxf4\n");
-		for (i=0; i<MAX_CHANNELS; i++) 
+		for (i=lowchan; i<highchan; i++) 
 		{
 			fprintf(caldat, "%g %g %g %g %g %g %g %g %g %g\n", 
 				xxf[i], xxf1[i], xxf2[i], xxf3[i], xxf4[i], yyf[i], yyf1[i], yyf2[i], yyf3[i], yyf4[i]);
@@ -387,7 +426,7 @@ void smooth_cal_bandaverage(SpecRecord dataset[], int size, int lowchan, int hig
 	for (i=0; i<size; i++) 
 	{
 		//store these new smoothed values back in to the cal arrays of the dataset
-		for (chan=0; chan<MAX_CHANNELS; chan++) 
+		for (chan=lowchan; chan<highchan; chan++) 
 		{
 			dataset[i].cal.xx[chan] = xxf[chan] * xx[i];
 			dataset[i].cal.yy[chan] = yyf[chan] * yy[i];
@@ -395,8 +434,6 @@ void smooth_cal_bandaverage(SpecRecord dataset[], int size, int lowchan, int hig
 			dataset[i].cal.yx[chan] = yxf[chan] * yx[i];
 		}
 	}
-
-
 
 	// write out the cal file
 	calfile = fopen(filename, "w");

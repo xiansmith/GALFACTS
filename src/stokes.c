@@ -34,8 +34,8 @@ static void compute_gains(const SpecRecord * pRec, GainSet * pGain, int lowchan,
 {
 	int i;
 	double calU, calV;
-
-	for (i=lowchan; i<=highchan; i++)
+	//for (i=0; i<MAX_CHANNELS; i++)
+	for (i=lowchan; i<highchan; i++)
 	{
 		pGain->x[i] = sqrt(Tcalx[i]/pRec->cal.xx[i]);
 		pGain->y[i] = sqrt(Tcaly[i]/pRec->cal.yy[i]);
@@ -56,7 +56,8 @@ static void calibrate_stokes(StokesSet * calStokes, const GainSet * gain, const 
 	int i;
 
 	// calibrate the cal signal
-	for (i=lowchan; i<=highchan; i++)
+	//for (i=0; i<MAX_CHANNELS; i++)
+	for (i=lowchan; i<highchan; i++)
 	{
 		calStokes->I[i] =  ((gain->x[i]*gain->x[i] + gain->y[i]*gain->y[i])/4.0) * obsStokes->I[i] 
 			+ ((gain->x[i]*gain->x[i] - gain->y[i]*gain->y[i])/4.0) * obsStokes->Q[i];
@@ -76,7 +77,8 @@ static void calibrate_stokes(StokesSet * calStokes, const GainSet * gain, const 
 static void print_stokes(FILE * file, const StokesSet * obs, const StokesSet * cal, const GainSet * gain, int lowchan, int highchan)
 {
 	int i;
-	for (i=lowchan; i<=highchan; i++)
+	for (i=lowchan; i<highchan; i++)
+//	for (i=0; i<MAX_CHANNELS; i++)
 	{
 		fprintf(file, "%4d %7.4f %7.4f %7.4f %7.4f %9.4f %7.4f %7.4f %7.4f %8.3f %6.3f %6.3f\n",
 				i,      
@@ -89,13 +91,14 @@ static void print_stokes(FILE * file, const StokesSet * obs, const StokesSet * c
 
 //NOTE: The ObsCal uses the raw calon-caloff, not the smoothed cal field of the record
 //The ObsSky uses caloff + calon - smoothed cal.
-static void compute_observed_stokes(const SpecRecord * pRec, StokesSet * ObsCal, StokesSet * ObsSky)
+static void compute_observed_stokes(const SpecRecord * pRec, StokesSet * ObsCal, StokesSet * ObsSky, int lowchan, int highchan)
 {
 	int i;
 	PolParams cal; //calculated values of the cal
 	PolParams data; //calculated values of the cal
 
-	for (i=0; i<MAX_CHANNELS; i++)
+//	for (i=0; i<MAX_CHANNELS; i++)
+	for (i=lowchan; i<highchan; i++)
 	{
 		cal.xx = pRec->calon.xx[i] - pRec->caloff.xx[i];
 		cal.yy = pRec->calon.yy[i] - pRec->caloff.yy[i];
@@ -129,6 +132,7 @@ static void compute_final_stokes(SpecRecord * pRec, StokesSet * TrueSky, int ign
 	int i;
 
 	for (i=lowchan; i<=highchan; i++)
+//	for (i=0; i<MAX_CHANNELS; i++)
 	{
 		if ((ignoreRFI || pRec->flagRFI[i] == RFI_NONE) && isfinite(TrueSky->I[i]))
 		{
@@ -175,6 +179,7 @@ void average_stokes(SpecRecord dataset[], int size, int lowchan, int highchan)
 
 		count = 0;
 		I = Q = U = V = 0.0;
+		//for (chan=0; chan<MAX_CHANNELS; chan++)
 		for (chan=lowchan; chan<=highchan; chan++)
 		{
 			if (isfinite(pRec->stokes.I[chan]))
@@ -210,7 +215,7 @@ void calculate_stokes(SpecRecord dataset[], int size, int lowchan, int highchan,
 
 	GainSet gain;
 
-/*SSG
+
 	FILE * skyfile;
 	FILE * calfile;
 	FILE * gainfile;
@@ -221,7 +226,7 @@ void calculate_stokes(SpecRecord dataset[], int size, int lowchan, int highchan,
 	skyfile = fopen("skyfile.dat", "w");
 	fprintf(skyfile, "# Chan ObsSkyI ObsSkyQ ObsSkyU ObsSkyV CalSkyI CalSkyQ CalSkyU CalSkyV "
 			"GainX GainY GainPhi\n");
-
+/*SSG
 	gainfile = fopen("gainfile.dat", "w");
 	fprintf(gainfile, "# Chan ObsSkyI ObsSkyQ ObsSkyU ObsSkyV CalSkyI CalSkyQ CalSkyU CalSkyV "
 			"GainX GainY GainPhi\n");
@@ -232,29 +237,29 @@ SSG*/
 		pRec = &(dataset[i]);
 		if (pRec->flagBAD) continue;
 
-		//printf("compute observed stokes ...\n");
-		compute_observed_stokes(pRec, &ObsCal, &ObsSky);
+		printf("Computing observed stokes\n");
+		compute_observed_stokes(pRec, &ObsCal, &ObsSky, lowchan, highchan);
 
-		//printf("compute gains ...\n");
+		printf("Computing gains\n");
 		compute_gains(pRec, &gain, lowchan, highchan, Tcalx, Tcaly);
 
 		// calibrate the cal signal
-		//printf("calibrate the cal ...\n");
+		printf("Calibrating the cal\n");
 		calibrate_stokes(&CalCal, &gain, &ObsCal, lowchan, highchan);
 
 		// calibrate the sky signal
-		//printf("calibrate the sky ...\n");
+		printf("Calibrating the sky\n");
 		calibrate_stokes(&TrueSky, &gain, &ObsSky, lowchan, highchan);
 
-		//printf("compute final stokes ...\n");
+		printf("Computing final stokes\n");
 		compute_final_stokes(pRec, &TrueSky, ignoreRFI, lowchan, highchan);
 
-//		print_stokes(calfile, &ObsCal, &CalCal, &gain, lowchan, highchan);
-//		print_stokes(skyfile, &ObsSky, &TrueSky, &gain, lowchan, highchan);
+		print_stokes(calfile, &ObsCal, &CalCal, &gain, lowchan, highchan);
+		print_stokes(skyfile, &ObsSky, &TrueSky, &gain, lowchan, highchan);
 	}
 
-//	fclose(calfile);
-//	fclose(skyfile);
+	fclose(calfile);
+	fclose(skyfile);
 //	fclose(gainfile);
 }
 

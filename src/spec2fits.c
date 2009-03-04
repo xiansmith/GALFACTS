@@ -549,7 +549,7 @@ static void process_dataset(const char * filepath, int beam, int smooth)
 
 	if (smooth) {	
 		printf("performing frequency smoothing ...\n");
-		perform_freq_smoothing(dataset, numRecords);
+		perform_freq_smoothing(dataset, numRecords, 0, MAX_CHANNELS);
 	}
 
 

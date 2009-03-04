@@ -18,6 +18,7 @@
 
 #define NUM_BEAMS 7 //SSG
 //enum STOKES {STOKES_I, STOKES_Q, STOKES_U, STOKES_V};
+#define MULTIBEAM 8 //ssg
 
 enum RFIFlags {	RFI_NONE =		0x0000,
 				RFI_CALOFF_XX =	0x0001, 

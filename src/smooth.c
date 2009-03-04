@@ -5,7 +5,7 @@ static inline float hanning_3(float * data, int i)
 	return data[i-1]*0.25 + data[i]*0.50 + data[i+1]*0.25;
 }
 
-void perform_freq_smoothing(SpecRecord dataset[], int numRecords)
+void perform_freq_smoothing(SpecRecord dataset[], int numRecords, int lowchan, int highchan)
 {
 	int n, chan;
 	PolSet smooth_on;
@@ -15,7 +15,8 @@ void perform_freq_smoothing(SpecRecord dataset[], int numRecords)
 	{
 		SpecRecord * pRec = &(dataset[n]);	
 
-		for (chan=1; chan<MAX_CHANNELS-1; chan++) {
+//		for (chan=1; chan<MAX_CHANNELS-1; chan++) {
+		for (chan=lowchan+1; chan<highchan-1; chan++) {
 			smooth_on.xx[chan] = hanning_3(pRec->calon.xx, chan);
 			smooth_on.xy[chan] = hanning_3(pRec->calon.xy, chan);
 			smooth_on.yx[chan] = hanning_3(pRec->calon.yx, chan);
@@ -25,8 +26,8 @@ void perform_freq_smoothing(SpecRecord dataset[], int numRecords)
 			smooth_off.yx[chan] = hanning_3(pRec->caloff.yx, chan);
 			smooth_off.yy[chan] = hanning_3(pRec->caloff.yy, chan);
 		}
-
-		for (chan=1; chan<MAX_CHANNELS-1; chan++) {
+//		for (chan=1; chan<MAX_CHANNELS-1; chan++) {
+		for (chan=lowchan+1; chan<highchan-1; chan++) {
 			pRec->calon.xx[chan] = smooth_on.xx[chan];
 			pRec->calon.xy[chan] = smooth_on.xy[chan];
 			pRec->calon.yx[chan] = smooth_on.yx[chan];

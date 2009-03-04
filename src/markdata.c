@@ -27,7 +27,7 @@ void mark_bad_datapoints(const char * badfilename, SpecRecord dataset[], int num
 	
 	badfile = fopen(badfilename, "r");
 	if (badfile == NULL) {
-		printf("INFO: No manually flagged bad datapoints file.\n");
+		printf("No manually flagged bad datapoints file.\n");
 		return;
 	}
 
@@ -38,7 +38,7 @@ void mark_bad_datapoints(const char * badfilename, SpecRecord dataset[], int num
 		if (buf[0] == '\n') continue;
 
 		sscanf(buf, "%s %f %f", type, &low, &high);
-		printf("bad datapoints in: %s (%f, %f)\n", type, low, high);
+		printf("Bad datapoints in: %s (%f, %f)\n", type, low, high);
 
 		if (strcmp("RA", type) == 0) {
 			for (i=0; i<numRecords; i++) {
@@ -65,7 +65,7 @@ void mark_bad_datapoints(const char * badfilename, SpecRecord dataset[], int num
 			}
 		}
 		else {
-			printf("WARN: unrecognized bad type '%s'\n", type);
+			printf("Unrecognized bad type '%s'\n", type);
 		}
 	}
 

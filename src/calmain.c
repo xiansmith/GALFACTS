@@ -23,7 +23,7 @@ static int read_tcal(const char * filename, float * Tcalx, float * Tcaly)
     int p;
     char line[80+1];
     char * tok;
-const int START_CHAN = 30; //TODO: this is a hack for the start channel number
+//	const int START_CHAN = 30; //TODO: this is a hack for the start channel number
     
     file = fopen(filename, "r");
     if (file == NULL) {
@@ -32,7 +32,7 @@ const int START_CHAN = 30; //TODO: this is a hack for the start channel number
     }
     
     fgets(line, 80, file);
-    p = START_CHAN;
+    p = 0;
     do {
         if (line[0] != '#') 
         {
@@ -48,12 +48,12 @@ const int START_CHAN = 30; //TODO: this is a hack for the start channel number
     } while (!feof(file));
     
     fclose(file);
-    return p-START_CHAN;
+    return p;
 }
 
 
 
-void write_cal_fits(SpecRecord dataset[], int size, float fcen, float df)
+void write_cal_fits(SpecRecord dataset[], int size, float fcen, float df, int lowchan, int highchan)
 {
 	int i, n;
 	header_param_list hpar;
@@ -62,30 +62,46 @@ void write_cal_fits(SpecRecord dataset[], int size, float fcen, float df)
 	const char * calyyfile = "calyy2.fits";
 	const char * calxyfile = "calxy2.fits";
 	const char * calyxfile = "calyx2.fits";
-
-	float *caldataxx  = (float *) malloc (MAX_CHANNELS * size * sizeof(float));
-	float *caldataxy  = (float *) malloc (MAX_CHANNELS * size * sizeof(float));
-	float *caldatayx  = (float *) malloc (MAX_CHANNELS * size * sizeof(float));
-	float *caldatayy  = (float *) malloc (MAX_CHANNELS * size * sizeof(float));
+	
+	printf("Requesting malloc for %ld bytes of memory\n.",(highchan-lowchan) * size * sizeof(float));
+	float *caldataxx  = (float *) malloc ((highchan-lowchan) * size * sizeof(float));
+	if (*caldataxx == NULL) {
+		printf("ERROR: malloc failed in write_cal_fits() !\n");
+	}
+	printf("Requesting malloc for %ld bytes of memory\n.",(highchan-lowchan) * size * sizeof(float));
+	float *caldatayy  = (float *) malloc ((highchan-lowchan)* size * sizeof(float));
+	if (*caldatayy == NULL) {
+		printf("ERROR: malloc failed in write_cal_fits() !\n");
+	}
+	printf("Requesting malloc for %ld bytes of memory\n.",(highchan-lowchan) * size * sizeof(float));
+	float *caldatayx  = (float *) malloc ((highchan-lowchan) * size * sizeof(float));
+	if (*caldatayx == NULL) {
+		printf("ERROR: malloc failed in write_cal_fits() !\n");
+	}
+	printf("Requesting malloc for %ld bytes of memory\n.",(highchan-lowchan) * size * sizeof(float));
+	float *caldataxy  = (float *) malloc ((highchan-lowchan)* size * sizeof(float));
+	if (*caldataxy == NULL) {
+		printf("ERROR: malloc failed in write_cal_fits() !\n");
+	}
 
 	for (n=0; n<size; n++) {
-		for (i=0; i<MAX_CHANNELS; i++) {
-			caldataxx[n*MAX_CHANNELS+i] = dataset[n].cal.xx[i];
-			caldataxy[n*MAX_CHANNELS+i] = dataset[n].cal.xy[i];
-			caldatayx[n*MAX_CHANNELS+i] = dataset[n].cal.yx[i];
-			caldatayy[n*MAX_CHANNELS+i] = dataset[n].cal.yy[i];
+		for (i=0; i<(highchan-lowchan); i++) {
+			caldataxx[n*(highchan-lowchan)+i] = dataset[n].cal.xx[i+lowchan];
+			caldataxy[n*(highchan-lowchan)+i] = dataset[n].cal.xy[i+lowchan];
+			caldatayx[n*(highchan-lowchan)+i] = dataset[n].cal.yx[i+lowchan];
+			caldatayy[n*(highchan-lowchan)+i] = dataset[n].cal.yy[i+lowchan];
 		}
 	}
 	init_header_param_list (&hpar);  /* initialize parameter records */
 	hpar.bitpix = -32;
 	hpar.num_axes = 2;
-	hpar.naxis[0] = MAX_CHANNELS;
+	hpar.naxis[0] = (highchan-lowchan);
 	hpar.naxis[1] = n;
 	sprintf (hpar.ctype[0], "Frequency");
 	sprintf (hpar.ctype[1], "Time");
 	hpar.crval[0] = fcen;		  /* channels */
 	hpar.crval[1] = (dataset[size-1].AST + dataset[0].AST) / 2.0;               /* seconds */
-	hpar.crpix[0] = MAX_CHANNELS / 2.0;	/* image center in pixels */
+	hpar.crpix[0] = (highchan-lowchan) / 2.0;	/* image center in pixels */
 	hpar.crpix[1] = 0.5 + n / 2.0;
 	hpar.cdelt[0] = df;                     /* channel */
 	hpar.cdelt[1] = 0.2;                     /* seconds */
@@ -181,7 +197,7 @@ static void create_annotations(SpecRecord dataset[], int size)
 
 
 
-static void process_dataset(const char * datadirname, const char * datedir, const char * subdir, int beam, float numSigma, float numSigmaThresh, int lowchan, int highchan, int tsmooth, int ignoreRFI, int rfiTolerance, int rfiSpan, int ignoreA_low, int ignoreA_high, float decmin, float decmax, int scan_count_thresh, float Tcalx[], float Tcaly[])
+static void process_dataset(const char * datadirname, const char * datedir, const char * subdir, int beam, int band, float numSigma, float numSigmaThresh, int lowchan, int highchan, int tsmooth, int ignoreRFI, int rfiTolerance, int rfiSpan, int ignoreA_low, int ignoreA_high, float decmin, float decmax, int scan_count_thresh, float Tcalx[], float Tcaly[])
 {	
 	
 	FILE * datafile, *cfgfile;
@@ -203,13 +219,20 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 	/* Open Datafile */
 	globbuf.gl_offs = 1;
 //	sprintf(globpattern, "%s/%s/*.za_scan*.%s.%s.spec", datadirname, datedir, subdir, datedir);
-	sprintf(globpattern, "%s/%s/*.*.beam%i.*.spec", datadirname, datedir, beam);
+
+	//fix to allow for both precursor and main run files to be run
+	if(band == -1)
+		sprintf(globpattern, "%s/%s/*.*.b*%i.*.spec", datadirname, datedir, beam);
+	else
+		sprintf(globpattern, "%s/%s/*.*.b*%is*%i.*.spec", datadirname, datedir, beam, band);
+		
+//	sprintf(globpattern, "%s/%s/*.*.b*%is*%i.*.spec", datadirname, datedir, beam, band);
 	glob(globpattern, 0, NULL, &globbuf);
 	if (globbuf.gl_pathc < 1) {
 		printf("ERROR: unable to find file with pattern %s\n", globpattern);
 	}
-//	else //SSG
-//		printf("DIAGNOSTIC: found file with pattern %s:: beam %d\n", globpattern,beam); //SSG
+	else //SSG
+		printf("DIAGNOSTIC: found file %s \n", globbuf.gl_pathv[0]); //SSG
 
 	strncpy(datafilename, globbuf.gl_pathv[0], 128);
 	//globfree(&globbuf);	
@@ -224,8 +247,14 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 	/* Open Configuration File */
 	globbuf.gl_offs = 1;
 //	sprintf(globpattern, "%s/%s/*.za_scan*.%s.%s.spec_cfg", datadirname, datedir, subdir, datedir);
-	sprintf(globpattern, "%s/%s/*.*.beam%i.*.spec_cfg", datadirname, datedir, beam);
+	//fix to allow for both precursor and main run files to be run
+	if(band == -1)
+		sprintf(globpattern, "%s/%s/*.*.b*%i.*.spec_cfg", datadirname, datedir, beam);
+	else
+		sprintf(globpattern, "%s/%s/*.*.b*%is*%i.*.spec_cfg", datadirname, datedir, beam, band);
+		
 	glob(globpattern, 0, NULL, &globbuf);
+	
 	if (globbuf.gl_pathc < 1) {
 		printf("ERROR: unable to find file with pattern %s\n", globpattern);
 	}
@@ -239,21 +268,21 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 
 
 	/* read config file */
-	printf("reading config file %s ... \n", cfgfilename);
+	printf("Reading config file %s \n", cfgfilename);
 	read_cfgfile(cfgfile, &cfgData);
 	fclose(cfgfile);
 
 	/* calculate the channel frequencies */
 	fcen = cfgData.centerMHz; 
-	df = cfgData.bandwitdhkHz / 256 / 1000;
-	printf("center frequency: %fMHz\n", fcen);
-	printf("channel bandwidth: %fMHz\n", df);
+	df = cfgData.bandwitdhkHz / MAX_CHANNELS / 1000;
+	printf("Center frequency: %fMHz\n", fcen);
+	printf("Channel bandwidth: %fMHz\n", df);
 	for (i=0; i<MAX_CHANNELS; i++) {
 		freq[i] = fcen + ((float)(i - 127)) * df;
 	}
 
 	/* read data file */
-	printf("reading data file %s ... \n", datafilename);
+	printf("Reading data file %s. \n", datafilename);
 	numRecords = read_datafile(datafile, &dataset, beam);
 	fclose(datafile);
 	printf("Read %i records\n", numRecords);
@@ -276,11 +305,11 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 		minDEC = (pRec->DEC < minDEC) ? pRec->DEC : minDEC;
 		maxDEC = (pRec->DEC > maxDEC) ? pRec->DEC : maxDEC;
 	}
-	printf("data ranges from RA (%f, %f) DEC (%f, %f)\n", minRA, maxRA, minDEC, maxDEC);
+	printf("Data ranges from RA (%f, %f) DEC (%f, %f)\n", minRA, maxRA, minDEC, maxDEC);
 	
 	/* mark bad datapoints */
 	sprintf(badfilename, "%s/%s/bad_datapoints.dat", datadirname, datedir);
-	printf("marking bad data points ...\n");
+	printf("Marking bad data points\n");
 	mark_bad_datapoints(badfilename, dataset, numRecords);
 
 	/* count remaining good records */
@@ -289,52 +318,53 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 //	}
 
 
-	printf("perform frequency smoothing ...\n");
-	perform_freq_smoothing(dataset, numRecords);
+	printf("Performing frequency smoothing\n");
+	perform_freq_smoothing(dataset, numRecords, lowchan, highchan);
 
 	if (!ignoreRFI) 
 	{
 		/* Perform the RFI detection */
-		printf("performing aerostat RFI blanking ...\n");
+		printf("Performing aerostat RFI blanking\n");
 		aerostat_rfi_blanking(dataset, numRecords, lowchan, highchan);
-		printf("performing RFI detection ...\n");
+		printf("Performing RFI detection\n");
 		rfi_detection(dataset, numRecords, lowchan, highchan, numSigma, numSigmaThresh, ignoreA_low, ignoreA_high, 0, 0);
-		printf("performing RFI spanning ...\n");
+		printf("Performing RFI spanning\n");
 		rfi_spanning(dataset, numRecords, lowchan, highchan, rfiSpan);
-		printf("performing RFI blanking ...\n");
+		printf("Performing RFI blanking\n");
 		rfi_blanking(dataset, numRecords, lowchan, highchan, rfiTolerance);
-		printf("performing RFI write ...\n");
+		printf("Performing RFI write\n");
 		rfi_write(dataset, numRecords, lowchan, highchan, freq);
 	}
 
 	/* Write out the annotations */
-	printf("creating annotations ...\n");
+	printf("Creating annotations\n");
 	create_annotations(dataset, numRecords); 
 
 	/* Compute the cal values */
-	printf("compute the raw values of cal ...\n");
-	compute_raw_cal(dataset, numRecords);
+	printf("Compute the raw values of cal\n");
+	compute_raw_cal(dataset, numRecords, lowchan, highchan);
 
 	/* Compute curve fit cal */
-	printf("compute smoothed cal ...\n");
+	printf("Compute smoothed cal\n");
 	smooth_cal_bandaverage(dataset, numRecords, lowchan, highchan, 120 * 5 - 1, 2.5);
-
-	printf("writing cal fits on curve fit cal ...\n");
-	write_cal_fits(dataset, numRecords, fcen, df);
+//lowchan and highchan are not being used most of the time it calibrates all the channels
+// need to fix this in next iteration.
+	printf("Writing cal fits on curve fit cal\n");
+	write_cal_fits(dataset, numRecords, fcen, df, lowchan, highchan);
 
 	/* Calculate Stokes parameters */
-	printf("calculate stokes parameters ...\n");
+	printf("Calculating stokes parameters\n");
 	calculate_stokes(dataset, numRecords, lowchan, highchan, ignoreRFI, Tcalx, Tcaly);
 
-	printf("correct beam gains...\n");
+	printf("Correcting beam gains\n");
 	if(multibeam)
 		correct_beamgains(dataset, numRecords, lowchan, highchan, beam);
 
 	/* Write Channel Data */
-	printf("writing channel data...\n");
+	printf("Writing channel data\n");
 	write_channel_data(dataset, numRecords, lowchan, highchan);
 
-	printf("writing average data...\n");
+	printf("Writing average data\n");
 	average_stokes(dataset, numRecords, lowchan, highchan);
 	write_channel_data(dataset, numRecords, 0, 1);
 
@@ -343,7 +373,7 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 	//smooth_stokes(dataset, numRecords, lowchan, highchan, tsmooth);
 
 	/* done */
-	printf("done!\n");
+	printf("Done!\n");
 	free(dataset);
 	return;
 }
@@ -356,6 +386,7 @@ int main(int argc, char *argv[])
 	int rfiTolerance;
 	int rfiSpan;
 	int beam;
+	int band;
 	float numSigmaThresh;
 	int ignoreA_low;
 	int ignoreA_high;
@@ -376,9 +407,11 @@ int main(int argc, char *argv[])
 	int mjd, i, j;
 	char *subdir;
 
-	if (argc != 17) {
-		printf("Usage: %s <datadir> <subdir> <beam> <lowchan> <highchan> <ignoreRFI> <RFITolerance> <ignoreA_low> <ignoreA_high> <numsigma> <numsigmathresh> <tsmooth> <rfispan> <decmin> <decmax> <scan_count_thresh>\n", argv[0]);
-		printf("eg: %s /n/swift2/galfacts/data/A1863/SPEC beam1 1 3.5 25 230 0 25 0 0 3.5 0.03 5 10\n", argv[0]);
+	if (argc != 18) {
+		printf("Usage: %s <datadir> <subdir> <beam> <band> <lowchan> <highchan> <ignoreRFI> \n <RFITolerance> <ignoreA_low> \
+		<ignoreA_high> <numsigma> <numsigmathresh> <tsmooth> <rfispan> \n <decmin> <decmax> \
+		<scan_count_thresh>\n", argv[0]);
+//		printf("eg: %s /n/swift2/galfacts/data/A1863/SPEC beam1 1 3.5 25 230 0 25 0 0 3.5 0.03 5 10\n", argv[0]);
 		return EXIT_FAILURE;
 	} 
 	else 
@@ -386,20 +419,21 @@ int main(int argc, char *argv[])
 		datadirname = argv[1];
 		subdir = argv[2];
         beam = atoi(argv[3]);
-		lowchan = atoi(argv[4]);
-		highchan = atoi(argv[5]);
-		ignoreRFI = atoi(argv[6]);
-		rfiTolerance = atoi(argv[7]);
-		ignoreA_low = atoi(argv[8]);
-		ignoreA_high = atoi(argv[9]);
-		numSigma = atof(argv[10]);
-		numSigmaThresh = atof(argv[11]);
-		tsmooth = atoi(argv[12]);
-		rfiSpan = atoi(argv[13]);
-		decmin = atof(argv[14]);
-		decmax = atof(argv[15]);
-		scan_count_thresh = atoi(argv[16]);
-		if(beam == 8) //SSG
+        band = atoi(argv[4]);
+		lowchan = atoi(argv[5]);
+		highchan = atoi(argv[6]);
+		ignoreRFI = atoi(argv[7]);
+		rfiTolerance = atoi(argv[8]);
+		ignoreA_low = atoi(argv[9]);
+		ignoreA_high = atoi(argv[10]);
+		numSigma = atof(argv[11]);
+		numSigmaThresh = atof(argv[12]);
+		tsmooth = atoi(argv[13]);
+		rfiSpan = atoi(argv[14]);
+		decmin = atof(argv[15]);
+		decmax = atof(argv[16]);
+		scan_count_thresh = atoi(argv[17]);
+		if(beam == MULTIBEAM) //SSG
 			multibeam = 1; //SSG
 		else
 			multibeam = 0; //SSG
@@ -407,21 +441,42 @@ int main(int argc, char *argv[])
 
 	//Handle the Tcal correction file
 	num_tcal = read_tcal(tcalfilename, Tcalx, Tcaly);
-	if (num_tcal < 0) {
+	if (num_tcal < 0) 
+	{
 		printf("ERROR: unable to read %s\n", tcalfilename);
-		return EXIT_FAILURE;
-	} else if (num_tcal < highchan-lowchan) {
+		printf("Setting all Tcal parameters to 1.00\n");
+		for(int i = 0;i < MAX_CHANNELS;i++)
+		{
+			Tcalx[i] = 0.0;
+			Tcaly[i] = 0.0;
+		}
+//		return EXIT_FAILURE;
+	}
+	else if (num_tcal < MAX_CHANNELS) 
+	{
 		printf("ERROR: Only read %i factors from %s, but require %i\n", 
-			num_tcal, tcalfilename, highchan-lowchan);
-		return EXIT_FAILURE;
-	} else {
+		num_tcal, tcalfilename, MAX_CHANNELS);
+		printf("Setting all Tcal parameters to 1.00\n");
+		for(int i = 0;i < MAX_CHANNELS;i++)
+		{
+			Tcalx[i] = 0.0;
+			Tcaly[i] = 0.0;
+		}
+//		return EXIT_FAILURE;
+	} 
+	else 
+	{
 		printf("Read %i factors from %s\n", num_tcal, tcalfilename);
 	}
 
 	printf("Channels (%i, %i]\n", lowchan, highchan);
-	if (ignoreRFI) {
+	
+	if (ignoreRFI) 
+	{
 		printf("Ignoring RFI\n");
-	} else {
+	} 
+	else 
+	{
 		printf("RFI Tolerance: %i%%\n", rfiTolerance);
 		printf("RFI Spanning: %i\n", rfiSpan);
 		printf("Ignore Range: (%i,%i)\n", ignoreA_low, ignoreA_high);
@@ -441,7 +496,7 @@ int main(int argc, char *argv[])
 		chdir(datedir);
 		//SSG
 		printf("Now processing day %s...\n",datedirs[mjd]); //SSG
-		if(beam == 8)
+		if(beam == MULTIBEAM)
 		{
 			for(j = 0;j < 7;j++) //for each beam
 			{
@@ -454,7 +509,7 @@ int main(int argc, char *argv[])
 				mkdir(subdir, mode);
 				chdir(subdir);
 				printf("Processing %s\n",subdirname); //SSG
-				process_dataset(datadirname, datedir, subdir, beamcounter, numSigma, numSigmaThresh, lowchan, highchan, tsmooth, ignoreRFI, rfiTolerance, rfiSpan, ignoreA_low, ignoreA_high, decmin, decmax, scan_count_thresh, Tcalx, Tcaly); //SSG
+				process_dataset(datadirname, datedir, subdir, beamcounter, band, numSigma, numSigmaThresh, lowchan, highchan, tsmooth, ignoreRFI, rfiTolerance, rfiSpan, ignoreA_low, ignoreA_high, decmin, decmax, scan_count_thresh, Tcalx, Tcaly); //SSG
 				chdir("..");
 			}
 		}
@@ -463,14 +518,9 @@ int main(int argc, char *argv[])
 			beamcounter = beam;
 			mkdir(subdir, mode);
 			chdir(subdir);
-			process_dataset(datadirname, datedir, subdir, beamcounter, numSigma, numSigmaThresh, lowchan, highchan, tsmooth, ignoreRFI, rfiTolerance, rfiSpan, ignoreA_low, ignoreA_high, decmin, decmax, scan_count_thresh, Tcalx, Tcaly); //SSG
+			process_dataset(datadirname, datedir, subdir, beamcounter, band, numSigma, numSigmaThresh, lowchan, highchan, tsmooth, ignoreRFI, rfiTolerance, rfiSpan, ignoreA_low, ignoreA_high, decmin, decmax, scan_count_thresh, Tcalx, Tcaly); //SSG
 			chdir("..");
 		}
-		//SSG
-//		mkdir("beam0", mode);//SSG
-//		chdir("beam0");//SSG
-
-//SSG		process_dataset(datadirname, datedir, subdir, beam, numSigma, numSigmaThresh, lowchan, highchan, tsmooth, ignoreRFI, rfiTolerance, rfiSpan, ignoreA_low, ignoreA_high, decmin, decmax, scan_count_thresh, Tcalx, Tcaly);
 
 		chdir("..");
 	}

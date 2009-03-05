@@ -654,7 +654,7 @@ static void basket_weave(FluxWappData *wappdata, FILE * chisqfile, int day_order
 		
 		grid_data(wappdata, md, dataI, dataQ, dataU, dataV, weight);
 		
-		if(showprogress == ALL || showprogress == I)
+		if(show_progress == ALL || show_progress == I)
 		{
 			sprintf (hpar.object, "I Basketweaving Progress");
 			Iprogressfile = fopen("Iprogress.fits", "w");
@@ -662,21 +662,21 @@ static void basket_weave(FluxWappData *wappdata, FILE * chisqfile, int day_order
 			writefits_plane(Iprogressfile, dataI, &hpar);
 		//printf("plane %i\n", n3++);
 		}
-		if(showprogress == ALL || showprogress == Q)
+		if(show_progress == ALL || show_progress == Q)
 		{		
 			sprintf (hpar.object, "Q Basketweaving Progress");
 			Qprogressfile = fopen("Qprogress.fits", "w");
 			writefits_header(Qprogressfile, &hpar);
 			writefits_plane(Qprogressfile, dataQ, &hpar);
 		}
-		if(showprogress == ALL || showprogress == U)
+		if(show_progress == ALL || show_progress == U)
 		{		
 			sprintf (hpar.object, "U Basketweaving Progress");
 			Uprogressfile = fopen("Uprogress.fits", "w");
 			writefits_header(Uprogressfile, &hpar);
 			writefits_plane(Uprogressfile, dataU, &hpar);
 		}	
-		if(showprogress == ALL || showprogress == V)
+		if(show_progress == ALL || show_progress == V)
 		{		
 			sprintf (hpar.object, "V Basketweaving Progress");
 			Vprogressfile = fopen("Vprogress.fits", "w");

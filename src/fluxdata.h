@@ -19,7 +19,7 @@ FluxWappData - an entire wapp worth of data for all days (single channel)
 #define WAPP_LEN 15 
 
 //sguram
-#define MAP 0 //added to distinguish between which files to read for map and clean programs
+#define BASKETWEAVE 0 //added to distinguish between which files to read for map and clean programs
 #define CLEAN 1
 
 typedef struct {
@@ -78,7 +78,7 @@ typedef struct {
 int fluxrecord_read(FluxRecord * pRec, FILE * file);
 int fluxrecord_write(FluxRecord * pRec, FILE * file);
 int fluxwappdata_readavg(FluxWappData * wappdata);
-int fluxwappdata_readchan(FluxWappData * wappdata, int chan. int id);
+int fluxwappdata_readchan(FluxWappData * wappdata, int chan, int id);
 int fluxwappdata_writeavg(FluxWappData * wappdata);
 int fluxwappdata_writechan(FluxWappData * wappdata, int chan);
 FluxWappData * fluxwappdata_alloc(const char *wapp, char **days, int numDays);

@@ -336,7 +336,7 @@ void write_channel_data(SpecRecord dataset[], int size, int lowchan, int highcha
 	int chan;
 	for (chan=lowchan; chan<highchan; chan++) 
 	{
-		snprintf(filename, 32, "fluxtime%03i.dat", chan);
+		snprintf(filename, 32, "fluxtime%04i.dat", chan);
 		fluxfile = fopen(filename, "w");
 		if (fluxfile == NULL) {
 			printf("ERROR: unable to open file %s\n", filename);

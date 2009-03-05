@@ -28,16 +28,19 @@ FluxWappData * fluxwappdata_alloc(const char *wapp, char **days, int numDays)
     wappdata = (FluxWappData*) malloc(sizeof(FluxWappData));
     strncpy(wappdata->wapp, wapp, WAPP_LEN);
     wappdata->numDays = numDays;
+	printf("Requesting malloc for %ld bytes\n",sizeof(FluxDayData) * numDays);
     wappdata->daydata = (FluxDayData*) malloc(sizeof(FluxDayData) * numDays);
+	printf("Requesting malloc for %ld bytes\n",sizeof(ScanDayData) * numDays);
     wappdata->scanDayData = (ScanDayData*) malloc(sizeof(ScanDayData) * numDays);
     for (i=0; i<numDays; i++) {
-	if(!strcmp(wapp,"beam8"))//SSG
-	{
-		j = i/7; 
-	       strncpy(wappdata->daydata[i].mjd, days[j], MJD_LEN);//SSG
-	}
-	else
+		if(!strcmp(wapp,"multibeam"))//SSG
+		{
+			j = i/7; 
+	       	strncpy(wappdata->daydata[i].mjd, days[j], MJD_LEN);//SSG
+		}
+		else
 	        strncpy(wappdata->daydata[i].mjd, days[i], MJD_LEN);
+	        
         wappdata->daydata[i].numRecords = 0;
         wappdata->daydata[i].records = NULL;
         wappdata->scanDayData[i].numScans = 0;
@@ -155,22 +158,23 @@ static int fluxdaydata_read(FluxDayData *daydata, FILE *infile)
     if (daydata->records != NULL) {
         free(daydata->records);
     }
-//ssgprintf("allocating %i FluxRecords\n", numRecords);
+
+	printf("Requesting malloc for %ld bytes\n",numRecords * sizeof(FluxRecord));
     daydata->records = (FluxRecord*) malloc(numRecords * sizeof(FluxRecord));
-//ssg
+
 	if(daydata->records == NULL)
 	{
-		printf("crapped out.\n");
+		printf("ERROR: malloc failed !\n");
 		exit(0);
 	}
-//ssg
+
     // read out the # header on the fluxtime files
     fgets(header, 80, infile);
 
     k = 0;
     while (!feof(infile) && k<numRecords)
     {
-	FluxRecord *pRec = &daydata->records[k];
+		FluxRecord *pRec = &daydata->records[k];
         int num = fluxrecord_read(pRec, infile);
         if (num == 7) {
             float RA = daydata->records[k].RA;
@@ -188,13 +192,10 @@ static int fluxdaydata_read(FluxDayData *daydata, FILE *infile)
     return k;
 }
 
-
-
-
 //----------- read in data from input flux files
 //dataset must be allocated of size ndays
 //dataset[].records will be malloced new memory
-int fluxwappdata_readchan(FluxWappData * wappdata, int chan)
+int fluxwappdata_readchan(FluxWappData * wappdata, int chan, int id)
 {
     int  m,j;
     int count;
@@ -205,26 +206,34 @@ int fluxwappdata_readchan(FluxWappData * wappdata, int chan)
     {
         char filename[64+1];
         FluxDayData * daydata = &wappdata->daydata[m];
-	//SSG
-	if(!strcmp(wappdata->wapp,"beam8"))
-	{
-		j = m%7;
-		sprintf(beamno,"beam%d",j);
-        	//sprintf(filename, "%s/%s/balanceB%03i.dat", daydata->mjd, beamno, chan);
-        	sprintf(filename, "%s/%s/fluxtime%03i.dat", daydata->mjd, beamno, chan);
- //       	sprintf(filename, "%s/%s/clean%03i.dat", daydata->mjd, beamno, chan); //SSG hack for cleanmain
-	}
-	else
-        	//sprintf(filename, "%s/%s/balanceB%03i.dat", daydata->mjd, wappdata->wapp, chan);
-        	sprintf(filename, "%s/%s/fluxtime%03i.dat", daydata->mjd, wappdata->wapp, chan);
-	//SSG
-        infile = fopen(filename, "r");
-        if (infile == NULL) {
-            printf("ERROR: can't open input file %s\n", filename);
-            continue;
-        }
+
+		if(!strcmp(wappdata->wapp,"multibeam"))
+		{
+			j = m%7;
+			sprintf(beamno,"beam%d",j);
+			if(id == CLEAN)	
+	        	sprintf(filename, "%s/%s/balanceB%04i.dat", daydata->mjd, beamno, chan);
+    	    if(id == BASKETWEAVE)
+        		sprintf(filename, "%s/%s/fluxtime%04i.dat", daydata->mjd, beamno, chan);
+ 	//       	sprintf(filename, "%s/%s/clean%03i.dat", daydata->mjd, beamno, chan); //SSG hack for cleanmain
+		}
+		else
+		{	
+			if(id == CLEAN)
+    	    	sprintf(filename, "%s/%s/balanceB%04i.dat", daydata->mjd, wappdata->wapp, chan);
+	        if(id == BASKETWEAVE)
+    	    	sprintf(filename, "%s/%s/fluxtime%04i.dat", daydata->mjd, wappdata->wapp, chan);
+		}
+
+	
+    	infile = fopen(filename, "r");
+    	if (infile == NULL) {
+    		printf("ERROR: can't open input file %s\n", filename);
+	        continue;
+    	}
 //	else//SSG
 //		printf("DIAGNOSTIC: Opened file %s\n",filename);//SSG
+        
         fluxdaydata_read(daydata, infile);
 
         fclose(infile);

@@ -430,11 +430,11 @@ static double scan_weave(ScanDayData *daydata, int scan, int order, float loop_g
 	}
 }
 
-
+/*
 static double mesh_weave(FluxWappData * wappdata)
 {
 	int h, i, j;
-	int k;
+//	int k;
 	double RA, DEC;
 	double dI, dQ, dU, dV;
 	FILE * weavefile;
@@ -493,7 +493,7 @@ static double mesh_weave(FluxWappData * wappdata)
 	}
 
 	fclose (weavefile);
-}
+}*/
 
 static void apply_difference_corrections(ScanDayData *daydata, double *dRA, double *dI, double *dQ, double *dU, double *dV, int num_delta, int order, float loop_gain)
 {
@@ -598,11 +598,9 @@ static double day_weave(ScanDayData *daydata, int order, float loop_gain, int ap
 	}
 }
 
-
-
 #define PERCENT_CHANGE(A,B) ((A-B)/B)
 
-static void basket_weave(FluxWappData *wappdata, FILE * chisqfile, int day_order, int scan_order, float loop_gain, float loop_epsilon, MapMetaData * md, int show_progress)
+static void basket_weave(FluxWappData *wappdata, FILE * chisqfile, int day_order, int scan_order, float loop_gain, float loop_epsilon, MapMetaData * md, enum ShowProgress show_progress)
 {
 	int r, i;
 	int count;
@@ -610,7 +608,7 @@ static void basket_weave(FluxWappData *wappdata, FILE * chisqfile, int day_order
 	double globalchange;
 	int ord;
 	static header_param_list hpar;
-	FILE *progressfile;
+	FILE *Iprogressfile,*Qprogressfile,*Uprogressfile,*Vprogressfile;
 	float *dataI, *dataQ, *dataU, *dataV, *weight;
 	int n1, n2, n3;
 	if (show_progress) 
@@ -620,10 +618,15 @@ static void basket_weave(FluxWappData *wappdata, FILE * chisqfile, int day_order
 		n3 = 0; //don't know how many planes in the cube, it will be set later below
 
 		//start a fits cube
+		printf("Requesting malloc for %ld bytes\n",n1 * n2 * sizeof (float));
 		dataI = (float *) malloc (n1 * n2 * sizeof (float));
+		printf("Requesting malloc for %ld bytes\n",n1 * n2 * sizeof (float));
 		dataQ = (float *) malloc (n1 * n2 * sizeof (float));
+		printf("Requesting malloc for %ld bytes\n",n1 * n2 * sizeof (float));
 		dataU = (float *) malloc (n1 * n2 * sizeof (float));
+		printf("Requesting malloc for %ld bytes\n",n1 * n2 * sizeof (float));
 		dataV = (float *) malloc (n1 * n2 * sizeof (float));
+		printf("Requesting malloc for %ld bytes\n",n1 * n2 * sizeof (float));
 		weight = (float *) malloc (n1 * n2 * sizeof (float));
 
 		init_header_param_list (&hpar);
@@ -648,14 +651,38 @@ static void basket_weave(FluxWappData *wappdata, FILE * chisqfile, int day_order
 		hpar.equinox = 2000.0;
 		sprintf (hpar.bunit, "Kelvin");
 		sprintf (hpar.telescope, "Arecibo");
-		sprintf (hpar.object, "Q Basketweaving Progress");
-
-		progressfile = fopen("Qprogress.fits", "w");
-		writefits_header(progressfile, &hpar);
-
+		
 		grid_data(wappdata, md, dataI, dataQ, dataU, dataV, weight);
-		writefits_plane(progressfile, dataQ, &hpar);
-		printf("plane %i\n", n3++);
+		
+		if(showprogress == ALL || showprogress == I)
+		{
+			sprintf (hpar.object, "I Basketweaving Progress");
+			Iprogressfile = fopen("Iprogress.fits", "w");
+			writefits_header(Iprogressfile, &hpar);
+			writefits_plane(Iprogressfile, dataI, &hpar);
+		//printf("plane %i\n", n3++);
+		}
+		if(showprogress == ALL || showprogress == Q)
+		{		
+			sprintf (hpar.object, "Q Basketweaving Progress");
+			Qprogressfile = fopen("Qprogress.fits", "w");
+			writefits_header(Qprogressfile, &hpar);
+			writefits_plane(Qprogressfile, dataQ, &hpar);
+		}
+		if(showprogress == ALL || showprogress == U)
+		{		
+			sprintf (hpar.object, "U Basketweaving Progress");
+			Uprogressfile = fopen("Uprogress.fits", "w");
+			writefits_header(Uprogressfile, &hpar);
+			writefits_plane(Uprogressfile, dataU, &hpar);
+		}	
+		if(showprogress == ALL || showprogress == V)
+		{		
+			sprintf (hpar.object, "V Basketweaving Progress");
+			Vprogressfile = fopen("Vprogress.fits", "w");
+			writefits_header(Vprogressfile, &hpar);
+			writefits_plane(Vprogressfile, dataV, &hpar);
+		}
 	}
 
 	//do day by day weaving
@@ -687,16 +714,23 @@ static void basket_weave(FluxWappData *wappdata, FILE * chisqfile, int day_order
 			count++;
 			globalchange = chisqglobalprev - chisqglobal;
 			chisqglobalprev = chisqglobal;
-			printf("day iteration:%i global chisq:%g change:%g\n", count, chisqglobal, globalchange);
+			printf("Day iteration:%i global chisq:%g change:%g\n", count, chisqglobal, globalchange);
 			fprintf(chisqfile, "%f %f\n", chisqglobal, globalchange);
 
 		} while (globalchange > loop_epsilon && count < 20);
 
 		//done all weaves for this order, so write a progress plane
 		if (show_progress) {
-			printf("writing progress plane %i\n", n3++);
+			printf("Writing progress plane %i\n", n3++);
 			grid_data(wappdata, md, dataI, dataQ, dataU, dataV, weight);
-			writefits_plane(progressfile, dataQ, &hpar);
+			if(show_progress == ALL || show_progress == I)
+				writefits_plane(Iprogressfile, dataI, &hpar);
+			if(show_progress == ALL || show_progress == Q)
+				writefits_plane(Qprogressfile, dataQ, &hpar);
+			if(show_progress == ALL || show_progress == U)
+				writefits_plane(Uprogressfile, dataU, &hpar);
+			if(show_progress == ALL || show_progress == V)
+				writefits_plane(Vprogressfile, dataV, &hpar);
 		}
 	}
 
@@ -740,16 +774,24 @@ static void basket_weave(FluxWappData *wappdata, FILE * chisqfile, int day_order
 			globalchange = chisqglobalprev - chisqglobal;
 			chisqglobalprev = chisqglobal;
 
-			printf("scan iteration:%i global chisq:%g change:%g\n", count, chisqglobal, globalchange);
+			printf("INFO: scan iteration:%i global chisq:%g change:%g\n", count, chisqglobal, globalchange);
 			fprintf(chisqfile, "%f %f\n", chisqglobal, globalchange);
 
 		} while (globalchange > loop_epsilon && count < 20);
 
 		//done all weaves for this order, so write a progress plane
-		if (show_progress) {
-			printf("writing progress plane %i\n", n3++);
+		if (show_progress) 
+		{
+			printf("Writing progress plane %i\n", n3++);
 			grid_data(wappdata, md, dataI, dataQ, dataU, dataV, weight);
-			writefits_plane(progressfile, dataQ, &hpar);
+			if(show_progress == ALL || show_progress == I)
+				writefits_plane(Iprogressfile, dataI, &hpar);
+			if(show_progress == ALL || show_progress == Q)
+				writefits_plane(Qprogressfile, dataQ, &hpar);
+			if(show_progress == ALL || show_progress == U)
+				writefits_plane(Uprogressfile, dataU, &hpar);
+			if(show_progress == ALL || show_progress == V)
+				writefits_plane(Vprogressfile, dataV, &hpar);			
 		}
 
 	}
@@ -766,14 +808,46 @@ static void basket_weave(FluxWappData *wappdata, FILE * chisqfile, int day_order
 		free(weight);
 
 		//close the fits cube
-		writefits_pad_end(progressfile, &hpar);
-		fclose(progressfile);
-
-		//change the fits header on disk to update the number of planes of the cube
-		hpar.naxis[2] = n3;
-		progressfile = fopen("Qprogress.fits", "r+");
-		writefits_header(progressfile, &hpar);
-		fclose(progressfile);
+		if(show_progress == ALL || show_progress == I)
+		{
+			writefits_pad_end(Iprogressfile, &hpar);
+			fclose(Iprogressfile);
+			//change the fits header on disk to update the number of planes of the cube
+			hpar.naxis[2] = n3;
+			Iprogressfile = fopen("Iprogress.fits", "r+");
+			writefits_header(Iprogressfile, &hpar);
+			fclose(Iprogressfile);
+		}
+		if(show_progress == ALL || show_progress == Q)
+		{
+			writefits_pad_end(Qprogressfile, &hpar);
+			fclose(Qprogressfile);
+			//change the fits header on disk to update the number of planes of the cube
+			hpar.naxis[2] = n3;
+			Qprogressfile = fopen("Qprogress.fits", "r+");
+			writefits_header(Qprogressfile, &hpar);
+			fclose(Qprogressfile);
+		}
+		if(show_progress == ALL || show_progress == U)
+		{
+			writefits_pad_end(Uprogressfile, &hpar);
+			fclose(Uprogressfile);
+			//change the fits header on disk to update the number of planes of the cube
+			hpar.naxis[2] = n3;
+			Uprogressfile = fopen("Uprogress.fits", "r+");
+			writefits_header(Uprogressfile, &hpar);
+			fclose(Uprogressfile);
+		}
+		if(show_progress == ALL || show_progress == V)
+		{
+			writefits_pad_end(Vprogressfile, &hpar);
+			fclose(Vprogressfile);
+			//change the fits header on disk to update the number of planes of the cube
+			hpar.naxis[2] = n3;
+			Vprogressfile = fopen("Vprogress.fits", "r+");
+			writefits_header(Vprogressfile, &hpar);
+			fclose(Vprogressfile);
+		}
 	}
 }
 
@@ -798,18 +872,17 @@ void balance_data(FluxWappData * wappdata, MapMetaData *md, int day_order, int s
 		return;
 	}
 
-	printf("finding crossing points ...\n");
+	printf("Finding crossing points\n");
 	find_intersections(wappdata);
 
-	printf("performing basket weaving ...\n");
-	printf("loop_gain: %g loop_epsilon: %g\n", loop_gain, loop_epsilon);
+	printf("Performing basket weaving\n");
+	printf("Loop_gain: %g Loop_epsilon: %g\n", loop_gain, loop_epsilon);
 
 	fprintf(chisqfile, "#day chisqmax, change, chisqglobal, globalchange\n");
 	basket_weave(wappdata, chisqfile, day_order, scan_order, loop_gain, loop_epsilon, md, show_progress);
 	//mesh_weave(wappdata);
 
 	fclose (chisqfile);
-
 }
 
 

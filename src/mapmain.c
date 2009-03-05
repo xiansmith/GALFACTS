@@ -98,8 +98,8 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 	int numbytes;
 
 	printf("Map size: %d x %d\n", md->n1, md->n2);
-	printf("DEC range: %f ... %f degrees\n", md->decmin, md->decmax);
-	printf("RA range: %f ... %f degrees\n", md->ramin, md->ramax);
+	printf("DEC range (degrees): (%f %f)\n", md->decmin, md->decmax);
+	printf("RA range (degrees): (%f %f)\n", md->ramin, md->ramax);
 	printf("Map centre: %.2f %.2f\n", md->RAcen, md->DECcen); 
 	printf("Channel range: (%i, %i]\n", md->lowchan, md->highchan);
 	printf("Channel count: %i\n", md->n3);
@@ -116,60 +116,65 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
  	printf("Balance Epsilon: %f\n", balepsilon);
 
 	numbytes = md->n1 * md->n2 * sizeof (float);
+	printf("Requesting malloc for %ld bytes\n",numbytes);
 	dataI  = (float *) malloc (numbytes);
+	printf("Requesting malloc for %ld bytes\n",numbytes);	
 	dataQ  = (float *) malloc (numbytes);
+	printf("Requesting malloc for %ld bytes\n",numbytes);	
 	dataU  = (float *) malloc (numbytes);
+	printf("Requesting malloc for %ld bytes\n",numbytes);	
 	dataV  = (float *) malloc (numbytes);
+	printf("Requesting malloc for %ld bytes\n",numbytes);	
 	weight  = (float *) malloc (numbytes);
 	
 	if (!dataI || !dataQ || !dataU || !dataV || !weight) {
-		printf("ERROR: memory allocation of %i bytes failed!\n", numbytes);
+		printf("ERROR: memory allocation of %i bytes failed !\n", numbytes);
 		return;
 	}
 
 	init_psf_lookup_table(65537, 9.1);
 	init_psf_map(md->fwhm, md->cellsize, md->beamwidths);
 
-
-
 	if (show_progress) 
 	{
 		chan = md->lowchan;
-		printf("Creating a progress cube\n");
-		printf("reading data ...\n");
-		fluxwappdata_readchan(wappdata, chan);
-		printf("determine scan lines ...\n");
+		printf("Creating a progress cube \n");
+		printf("Reading data\n");
+		fluxwappdata_readchan(wappdata,0,BASKETWEAVE);
+		printf("Determine scan lines\n");
 		determine_scan_lines(wappdata, md->decmin, md->decmax);
-		printf("performing balancing ...\n");
+		printf("Performing balancing\n");
 		balance_data(wappdata, md, day_order, scan_order, balgain, balepsilon, show_progress);
 	}
 	else
 	{
 		start_fits_cubes(wapp, md);
 
-		for (chan=md->lowchan; chan<md->highchan; chan++)
+//TODO: currently only basketweaving average channel, need to fix this and apply the corrections determined to all channels
+//		for (chan=md->lowchan; chan<md->highchan; chan++)
+		for(chan=0;chan<1;chan++) 
 		{
 			printf("Channel: %i\n", chan);
 
 			//read channel data files for all the days
-			printf("reading data ...\n");
+			printf("Reading data\n");
 			//scanwappdata_readchan(wappdata, wapp, chan, days, num_days);
-			fluxwappdata_readchan(wappdata, chan);
+			fluxwappdata_readchan(wappdata, chan, BASKETWEAVE);
 
 			//determine scan lines
-			printf("determine scan lines ...\n");
+			printf("Determine scan lines\n");
 			determine_scan_lines(wappdata, md->decmin, md->decmax);
 
 			//remove declination dependence
-			printf("removing the declination dependence...\n");
-			remove_dec_dependence(wappdata, md->decmin, md->decmax, 0.01, chan);
+//			printf("Removing the declination dependence\n");
+//			remove_dec_dependence(wappdata, md->decmin, md->decmax, 0.01, chan);
 
 			//flatten the field
 			//printf("flatten the field...\n");
 			//flatten_field(wappdata, 1.5, 0);
 
 			//perform balancing
-			printf("performing balancing ...\n");
+			printf("Performing balancing\n");
 			balance_data(wappdata, md, day_order, scan_order, balgain, balepsilon, show_progress);
 
 			//write out the balanced data
@@ -177,15 +182,15 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 			//fluxwappdata_writechan(wappdata, chan);
 
 			//perform gridding
-			printf("performing gridding ...\n");
+			printf("Performing gridding\n");
 			grid_data(wappdata, md, dataI, dataQ, dataU, dataV, weight);
 
 			//write fits data
-			printf("writing fits data ...\n");
+			printf("Writing fits data\n");
 			write_fits_planes(dataI, dataQ, dataU, dataV, weight);
 		}
 
-		printf("finishing fits files ...");
+		printf("Finishing fits files");
 		finish_fits_cubes();
 	}
 
@@ -195,7 +200,7 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 	free(dataU);
 	free(dataV);
 
-	printf("done!\n");
+	printf("Done!\n");
 }
 
 int main(int argc, char * argv[])
@@ -219,16 +224,19 @@ int main(int argc, char * argv[])
 	/* Process command line arguments */ 
 	/* Convert args into more usable units were required */
 
-	if (argc != 18) {
+	if (argc != 18) 
+	{
 		print_usage(argv[0]);
 		return EXIT_FAILURE;
-	} else {
+	} 
+	else 
+	{
 		wapp = argv[1];
 		md.fcen = (float) atof(argv[2]);
 		md.lowchan = atoi(argv[3]);
 		md.highchan = atoi(argv[4]);
-		md.ramin = (float) atof(argv[5]) * 15.0; //convert to degrees
-		md.ramax = (float) atof(argv[6]) * 15.0; //convert to degrees
+		md.ramin = (float) atof(argv[5]); //convert to degrees ?
+		md.ramax = (float) atof(argv[6]); //convert to degrees ?
 		md.decmin = (float) atof(argv[7]);
 		md.decmax = (float) atof(argv[8]);
 		md.cellsize = (float) atof(argv[9]) / 60.0; //convert to degrees
@@ -249,7 +257,8 @@ int main(int argc, char * argv[])
 		md.DECrange = md.decmax - md.decmin;
 		md.n1 = (int)(md.RArange/md.cellsize) + 1;
 		md.n2 = (int)(md.DECrange/md.cellsize) + 1;
-		md.n3 = md.highchan - md.lowchan;
+//		md.n3 = md.highchan - md.lowchan;
+		md.n3 = 1; //for the time being till figure out how to apply basketweave from avg to all  
 		md.fstart = md.fcen + (md.lowchan-127) * (100.0/256.0);
 		
 	}
@@ -259,7 +268,7 @@ int main(int argc, char * argv[])
 		return EXIT_FAILURE;
 	}
 	//SSG
-	if (!strcmp(wapp,"beam8"))
+	if (!strcmp(wapp,"multibeam"))
 	{
 		numDays = numDays * 7;
 		multibeam = 1;
@@ -269,7 +278,7 @@ int main(int argc, char * argv[])
 	//SSG
 	// allocate and initialize the wapp data days
 	wappdata = fluxwappdata_alloc(wapp, files, numDays);
-//	printf("After wapp alloc");
+
 	printf("Creating a frequency cube\n");
 	create_fits_cube(wappdata, wapp, &md, day_order, scan_order, balgain, balepsilon, showprogress);
 	

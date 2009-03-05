@@ -50,7 +50,7 @@ static void tag_scanlines(enum ScanTag *tags, FluxRecord dataset[], int numRecor
 //		tags[numRecords-1] = UPENDPOINT;
 }
 
-static void tag_scanlines2(enum ScanTag *tags, FluxRecord dataset[], int numRecords, float decmin, float decmax)
+/*static void tag_scanlines2(enum ScanTag *tags, FluxRecord dataset[], int numRecords, float decmin, float decmax)
 {
 	int j;
 
@@ -94,9 +94,7 @@ static void tag_scanlines2(enum ScanTag *tags, FluxRecord dataset[], int numReco
 		}
 	}
 
-}
-
-
+}*/
 
 static int count_scanlines(enum ScanTag tags[], int size)
 {
@@ -117,7 +115,7 @@ static int count_scanlines(enum ScanTag tags[], int size)
 	return upcount + downcount + 1;
 }
 
-static void output_tags(enum ScanTag tags[], FluxRecord dataset[], int size, char* day)
+/*static void output_tags(enum ScanTag tags[], FluxRecord dataset[], int size, char* day)
 {
 	int i;
 	char filename[32];
@@ -142,9 +140,7 @@ static void output_tags(enum ScanTag tags[], FluxRecord dataset[], int size, cha
 				break;
 		}
 	}
-}
-
-
+}*/
 
 void determine_scan_lines(FluxWappData * wappdata, float decmin, float decmax)
 {
@@ -163,7 +159,7 @@ void determine_scan_lines(FluxWappData * wappdata, float decmin, float decmax)
 
 		daydata = &wappdata->daydata[d];
 		scanDayData = &wappdata->scanDayData[d];
-//		printf("day %s\n", daydata->mjd);
+		printf("Determining scans for day %s\n", daydata->mjd);
 		numRecords = daydata->numRecords;
 
 		tags = malloc(sizeof(enum ScanTag) * numRecords);
@@ -173,14 +169,11 @@ void determine_scan_lines(FluxWappData * wappdata, float decmin, float decmax)
 		scanDayData->numScans = numScans;
 		scanDayData->scans = malloc(sizeof(ScanData) * numScans);
 
-		//assuming we always start with a downscan
-//SSG		direction = DOWNSCAN;
-		//SSG
 		if(tags[0] == DOWNSCAN || tags[0] == UPENDPOINT)
 			direction = DOWNSCAN;
 		if(tags[0] == UPSCAN || tags[0] == DOWNENDPOINT)
 			direction = UPSCAN;
-		//SSG
+
 		i = 0;
 		scanCount = 0;
 		while (i < numRecords) 
@@ -203,26 +196,24 @@ void determine_scan_lines(FluxWappData * wappdata, float decmin, float decmax)
 				scanDayData->scans[scanCount].num_records = end-start;
 				scanCount++;
 			} else {
-//				printf("WARN: short scan being ignored start:%i end:%i\n", start, end);
+				printf("WARN: short scan being ignored start:%i end:%i\n", start, end);
 				;
 			}
-//SSG			direction = (direction == DOWNSCAN) ? UPSCAN : DOWNSCAN; 
-//SSG
+
 			if(tags[i] == DOWNSCAN || tags[i] == UPENDPOINT)
 				direction = DOWNSCAN;
 			if(tags[i] == UPSCAN || tags[i] == DOWNENDPOINT)
 				direction = UPSCAN;
-//SSG
 	
 		}
-		//SSG
+		
 		if(scanCount < numScans)
 		{		
-//		printf("DIAGNOSTIC: scanCount %d numScans %d\n",scanCount-1,numScans);
+//		printf("INFO: scanCount %d numScans %d\n",scanCount-1,numScans);
 		//SSG
-		scanDayData->numScans = scanCount;//SSG
+			scanDayData->numScans = scanCount;//SSG
 		}
-//		printf("DIAGNOSTIC: new numscans %d\n",scanDayData->numScans);//SSG
+//		printf("INFO: new numscans %d\n",scanDayData->numScans);//SSG
 		free(tags);
 	}
 }

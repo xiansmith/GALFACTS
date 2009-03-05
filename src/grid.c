@@ -56,14 +56,10 @@ void init_psf_map(float fwhm, float cellsize, int beamwidths)
 	}
 }
 
-
-
-
 static double * psf_lookup_table;
 static double psf_step;
 static int psf_size;
 //static double dsqrarg;
-
 
 //#define DSQR(a) ((dsqrarg=(a)) == 0.0 ? 0.0 : dsqrarg*dsqrarg)
 //#define PSF(offset) ( exp(-2.772589 * DSQR(offset/fwhm)) )

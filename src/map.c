@@ -8,7 +8,7 @@
 void write_fits_maps(const char * wapp, MapMetaData *md, float dataI[], float dataQ[], float dataU[], float dataV[])
 {
         header_param_list hpar;
-	char filename[31+1];
+		char filename[31+1];
 
         init_header_param_list (&hpar);  /* initialize parameter records */
         hpar.bitpix = -32;
@@ -23,8 +23,8 @@ void write_fits_maps(const char * wapp, MapMetaData *md, float dataI[], float da
         hpar.crpix[1] = 0.5 + md->n2 / 2.0;
         hpar.cdelt[0] = -md->cellsize;                     /* degrees */
         hpar.cdelt[1] = md->cellsize;                     /* degrees */
-	hpar.equinox = 2000.0;
-	//hpar.epoch = 2000.0;
+		hpar.equinox = 2000.0;
+		//hpar.epoch = 2000.0;
         sprintf (hpar.bunit, "Kelvin");
         sprintf (hpar.telescope, "Arecibo");
 		

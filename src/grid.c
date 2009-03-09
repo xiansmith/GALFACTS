@@ -5,7 +5,7 @@
 #include "fluxdata.h"
 #include "map.h"
 #include "grid.h"
-#include "programs/fitsio.h"
+#include "programs/fitsLib.h"
 
 #define FWHM      2.0                    // FWHM of psf in arc minutes
 //#define FWHM      1.5                    // FWHM of psf in arc minutes

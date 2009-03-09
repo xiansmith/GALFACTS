@@ -17,25 +17,20 @@ static void print_usage(const char * prog)
 {
 	printf(
 	"\n"
-	"\twapp<n> - the wapp number to create maps for\n"
+	"\twapp<n> - the beam number to create maps for (use multibeam for a multibeam map)\n"
 	"\tfcenter - the center frequency of this wapp\n"
 	"\tlowchan, highchan - the channel range to use\n"
-	"\tramin, ramax - the Right assension range in hours\n"
+	"\tramin, ramax - the Right assension range in degrees\n"
 	"\tdecmin, decmax - the Declination range in degrees\n"
-	"\tcell size - cell size of map in arc minutes\n"
-	"\tpatch radius - area in pixels to calculate point spread response\n"
+	"\tcell size - pixel size of map in arc minutes\n"
+	"\tpatch radius - area in pixels to calculate point spread response (recommended 8)\n"
+	"\tgridtype - upscans 1 downscans 2 both 3\n"
 	"\tbalance day order - order of the polynomial fit in day-to-day balancing\n"
 	"\tbalance scan order - order of the polynomial fit in scan-by-scan balancing\n"
 	"\tbalance loopgain - the gain of each balance iteration (should be between 0 and 1)\n"
 	"\tbalance epsilon - the percent change of simasq threshold where the iteraiton will stop\n"
 	"\tshowprogress - 1 to create a basket weave progress cube, 0 otherwise\n"
-	"\n"
-	"eg: %s wapp1 1170.0 25 230 6.75 7.75 11.0 12.1 0.25 5 0.5 0.001 53108\n"
-	"\n"
-	"Call this program through the following names (hint: use softlinks)\n"
-	"\tmapcube - to create cubes, on slice per channel\n"
-	"\tmapavg - to create combined maps of all channels\n"
-	"\n", prog); 
+	"\n");
 }
 
 /*
@@ -116,15 +111,15 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
  	printf("Balance Epsilon: %f\n", balepsilon);
 
 	numbytes = md->n1 * md->n2 * sizeof (float);
-	printf("Requesting malloc for %ld bytes\n",numbytes);
+	printf("Requesting malloc for %u bytes\n",numbytes);
 	dataI  = (float *) malloc (numbytes);
-	printf("Requesting malloc for %ld bytes\n",numbytes);	
+	printf("Requesting malloc for %u bytes\n",numbytes);	
 	dataQ  = (float *) malloc (numbytes);
-	printf("Requesting malloc for %ld bytes\n",numbytes);	
+	printf("Requesting malloc for %u bytes\n",numbytes);	
 	dataU  = (float *) malloc (numbytes);
-	printf("Requesting malloc for %ld bytes\n",numbytes);	
+	printf("Requesting malloc for %u bytes\n",numbytes);	
 	dataV  = (float *) malloc (numbytes);
-	printf("Requesting malloc for %ld bytes\n",numbytes);	
+	printf("Requesting malloc for %u bytes\n",numbytes);	
 	weight  = (float *) malloc (numbytes);
 	
 	if (!dataI || !dataQ || !dataU || !dataV || !weight) {
@@ -190,7 +185,7 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 			write_fits_planes(dataI, dataQ, dataU, dataV, weight);
 		}
 
-		printf("Finishing fits files");
+		printf("Finishing fits files\n");
 		finish_fits_cubes();
 	}
 

@@ -28,9 +28,9 @@ FluxWappData * fluxwappdata_alloc(const char *wapp, char **days, int numDays)
     wappdata = (FluxWappData*) malloc(sizeof(FluxWappData));
     strncpy(wappdata->wapp, wapp, WAPP_LEN);
     wappdata->numDays = numDays;
-	printf("Requesting malloc for %ld bytes\n",sizeof(FluxDayData) * numDays);
+	printf("Requesting malloc for %u bytes\n",sizeof(FluxDayData) * numDays);
     wappdata->daydata = (FluxDayData*) malloc(sizeof(FluxDayData) * numDays);
-	printf("Requesting malloc for %ld bytes\n",sizeof(ScanDayData) * numDays);
+	printf("Requesting malloc for %u bytes\n",sizeof(ScanDayData) * numDays);
     wappdata->scanDayData = (ScanDayData*) malloc(sizeof(ScanDayData) * numDays);
     for (i=0; i<numDays; i++) {
 		if(!strcmp(wapp,"multibeam"))//SSG
@@ -159,7 +159,7 @@ static int fluxdaydata_read(FluxDayData *daydata, FILE *infile)
         free(daydata->records);
     }
 
-	printf("Requesting malloc for %ld bytes\n",numRecords * sizeof(FluxRecord));
+	printf("Requesting malloc for %u bytes\n",numRecords * sizeof(FluxRecord));
     daydata->records = (FluxRecord*) malloc(numRecords * sizeof(FluxRecord));
 
 	if(daydata->records == NULL)

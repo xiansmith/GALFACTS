@@ -295,12 +295,12 @@ void rfi_detection(SpecRecord dataset[], int size, int lowchan, int highchan, fl
 	sigmathreshfile = fopen("sigmathresh.dat", "w");
 	fprintf(sigmathreshfile, "# offXX offYY onXX onYY\n");
 
-	printf("Requesting malloc for %u bytes of memory\n",sizeof(PolStatistics)*size);
+	printf("Requesting malloc for %lu bytes of memory\n",sizeof(PolStatistics)*size);
 	stats = (PolStatistics *)malloc(sizeof(PolStatistics) * size);
 	if (stats == NULL) {
 		printf("ERROR: malloc failed in rfi_detection() !\n");
 	}
-	printf("Requesting malloc for %u bytes of memory\n",sizeof(PolDifferences)*size);
+	printf("Requesting malloc for %lu bytes of memory\n",sizeof(PolDifferences)*size);
 	diffs = (PolDifferences *)malloc(sizeof(PolDifferences) * size);
 	if (diffs == NULL) {
 		printf("ERROR: malloc failed in rfi_detection() !\n");
@@ -465,17 +465,17 @@ void aerostat_rfi_blanking(SpecRecord dataset[], int size, int lowchan, int high
 
 	//average up the channels to reduce noise as these signals are broadband
 	//they peak on the middle channel (128) which could also be used 
-	printf("Requesting malloc for %u bytes of memory\n",sizeof(double)*size);
+	printf("Requesting malloc for %lu bytes of memory\n",sizeof(double)*size);
 	offxx = calloc(size, sizeof(double));
 	if (offxx == NULL) {
 		printf("ERROR: malloc failed in aerostat_rfi_blanking() !\n");
 	}
-	printf("Requesting malloc for %u bytes of memory\n",sizeof(float)*size);	
+	printf("Requesting malloc for %lu bytes of memory\n",sizeof(float)*size);	
 	diff1 = calloc(size, sizeof(float));
 	if (diff1 == NULL) {
 		printf("ERROR: malloc failed in aerostat_rfi_blanking() !\n");
 	}
-	printf("Requesting malloc for %u bytes of memory\n",sizeof(float)*size);	
+	printf("Requesting malloc for %lu bytes of memory\n",sizeof(float)*size);	
 	diff2 = calloc(size, sizeof(float));
 	if (diff2 == NULL) {
 		printf("ERROR: malloc failed in aerostat_rfi_blanking() !\n");

@@ -290,27 +290,27 @@ void smooth_cal_bandaverage(SpecRecord dataset[], int size, int lowchan, int hig
 	int i, chan;
 	const char *filename = "calfile.dat";
 	FILE *calfile;
-	printf("Requesting malloc for %u bytes of memory\n",sizeof(double)*size);
+	printf("Requesting malloc for %lu bytes of memory\n",sizeof(double)*size);
 	xx = (double*) calloc(size, sizeof(double));
 	if (xx == NULL) {
 		printf("ERROR: malloc failed in smooth_cal_bandaverage() !\n");
 	}
-	printf("Requesting malloc for %u bytes of memory\n",sizeof(double)*size);
+	printf("Requesting malloc for %lu bytes of memory\n",sizeof(double)*size);
 	yy = (double*) calloc(size, sizeof(double));
 	if (yy == NULL) {
 		printf("ERROR: malloc failed in smooth_cal_bandaverage() !\n");
 	}
-	printf("Requesting malloc for %u bytes of memory\n",sizeof(double)*size);
+	printf("Requesting malloc for %lu bytes of memory\n",sizeof(double)*size);
 	xy = (double*) calloc(size, sizeof(double));
 	if (xy == NULL) {
 		printf("ERROR: malloc failed in smooth_cal_bandaverage() !\n");
 	}
-	printf("Requesting malloc for %u bytes of memory\n",sizeof(double)*size);
+	printf("Requesting malloc for %lu bytes of memory\n",sizeof(double)*size);
 	yx = (double*) calloc(size, sizeof(double));
 	if (yx == NULL) {
 		printf("ERROR: malloc failed in smooth_cal_bandaverage() !\n");
 	}
-	printf("Requesting malloc for %u bytes of memory\n",sizeof(double)*size);
+	printf("Requesting malloc for %lu bytes of memory\n",sizeof(double)*size);
 	ast = (double*) calloc(size, sizeof(double));
 	if (ast == NULL) {
 		printf("ERROR: malloc failed in smooth_cal_bandaverage() !\n");

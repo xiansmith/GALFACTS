@@ -9,18 +9,18 @@ CFLAGS = \
 -D_GNU_SOURCE \
 
 
-objects = io.o misc_math.o fitsio.o
+objects = io.o misc_math.o fitsLib.o
 
 
-all : $(objects) fitsio.a
+all : $(objects) fitsLib.a
 
-fitsio.a :
-	ar r fitsio.a $(objects)
+fitsLib.a :
+	ar r fitsLib.a $(objects)
 	rm -rf $(objects)
 
 io.o : io.h io.c
 misc_math.o : misc_math.h misc_math.c mathdefs.h
-fitsio.o : fitsio.h fitsio.c io.h
+fitLib.o : fitLib.h fitLib.c io.h
 
 
 .PHONY clean :

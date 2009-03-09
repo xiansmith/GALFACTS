@@ -237,21 +237,21 @@ SSG*/
 		pRec = &(dataset[i]);
 		if (pRec->flagBAD) continue;
 
-		printf("Computing observed stokes\n");
+		//printf("Computing observed stokes\n");
 		compute_observed_stokes(pRec, &ObsCal, &ObsSky, lowchan, highchan);
 
-		printf("Computing gains\n");
+		//printf("Computing gains\n");
 		compute_gains(pRec, &gain, lowchan, highchan, Tcalx, Tcaly);
 
 		// calibrate the cal signal
-		printf("Calibrating the cal\n");
+		//printf("Calibrating the cal\n");
 		calibrate_stokes(&CalCal, &gain, &ObsCal, lowchan, highchan);
 
 		// calibrate the sky signal
-		printf("Calibrating the sky\n");
+		//printf("Calibrating the sky\n");
 		calibrate_stokes(&TrueSky, &gain, &ObsSky, lowchan, highchan);
 
-		printf("Computing final stokes\n");
+		//printf("Computing final stokes\n");
 		compute_final_stokes(pRec, &TrueSky, ignoreRFI, lowchan, highchan);
 
 		print_stokes(calfile, &ObsCal, &CalCal, &gain, lowchan, highchan);

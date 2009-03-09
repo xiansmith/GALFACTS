@@ -218,15 +218,13 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 
 	/* Open Datafile */
 	globbuf.gl_offs = 1;
-//	sprintf(globpattern, "%s/%s/*.za_scan*.%s.%s.spec", datadirname, datedir, subdir, datedir);
 
 	//fix to allow for both precursor and main run files to be run
 	if(band == -1)
-		sprintf(globpattern, "%s/%s/A2186.*d*.beam%i.*.spec", datadirname, datedir, beam);
+		sprintf(globpattern, "%s/%s/*.*.beam%i.*.spec", datadirname, datedir, beam);
 	else
 		sprintf(globpattern, "%s/%s/*.*.b*%is*%i.*.spec", datadirname, datedir, beam, band);
 		
-//	sprintf(globpattern, "%s/%s/*.*.b*%is*%i.*.spec", datadirname, datedir, beam, band);
 	glob(globpattern, 0, NULL, &globbuf);
 	if (globbuf.gl_pathc < 1) {
 		printf("ERROR: unable to find file with pattern %s\n", globpattern);
@@ -246,10 +244,10 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 
 	/* Open Configuration File */
 	globbuf.gl_offs = 1;
-//	sprintf(globpattern, "%s/%s/*.za_scan*.%s.%s.spec_cfg", datadirname, datedir, subdir, datedir);
+
 	//fix to allow for both precursor and main run files to be run
 	if(band == -1)
-		sprintf(globpattern, "%s/%s/A2186.*d*.beam%i.*.spec_cfg", datadirname, datedir, beam);
+		sprintf(globpattern, "%s/%s/*.*.beam%i.*.spec_cfg", datadirname, datedir, beam);
 	else
 		sprintf(globpattern, "%s/%s/*.*.b*%is*%i.*.spec_cfg", datadirname, datedir, beam, band);
 		

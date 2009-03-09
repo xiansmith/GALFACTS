@@ -7,7 +7,7 @@
 #include "jsd/jsd_futil.h"
 #include "jsd/jsd_util.h"
 #include "jsd/jsd_fit.h"
-#include "programs/fitsio.h"
+#include "programs/fitsLib.h"
 #include "grid.h"
 #include "string.h"
 
@@ -618,15 +618,15 @@ static void basket_weave(FluxWappData *wappdata, FILE * chisqfile, int day_order
 		n3 = 0; //don't know how many planes in the cube, it will be set later below
 
 		//start a fits cube
-		printf("Requesting malloc for %ld bytes\n",n1 * n2 * sizeof (float));
+		printf("Requesting malloc for %u bytes\n",n1 * n2 * sizeof (float));
 		dataI = (float *) malloc (n1 * n2 * sizeof (float));
-		printf("Requesting malloc for %ld bytes\n",n1 * n2 * sizeof (float));
+		printf("Requesting malloc for %u bytes\n",n1 * n2 * sizeof (float));
 		dataQ = (float *) malloc (n1 * n2 * sizeof (float));
-		printf("Requesting malloc for %ld bytes\n",n1 * n2 * sizeof (float));
+		printf("Requesting malloc for %u bytes\n",n1 * n2 * sizeof (float));
 		dataU = (float *) malloc (n1 * n2 * sizeof (float));
-		printf("Requesting malloc for %ld bytes\n",n1 * n2 * sizeof (float));
+		printf("Requesting malloc for %u bytes\n",n1 * n2 * sizeof (float));
 		dataV = (float *) malloc (n1 * n2 * sizeof (float));
-		printf("Requesting malloc for %ld bytes\n",n1 * n2 * sizeof (float));
+		printf("Requesting malloc for %u bytes\n",n1 * n2 * sizeof (float));
 		weight = (float *) malloc (n1 * n2 * sizeof (float));
 
 		init_header_param_list (&hpar);

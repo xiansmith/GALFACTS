@@ -447,7 +447,7 @@ int main(int argc,char* argv[])
 			int num_on=0,num_off=0,onoff=0,oncount=0,offcount=0;
 			for(h = 0;h < DUMPS_PER_ROW/(htls_time_comp*2);h++)			
 			{
-				spointing_htls[h].centralBeam.raj_true_in_hours=c1.crval2 + h*(c2.crval2-c1.crval2)*(2*htls_time_comp)/(DUMPS_PER_ROW)/15;
+				spointing_htls[h].centralBeam.raj_true_in_hours=c1.crval2/15 + h*(c2.crval2-c1.crval2)*(2*htls_time_comp)/(DUMPS_PER_ROW)/15;
 				spointing_htls[h].centralBeam.decj_true_in_degrees=c1.crval3 + h*(c2.crval3-c1.crval3)*(2*htls_time_comp)/(DUMPS_PER_ROW);
 				spointing_htls[h].centralBeam.atlantic_solar_time_now_in_sec=\
 				c1.lst + h*(c2.lst-c1.lst)*(2*htls_time_comp)/(DUMPS_PER_ROW);			
@@ -592,7 +592,7 @@ int main(int argc,char* argv[])
 			offcount = 0;
 			for(h = 0;h < DUMPS_PER_ROW/(lths_time_comp*2);h++)			
 			{
-				spointing_lths[h].centralBeam.raj_true_in_hours=c1.crval2 + h*(c2.crval2-c1.crval2)*(2*lths_time_comp)/(DUMPS_PER_ROW)/15;
+				spointing_lths[h].centralBeam.raj_true_in_hours=c1.crval2/15 + h*(c2.crval2-c1.crval2)*(2*lths_time_comp)/(DUMPS_PER_ROW)/15;
 				spointing_lths[h].centralBeam.decj_true_in_degrees=c1.crval3 + h*(c2.crval3-c1.crval3)*(2*lths_time_comp)/(DUMPS_PER_ROW);
 				spointing_lths[h].centralBeam.atlantic_solar_time_now_in_sec=\
 				c1.lst + h*(c2.lst-c1.lst)*(2*lths_time_comp)/(DUMPS_PER_ROW);						

@@ -230,8 +230,8 @@ int main(int argc, char * argv[])
 		md.fcen = (float) atof(argv[2]);
 		md.lowchan = atoi(argv[3]);
 		md.highchan = atoi(argv[4]);
-		md.ramin = (float) atof(argv[5]); //convert to degrees ?
-		md.ramax = (float) atof(argv[6]); //convert to degrees ?
+		md.ramin = (float) atof(argv[5])*15; //convert to degrees ?
+		md.ramax = (float) atof(argv[6])*15; //convert to degrees ?
 		md.decmin = (float) atof(argv[7]);
 		md.decmax = (float) atof(argv[8]);
 		md.cellsize = (float) atof(argv[9]) / 60.0; //convert to degrees

@@ -3,7 +3,6 @@
 #include "rfi.h"
 #include "stokes.h"
 #include "calibrate.h"
-#include "scan.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>

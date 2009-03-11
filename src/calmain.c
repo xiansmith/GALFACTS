@@ -445,8 +445,8 @@ int main(int argc, char *argv[])
 		printf("Setting all Tcal parameters to 1.00\n");
 		for(i = 0;i < MAX_CHANNELS;i++)
 		{
-			Tcalx[i] = 0.0;
-			Tcaly[i] = 0.0;
+			Tcalx[i] = 1.0;
+			Tcaly[i] = 1.0;
 		}
 //		return EXIT_FAILURE;
 	}
@@ -457,8 +457,8 @@ int main(int argc, char *argv[])
 		printf("Setting all Tcal parameters to 1.00\n");
 		for(i = 0;i < MAX_CHANNELS;i++)
 		{
-			Tcalx[i] = 0.0;
-			Tcaly[i] = 0.0;
+			Tcalx[i] = 1.0;
+			Tcaly[i] = 1.0;
 		}
 //		return EXIT_FAILURE;
 	} 

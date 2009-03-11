@@ -12,7 +12,7 @@
 #include "smooth.h"
 #include <glob.h>
 #include "markdata.h"
-#include "programs/fitsio.h"
+#include "programs/fitsLib.h"
 
 int multibeam; //SSG
 

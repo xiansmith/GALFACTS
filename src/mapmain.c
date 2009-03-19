@@ -254,7 +254,7 @@ int main(int argc, char * argv[])
 		md.n2 = (int)(md.DECrange/md.cellsize) + 1;
 //		md.n3 = md.highchan - md.lowchan;
 		md.n3 = 1; //for the time being till figure out how to apply basketweave from avg to all  
-		md.fstart = md.fcen + (md.lowchan-127) * (100.0/256.0);
+		md.fstart = md.fcen + (md.lowchan-(MAX_CHANNELS/2-1)) * (100.0/MAX_CHANNELS);
 		
 	}
 	numDays = get_date_dirs("./", &files);

@@ -18,7 +18,7 @@ scan: scanmain.c
 	$(CC) $(CFLAGS) -lm -o scan common.o fluxdata.o jsd/jsd_futil.o scanmain.c
 
 cube2avg: cube2avg.c
-	$(CC) $(CFLAGS) -lm -o cube2avg cube2avg.c programs/fitsio.a
+	$(CC) $(CFLAGS) -lm -o cube2avg cube2avg.c programs/fitsLib.a
 	mv cube2avg $(BIN)
 
 pointing: pointingmain.c common.o
@@ -26,15 +26,15 @@ pointing: pointingmain.c common.o
 	mv pointing $(BIN)
 
 calanalyze: calanalyze.c
-	$(CC) $(CFLAGS) -lm -o calanalyze calanalyze.c programs/fitsio.a
+	$(CC) $(CFLAGS) -lm -o calanalyze calanalyze.c programs/fitsLib.a
 	cp calanalyze $(BIN)
 
 fits_smooth: fits_smooth.c
-	$(CC) $(CFLAGS) -lm -o fits_smooth fits_smooth.c programs/fitsio.a
+	$(CC) $(CFLAGS) -lm -o fits_smooth fits_smooth.c programs/fitsLib.a
 	cp fits_smooth $(BIN)
 
 spec2fits: spec2fits.c common.o smooth.o spec.o rfi.o markdata.o
-	$(CC) $(CFLAGS) -lm -lcfitsio -o spec2fits common.o smooth.o spec.o rfi.o markdata.o spec2fits.c
+	$(CC) $(CFLAGS) -lm -o spec2fits common.o smooth.o spec.o rfi.o markdata.o spec2fits.c programs/fitsLib.a
 	cp spec2fits $(BIN)
 
 spectra: spectramain.o common.o spec.o
@@ -57,7 +57,7 @@ map: mapmain.o common.o jsd/jsd_futil.o jsd/jsd_util.o balance.o grid.o map.o sc
 	mv map $(BIN)
 
 fitscat: fitscat.c programs/fitsio.a
-	$(CC) $(CFLAFGS) -lm -o fitscat fitscat.c programs/fitsio.a
+	$(CC) $(CFLAFGS) -lm -o fitscat fitscat.c programs/fitsLib.a
 	mv fitscat $(BIN)
 
 dtm2spec: dtm2spec.c
@@ -69,19 +69,19 @@ cimafits2spec: cimafits2spec.c cimafits2.h
 	cp cimafits2spec $(BIN)
 
 beamgainratios: beamgainratios.c
-	$(CC) $(CFLAGS) -lm -o beamgainratios beamgainratios.c programs/fitsio.a
+	$(CC) $(CFLAGS) -lm -o beamgainratios beamgainratios.c programs/fitsLib.a
 	mv beamgainratios $(BIN)
 
 beamgains: beamgains.c
-	$(CC) $(CFLAGS) -lm -o beamgains beamgains.c programs/fitsio.a
+	$(CC) $(CFLAGS) -lm -o beamgains beamgains.c programs/fitsLib.a
 	mv beamgains $(BIN)
 
 beammodels: beammodels.c beammodels.o common.o
-	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o beammodels common.o beammodels.c beammodelsmain.c programs/fitsio.a jsd/jsd_futil.o
+	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o beammodels common.o beammodels.c beammodelsmain.c programs/fitsLib.a jsd/jsd_futil.o
 	mv beammodels $(BIN)
 
 cleanmap: cleanmain.c 
-	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o cleanmap common.o beammodels.o fluxdata.o map.o grid.o cleanmain.c programs/fitsio.a jsd/jsd_futil.o
+	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o cleanmap common.o beammodels.o fluxdata.o map.o grid.o cleanmain.c programs/fitsLib.a jsd/jsd_futil.o
 	mv cleanmap $(BIN)
 
 beammodels.o : beammodels.h beammodels.c
@@ -117,7 +117,7 @@ clean : empirical_clean
 empirical: empirical_determine empirical_apply empirical_intensity
 
 empirical_determine: empirical_determine.c
-	gcc -g -lm -o empirical_determine empirical_determine.c programs/fitsio.a
+	gcc -g -lm -o empirical_determine empirical_determine.c programs/fitsLib.a
 
 empirical_apply: empirical_apply.c
 	gcc -g -lm -o empirical_apply empirical_apply.c

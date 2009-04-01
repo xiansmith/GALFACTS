@@ -135,7 +135,7 @@ static void write_pointing(SpecRecord dataset[], int size, const char * fileroot
 	fprintf(file, "#RA DEC AST\n");
 	for (n=0; n<size; n++)
 	{
-		if (dataset[n].flagBAD) continue;
+//		if (dataset[n].flagBAD) continue; TODO:Look for validity with more detail later
 
 		fprintf(file, "%7.6f %7.6f %7.2f\n",
 			dataset[n].RA/15.0, dataset[n].DEC, dataset[n].AST);

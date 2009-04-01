@@ -1,10 +1,14 @@
 #!/bin/bash
-#change the 7 items below suitably
+#change the 12 items below suitably
 #executables directory
 BINDIR=/export/cheetah2/people/sguram/wasim_data/galfacts/src/bin
 #location of the data files
 OBSDIR=/export/cheetah2/people/sguram/wasim_data/data
-SMOOTH=0 #parameter to do hanning smoothing (1) or not (0)
+SMOOTH=0 #parameter to do hanning smoothing (1) or not (0)i
+NUMSIGMA=5 #sigma value for rfi detection
+NUMSIGMATHRESH=100 #sgima threshold for rfi detection
+IGNOREA_LOW=0 #lower channel number for the spectral line to ignore during rfi detection
+IGNOREA_HIGH=0 #higher channel number for the spectral line to ignore during rfi detection
 PROJ="A2303" #filename prefix for the .spec files
 MAX_CHANNELS=2048 #number of channels in the data
 days="54773 54774 54778" #list of days
@@ -41,7 +45,7 @@ if [ "$PROCESS_SPEC" = 1 ]; then
 echo "Processing files"
 for dir in $days 
 do
-	$PROG $OBSDIR/$dir/$PROJ*.beam${beam}*.$dir.spec $SMOOTH 
+	$PROG $OBSDIR/$dir/$PROJ*.beam${beam}*.$dir.spec $SMOOTH $NUMSIGMA $NUMSIGMATHRESH $IGNOREA_LOW $IGNOREA_HIGH 
 done
 fi
 

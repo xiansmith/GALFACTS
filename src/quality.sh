@@ -1,12 +1,15 @@
 #!/bin/bash
 #change the 7 items below suitably
-BINDIR=/u/ricci/testcode/bin #executables directory
-OBSDIR=/n/ras1/projects/galfacts/A2186 #location of the data files
+#executables directory
+BINDIR=/export/cheetah2/people/sguram/wasim_data/galfacts/src/bin
+#location of the data files
+OBSDIR=/export/cheetah2/people/sguram/wasim_data/data
 SMOOTH=0 #parameter to do hanning smoothing (1) or not (0)
-PROJ="A2186.igalfa_a" #filename prefix for the .spec files
+PROJ="A2303" #filename prefix for the .spec files
 MAX_CHANNELS=2048 #number of channels in the data
-days="54590 54591 54628" #list of days
+days="54773 54774 54778" #list of days
 beams="0 1 2 3 4 5 6" #list of beams
+RFI_XRANGE="[1365:1465]" #the band
 
 PROG=$BINDIR/spec2fits #executable name for producing text tables from the .spec files
 PLOT=.plot #temp file name
@@ -43,23 +46,18 @@ done
 fi
 
 #determine plotting ranges from the data 
-#RA_MIN=`grep -v '^#' *beam${beam}*.$dir.spec_pointing.dat | sort -n -k 1 | head -1 | awk '{print $1}'`
-#RA_MAX=`grep -v '^#' *beam${beam}*.$dir.spec_pointing.dat | sort -n -k 1 | tail -1 | awk '{print $1}'`
-RA_MIN=17.0
-RA_MAX=20.2
+RA_MIN=`grep -v '^#' *beam${beam}*.$dir.spec_pointing.dat | sort -n -k 1 | head -1 | awk '{print $1}'`
+RA_MAX=`grep -v '^#' *beam${beam}*.$dir.spec_pointing.dat | sort -n -k 1 | tail -1 | awk '{print $1}'`
 RA_RANGE="[$RA_MIN:$RA_MAX]"
 echo RA Range: $RA_RANGE
 
-#DEC_MIN=`grep -v '^#' *beam${beam}*.$dir.spec_pointing.dat | sort -n -k 2 | head -1 | awk '{print $2}'`
-#DEC_MAX=`grep -v '^#' *beam${beam}*.$dir.spec_pointing.dat | sort -n -k 2 | tail -1 | awk '{print $2}'`
-DEC_MIN=-1.5
-DEC_MAX=8.5
+DEC_MIN=`grep -v '^#' *beam${beam}*.$dir.spec_pointing.dat | sort -n -k 2 | head -1 | awk '{print $2}'`
+DEC_MAX=`grep -v '^#' *beam${beam}*.$dir.spec_pointing.dat | sort -n -k 2 | tail -1 | awk '{print $2}'`
 DEC_RANGE="[$DEC_MIN:$DEC_MAX]"
 echo DEC Range: $DEC_RANGE
 
 BANDAVG_YRANGE="[0.6:2.0]"
 TIMEAVG_YRANGE="[0:2.0]"
-RFI_XRANGE="[1365:1465]"
 CALAVG_YRANGE="[-0.1:0.1]"
 
 #create the pointing plots

@@ -6,7 +6,7 @@
 #include "spec.h"
 #include "smooth.h"
 #include "rfi.h"
-#include "programs/fitsio.h"
+#include "programs/fitsLib.h"
 #include "markdata.h"
 #include <math.h>
 
@@ -43,7 +43,7 @@ static float compute_sigma(float data[], int size, float avg)
 	for (i=0; i<size; i++) {
 		if (isnormal(data[i])) {
 			sum += SQR(data[i] - avg);
-			count++;	
+			count++;
 		}
 	}
 	return (float) sqrt(sum / (count-1) );
@@ -84,7 +84,7 @@ static void strnsub (char * dest, const char * src, int start, int end, int max)
 }
 
 
-/* get the filename from the file path out of the filename 
+/* get the filename from the file path out of the filename
  */
 static int get_name_from_filepath(char * name, char * path, int max, const char * filepath)
 {
@@ -137,10 +137,10 @@ static void write_pointing(SpecRecord dataset[], int size, const char * fileroot
 	{
 		if (dataset[n].flagBAD) continue;
 
-		fprintf(file, "%7.6f %7.6f %7.2f\n", 
+		fprintf(file, "%7.6f %7.6f %7.2f\n",
 			dataset[n].RA/15.0, dataset[n].DEC, dataset[n].AST);
 	}
-	
+
 	fclose(file);
 }
 
@@ -168,7 +168,7 @@ static void write_band_average(SpecRecord dataset[], int size, const char * file
 		memset(&avgcalon, 0, sizeof(PolAvg));
 		memset(&avgcaloff, 0, sizeof(PolAvg));
 		count = 0;
-		for (chan=0; chan<MAX_CHANNELS; chan++) 
+		for (chan=0; chan<MAX_CHANNELS; chan++)
 		{
 			avgcalon.xx += dataset[n].calon.xx[chan];
 			avgcalon.xy += dataset[n].calon.xy[chan];
@@ -181,12 +181,12 @@ static void write_band_average(SpecRecord dataset[], int size, const char * file
 			count++;
 		}
 		if (count <= 0) continue;
-		fprintf(file, "%7.6f %7.6f %7.2f %7.6f %7.6f %7.6f %7.6f %7.6f %7.6f %7.6f %7.6f\n", 
+		fprintf(file, "%7.6f %7.6f %7.2f %7.6f %7.6f %7.6f %7.6f %7.6f %7.6f %7.6f %7.6f\n",
 			dataset[n].RA/15.0, dataset[n].DEC, dataset[n].AST,
-			avgcalon.xx/chan, avgcalon.xy/chan, avgcalon.yx/chan, avgcalon.yy/chan, 
+			avgcalon.xx/chan, avgcalon.xy/chan, avgcalon.yx/chan, avgcalon.yy/chan,
 			avgcaloff.xx/chan, avgcaloff.xy/chan, avgcaloff.yx/chan, avgcaloff.yy/chan );
 	}
-	
+
 	fclose(file);
 }
 
@@ -210,7 +210,7 @@ static void write_time_average(SpecRecord dataset[], int size, const char * file
 		int count = 0;
 		memset(&avgcalon, 0, sizeof(PolAvg));
 		memset(&avgcaloff, 0, sizeof(PolAvg));
-		for (n=0; n<size; n++) 
+		for (n=0; n<size; n++)
 		{
 			avgcalon.xx += dataset[n].calon.xx[chan];
 			avgcalon.xy += dataset[n].calon.xy[chan];
@@ -222,11 +222,11 @@ static void write_time_average(SpecRecord dataset[], int size, const char * file
 			avgcaloff.yy += dataset[n].caloff.yy[chan];
 			count++;
 		}
-		fprintf(file, "%7.6f %7.6f %7.6f %7.6f %7.6f %7.6f %7.6f %7.6f\n", 
-			avgcalon.xx/count, avgcalon.xy/count, avgcalon.yx/count, avgcalon.yy/count, 
+		fprintf(file, "%7.6f %7.6f %7.6f %7.6f %7.6f %7.6f %7.6f %7.6f\n",
+			avgcalon.xx/count, avgcalon.xy/count, avgcalon.yx/count, avgcalon.yy/count,
 			avgcaloff.xx/count, avgcaloff.xy/count, avgcaloff.yx/count, avgcaloff.yy/count);
 	}
-	
+
 	fclose(file);
 }
 
@@ -256,16 +256,16 @@ static void write_rfi_data(SpecRecord dataset[], int size, const char * fileroot
 	rfi_detection(dataset, size, lowchan, highchan, numSigma, numSigmaThresh, ignoreA_low, ignoreA_high, 0, 0);
 	aerostat_rfi_blanking(dataset, size, lowchan, highchan);
 
-	for (n=0; n<size; n++) 
+	for (n=0; n<size; n++)
 	{
 		SpecRecord * pRec = &(dataset[n]);
 
 		//now that the channels are marked as RFI, write them out
-		for (chan=0; chan<MAX_CHANNELS; chan++) { 
+		for (chan=0; chan<MAX_CHANNELS; chan++) {
 		 	if (pRec->flagRFI[chan] != RFI_NONE) {
 				fprintf(file,
 					"%3i %9.6f %9.6f %9.6f %8.2f\n",
-					chan, fstart+df*chan, pRec->RA, pRec->DEC, pRec->AST);  
+					chan, fstart+df*chan, pRec->RA, pRec->DEC, pRec->AST);
 			}
 		}
 	}
@@ -308,7 +308,7 @@ static void write_raw_pol_fits(SpecRecord dataset[], int size, float fcen, float
 	hpar.crval[0] = fcen;		/* ref channel value*/
 	hpar.crval[1] = dataset[0].AST;	/* ref time value */
 	hpar.crval[2] = 0;		/* ref correlation value */
-	
+
 	hpar.crpix[0] = MAX_CHANNELS / 2;	/* start channel position */
 	hpar.crpix[1] = 0;			/* start time position */
 	hpar.crpix[2] = 0;			/* correlation start position */
@@ -330,20 +330,20 @@ static void write_raw_pol_fits(SpecRecord dataset[], int size, float fcen, float
 	}
 	writefits_header(file, &hpar);
 
-	for (n=0; n < size; n++) 
-		for (chan=0; chan<MAX_CHANNELS; chan++) 
+	for (n=0; n < size; n++)
+		for (chan=0; chan<MAX_CHANNELS; chan++)
 			data[n*MAX_CHANNELS+chan] = dataset[n].caloff.xx[chan];
 	writefits_plane(file, data, &hpar);
-	for (n=0; n < size; n++) 
-		for (chan=0; chan<MAX_CHANNELS; chan++) 
+	for (n=0; n < size; n++)
+		for (chan=0; chan<MAX_CHANNELS; chan++)
 			data[n*MAX_CHANNELS+chan] = dataset[n].caloff.xy[chan];
 	writefits_plane(file, data, &hpar);
-	for (n=0; n < size; n++) 
-		for (chan=0; chan<MAX_CHANNELS; chan++) 
+	for (n=0; n < size; n++)
+		for (chan=0; chan<MAX_CHANNELS; chan++)
 			data[n*MAX_CHANNELS+chan] = dataset[n].caloff.yx[chan];
 	writefits_plane(file, data, &hpar);
-	for (n=0; n < size; n++) 
-		for (chan=0; chan<MAX_CHANNELS; chan++) 
+	for (n=0; n < size; n++)
+		for (chan=0; chan<MAX_CHANNELS; chan++)
 			data[n*MAX_CHANNELS+chan] = dataset[n].caloff.yy[chan];
 	writefits_plane(file, data, &hpar);
 
@@ -360,20 +360,20 @@ static void write_raw_pol_fits(SpecRecord dataset[], int size, float fcen, float
 	}
 	writefits_header(file, &hpar);
 
-	for (n=0; n < size; n++) 
-		for (chan=0; chan<MAX_CHANNELS; chan++) 
+	for (n=0; n < size; n++)
+		for (chan=0; chan<MAX_CHANNELS; chan++)
 			data[n*MAX_CHANNELS+chan] = dataset[n].calon.xx[chan];
 	writefits_plane(file, data, &hpar);
-	for (n=0; n < size; n++) 
-		for (chan=0; chan<MAX_CHANNELS; chan++) 
+	for (n=0; n < size; n++)
+		for (chan=0; chan<MAX_CHANNELS; chan++)
 			data[n*MAX_CHANNELS+chan] = dataset[n].calon.xy[chan];
 	writefits_plane(file, data, &hpar);
-	for (n=0; n < size; n++) 
-		for (chan=0; chan<MAX_CHANNELS; chan++) 
+	for (n=0; n < size; n++)
+		for (chan=0; chan<MAX_CHANNELS; chan++)
 			data[n*MAX_CHANNELS+chan] = dataset[n].calon.yx[chan];
 	writefits_plane(file, data, &hpar);
-	for (n=0; n < size; n++) 
-		for (chan=0; chan<MAX_CHANNELS; chan++) 
+	for (n=0; n < size; n++)
+		for (chan=0; chan<MAX_CHANNELS; chan++)
 			data[n*MAX_CHANNELS+chan] = dataset[n].calon.yy[chan];
 	writefits_plane(file, data, &hpar);
 
@@ -454,7 +454,7 @@ static void write_noise_measurements(SpecRecord dataset[], int size, const char*
 		yyoff[n] = dataset[n].caloff.yy[chan];
 	}
 
-	for (n=0; n<size-1; n++) 
+	for (n=0; n<size-1; n++)
 	{
 		xxdiffon[n] = xxon[n] - xxon[n+1];
 		xxdiffoff[n] = xxoff[n] - xxoff[n+1];
@@ -492,11 +492,11 @@ static void write_noise_measurements(SpecRecord dataset[], int size, const char*
 
 
 static void process_dataset(const char * filepath, int beam, int smooth)
-{	
+{
 	FILE * datafile, *cfgfile;
 	int numRecords;
 	SpecRecord * dataset;
-	ConfigData cfgData;	
+	ConfigData cfgData;
 	float df;
 	float fcen;
 
@@ -510,8 +510,8 @@ static void process_dataset(const char * filepath, int beam, int smooth)
 	/* Open Datafile */
 	snprintf(datafilepath, 256, "%s", filepath);
 	if ( (datafile = fopen(datafilepath, "rb") ) == NULL )
-	{ 
-		printf("ERROR: can't open data file '%s'\n", datafilepath); 
+	{
+		printf("ERROR: can't open data file '%s'\n", datafilepath);
 		return;
 	}
 
@@ -519,8 +519,8 @@ static void process_dataset(const char * filepath, int beam, int smooth)
 	/* Open Configuration File */
 /*	snprintf(cfgfilepath, 256, "%s_cfg", filepath);
 	if ( (cfgfile = fopen(cfgfilepath, "r") ) == NULL )
-	{ 
-		printf("ERROR: can't open config file '%s'\n", cfgfilepath); 
+	{
+		printf("ERROR: can't open config file '%s'\n", cfgfilepath);
 		return;
 	}
 */
@@ -531,31 +531,31 @@ static void process_dataset(const char * filepath, int beam, int smooth)
 	fclose(cfgfile);
 */
 	/* calculate the channel frequencies */
-/*	fcen = cfgData.centerMHz; 
+/*	fcen = cfgData.centerMHz;
 	df = cfgData.bandwitdhkHz / MAX_CHANNELS / 1000;
 	printf ("center frequency: %fMHz\n", fcen);
 	printf("channel bandwidth: %fMHz\n", df);
 */
 	/* Read Datafile */
-	printf("reading data file %s ... \n", datafilepath);
+	printf("Reading data file %s\n", datafilepath);
 	numRecords = read_datafile(datafile, &dataset, beam);
 	fclose(datafile);
 	printf("Read %i records\n", numRecords);
 
 	if (numRecords <= 0) {
-		printf("ERROR: Skipping %s: there are no records!\n", datafilepath);
+		printf("ERROR: Skipping %s: there are no records\n", datafilepath);
 		return;
 	}
 
-	if (smooth) {	
-		printf("performing frequency smoothing ...\n");
+	if (smooth) {
+		printf("Performing frequency smoothing\n");
 		perform_freq_smoothing(dataset, numRecords, 0, MAX_CHANNELS);
 	}
 
 
 
 	get_name_from_filepath(filename, path, FILENAME_SIZE, filepath);
-//	printf("Filename: %s\n",filename);	
+//	printf("Filename: %s\n",filename);
 
 	snprintf(badfilepath, 256, "%s/bad_datapoints.dat", path);
 	mark_bad_datapoints(badfilepath, dataset, numRecords);
@@ -563,29 +563,29 @@ static void process_dataset(const char * filepath, int beam, int smooth)
 //	printf("writing raw data to fits ...\n");
 //	write_raw_pol_fits(dataset, numRecords, fcen, df, filename);
 
-	printf("writing rfi data ...\n");
+	printf("Writing rfi data\n");
 	write_rfi_data(dataset, numRecords, filename, fcen, df);
 
-	printf("writing pointing data ...\n");
+	printf("Writing pointing data\n");
 	write_pointing(dataset, numRecords, filename);
 
-	printf("writing band average data ...\n");
+	printf("Writing band average data\n");
 	write_band_average(dataset, numRecords, filename);
 
-	printf("writing time average data ...\n");
+	printf("Writing time average data\n");
 	write_time_average(dataset, numRecords, filename);
 
-	printf("writing noise measurements ...\n");
+	printf("Writing noise measurements\n");
 	write_noise_measurements(dataset, numRecords, filename, 90);
 
-	printf("done!\n");
+	printf("Done!\n");
 	free(dataset);
 	return;
 }
 
 
 
-/* get the beamid out of the filename 
+/* get the beamid out of the filename
  */
 static int get_beamid(const char * filename)
 {
@@ -623,12 +623,12 @@ int main(int argc, char *argv[])
 	int smooth;
 	char * filename;
 
-	if (argc != 3) 
+	if (argc != 3)
 	{
 		printf("Usage: %s <specfilename> <smooth>\n", argv[0]);
 		printf("eg: %s A2174.perpuls_08_00_025346+250905.beam0.53989.spec 1 \n", argv[0]);
 		return EXIT_FAILURE;
-	} 
+	}
 
 	filename = argv[1];
 	smooth = atoi(argv[2]);

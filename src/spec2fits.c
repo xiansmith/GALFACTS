@@ -526,7 +526,7 @@ static void process_dataset(const char * filepath, int beam, int smooth)
 
 
 	/* read config file */
-/	printf("Reading config file %s\n", cfgfilepath);
+	printf("Reading config file %s\n", cfgfilepath);
 	read_cfgfile(cfgfile, &cfgData);
 	fclose(cfgfile);
 

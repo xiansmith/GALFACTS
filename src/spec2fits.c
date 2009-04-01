@@ -517,25 +517,25 @@ static void process_dataset(const char * filepath, int beam, int smooth)
 
 
 	/* Open Configuration File */
-/*	snprintf(cfgfilepath, 256, "%s_cfg", filepath);
+	snprintf(cfgfilepath, 256, "%s_cfg", filepath);
 	if ( (cfgfile = fopen(cfgfilepath, "r") ) == NULL )
 	{
 		printf("ERROR: can't open config file '%s'\n", cfgfilepath);
 		return;
 	}
-*/
+
 
 	/* read config file */
-/*	printf("reading config file %s ... \n", cfgfilepath);
+/	printf("Reading config file %s\n", cfgfilepath);
 	read_cfgfile(cfgfile, &cfgData);
 	fclose(cfgfile);
-*/
+
 	/* calculate the channel frequencies */
-/*	fcen = cfgData.centerMHz;
+	fcen = cfgData.centerMHz;
 	df = cfgData.bandwitdhkHz / MAX_CHANNELS / 1000;
-	printf ("center frequency: %fMHz\n", fcen);
-	printf("channel bandwidth: %fMHz\n", df);
-*/
+	printf ("Center frequency: %fMHz\n", fcen);
+	printf("Channel bandwidth: %fMHz\n", df);
+
 	/* Read Datafile */
 	printf("Reading data file %s\n", datafilepath);
 	numRecords = read_datafile(datafile, &dataset, beam);
@@ -560,8 +560,8 @@ static void process_dataset(const char * filepath, int beam, int smooth)
 	snprintf(badfilepath, 256, "%s/bad_datapoints.dat", path);
 	mark_bad_datapoints(badfilepath, dataset, numRecords);
 
-//	printf("writing raw data to fits ...\n");
-//	write_raw_pol_fits(dataset, numRecords, fcen, df, filename);
+	printf("Writing raw data to fits\n");
+	write_raw_pol_fits(dataset, numRecords, fcen, df, filename);
 
 	printf("Writing rfi data\n");
 	write_rfi_data(dataset, numRecords, filename, fcen, df);

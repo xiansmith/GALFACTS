@@ -230,14 +230,10 @@ static void write_time_average(SpecRecord dataset[], int size, const char * file
 	fclose(file);
 }
 
-static void write_rfi_data(SpecRecord dataset[], int size, const char * fileroot, float fcen, float df)
+static void write_rfi_data(SpecRecord dataset[], int size, const char * fileroot, float fcen, float df, float numSigma, float numSigmaThresh, int ignoreA_low, int ignoreA_high)
 {
-	float numSigma = 4.5;
-	float numSigmaThresh = 100.0;
-	int ignoreA_low = 61;
-	int ignoreA_high = 64;
-	int lowchan = 25;
-	int highchan = 230;
+	int lowchan = 0;
+	int highchan = MAX_CHANNELS;
 	int n, chan;
 	float fstart;
 	char filename[FILENAME_SIZE+1];
@@ -410,7 +406,7 @@ static void remove_spikes(float data[], int N, float nsigma)
 	} while (repeat);
 }
 
-static void write_noise_measurements(SpecRecord dataset[], int size, const char* fileroot, int chan)
+static void write_noise_measurements(SpecRecord dataset[], int size, const char* fileroot, int chan, float numsigma)
 {
 	int n, i;
 	char filename[FILENAME_SIZE+1];
@@ -462,10 +458,10 @@ static void write_noise_measurements(SpecRecord dataset[], int size, const char*
 		yydiffoff[n] = yyoff[n] - yyoff[n+1];
 	}
 
-	remove_spikes(xxdiffon, size-1, 5);
-	remove_spikes(xxdiffoff, size-1, 5);
-	remove_spikes(yydiffon, size-1, 5);
-	remove_spikes(yydiffoff, size-1, 5);
+	remove_spikes(xxdiffon, size-1, numsigma);
+	remove_spikes(xxdiffoff, size-1, numsigma);
+	remove_spikes(yydiffon, size-1, numsigma);
+	remove_spikes(yydiffoff, size-1, numsigma);
 
 	fprintf(file, "#xxon xxdiffon xxoff xxdiffoff yyon yydiffon yyoff yydiffoff\n");
 	for (i=0; i<8; i++) {
@@ -491,7 +487,7 @@ static void write_noise_measurements(SpecRecord dataset[], int size, const char*
 }
 
 
-static void process_dataset(const char * filepath, int beam, int smooth)
+static void process_dataset(const char * filepath, int beam, int smooth, float numsigma, float numsigmathresh, int ignoreA_low, int ignoreA_high)
 {
 	FILE * datafile, *cfgfile;
 	int numRecords;
@@ -564,7 +560,7 @@ static void process_dataset(const char * filepath, int beam, int smooth)
 	write_raw_pol_fits(dataset, numRecords, fcen, df, filename);
 
 	printf("Writing rfi data\n");
-	write_rfi_data(dataset, numRecords, filename, fcen, df);
+	write_rfi_data(dataset, numRecords, filename, fcen, df,numsigma, numsigmathresh, ignoreA_low, ignoreA_high);
 
 	printf("Writing pointing data\n");
 	write_pointing(dataset, numRecords, filename);
@@ -575,8 +571,8 @@ static void process_dataset(const char * filepath, int beam, int smooth)
 	printf("Writing time average data\n");
 	write_time_average(dataset, numRecords, filename);
 
-	printf("Writing noise measurements\n");
-	write_noise_measurements(dataset, numRecords, filename, 90);
+//	printf("Writing noise measurements\n");
+//	write_noise_measurements(dataset, numRecords, filename, 100, numsigma);
 
 	printf("Done!\n");
 	free(dataset);
@@ -621,25 +617,32 @@ int main(int argc, char *argv[])
 {
 	int beamid;
 	int smooth;
+	float numsigma;
+	float numsigmathresh;
+	int ignoreA_low;
+	int ignoreA_high;
 	char * filename;
 
-	if (argc != 3)
+	if (argc != 7)
 	{
-		printf("Usage: %s <specfilename> <smooth>\n", argv[0]);
-		printf("eg: %s A2174.perpuls_08_00_025346+250905.beam0.53989.spec 1 \n", argv[0]);
+		printf("Usage: %s <specfilename> <smooth> <numsigma> <numsigmathresh> <ignoreA_low> <ignoreA_high>\n", argv[0]);
+		printf("eg: %s A2174.perpuls_08_00_025346+250905.beam0.53989.spec 1 5 90 875 890\n", argv[0]);
 		return EXIT_FAILURE;
 	}
 
 	filename = argv[1];
 	smooth = atoi(argv[2]);
-//	beamid = atoi(argv[3]);
+	numsigma = atof(argv[3]);
+	numsigmathresh = atof(argv[4]);
+	ignoreA_low = atoi(argv[5]);
+	ignoreA_high = atoi(argv[6]);
 
 	beamid = get_beamid(filename);
 	if (beamid < 0) {
 		return EXIT_FAILURE;
 	}
 	printf("Beam:%d\n",beamid);
-	process_dataset(filename, beamid, smooth);
+	process_dataset(filename, beamid, smooth, numsigma, numsigmathresh, ignoreA_low, ignoreA_high);
 	return EXIT_SUCCESS;
 }
 

@@ -460,7 +460,7 @@ int main(int argc,char* argv[])
 				{
 					spointing_htls[h].outerBeams[beam-1].raj_true_in_hours=c1.crval2/15 + h*(c2.crval2-c1.crval2)*(2*htls_time_comp)/(DUMPS_PER_ROW)/15;
 					spointing_htls[h].outerBeams[beam-1].decj_true_in_degrees=c1.crval3 + h*(c2.crval3-c1.crval3)*(2*htls_time_comp)/(DUMPS_PER_ROW);
-					spointing_htls[h].centralBeam`.atlantic_solar_time_now_in_sec=\
+					spointing_htls[h].centralBeam.atlantic_solar_time_now_in_sec=\
 					c1.lst + h*(c2.lst-c1.lst)*(2*htls_time_comp)/(DUMPS_PER_ROW);
 				}			
 

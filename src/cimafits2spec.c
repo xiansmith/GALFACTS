@@ -66,7 +66,7 @@ int main(int argc,char* argv[])
 	char *crow_id;
 	if(argc !=11)
 	{
-		printf("usage: cimafits2spec <proj_code> <date> <beam> <band>\n <datadir> <num_files> <start_file nnnnn> <crow_id>\n <htls_spec_comp> <lths_time_comp>");
+		printf("usage: cimafits2spec <proj_code> <date> <beam> <band> <datadir> <num_files> <start_file nnnnn> <crow_id> <htls_spec_comp> <lths_time_comp>\n");
 		return 0;
 	}
 	else

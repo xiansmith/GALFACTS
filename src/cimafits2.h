@@ -53,6 +53,9 @@ http://www2.naic.edu/~tghosh/a1947/continuum_pointing.inc
  *
  *
  * $Log$
+ * Revision 1.6  2009/04/08 23:28:10  sguram
+ * TRIVIAL: changed the RAW_CHANNELS and DUMPS_PER_ROW to more typical values. TODO: Need a config file for that.
+ *
  * Revision 1.5  2009/02/26 21:39:50  sguram
  * removed the nSpec structures, since code has been made compatible with the Spec structures.
  *
@@ -90,10 +93,8 @@ http://www2.naic.edu/~tghosh/a1947/continuum_pointing.inc
 
 #define MAIN_HEADER 2880
 #define BINTABLE_HEADER 20*2880
-#define DUMPS_PER_ROW 600
-#define RAW_CHANNELS 4096
-#define DEC_MAX 37.7666
-#define DEC_MIN 19.5666
+#define DUMPS_PER_ROW 500
+#define RAW_CHANNELS 2048
 
 /*  Comment-format:       unit format comment */
 typedef struct  {

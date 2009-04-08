@@ -216,6 +216,8 @@ int main(int argc,char* argv[])
 			return 0;
 		}
 		printf("Opened the datafile:%s\n",datafilename);
+		printf("Dumps per row: %d\n",DUMPS_PER_ROW);
+		printf("Number of channels: %d\n",RAW_CHANNELS);
 		if(f==0)
 				fprintf(calfile,"%s: ",datafilename);	
 		do

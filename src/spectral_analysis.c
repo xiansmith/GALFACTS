@@ -9,15 +9,23 @@
 
 int multibeam;
 
-static void print_usage()
+static void print_usage(char *prog)
 {
-	printf(
-	"\tbeam<n> - the beam string (e.g. beam0, beam1, multibeam)\n"
-	"\tlowchan, highchan - the channel range to use\n"
-	"\tdecmin, decmax - the Declination range in degrees\n"
-	"\tnum_bins - the number of bins\n"
-	"\tnsigma - the number of sigmas to use for source clipping\n"
-	"\n");
+	printf("USAGE:\n"
+	"%s <beam[n]> <lowchan> <highchan> <decmin> <decmax> <num_bins> <nsigma>\n\n"
+	"Description of command line arguments:\n"
+	"beam<n> - the beam string (e.g. beam0, beam1, multibeam)\n"
+	"lowchan, highchan - the channel range to use\n"
+	"decmin, decmax - the Declination range in degrees\n"
+	"num_bins - the number of bins\n"
+	"nsigma - the number of sigmas to use for source clipping\n"
+	"\n",prog);
+	printf("\tThe program writes out per beam per stokes binned spectral data files. The sources are rejected based \
+on the sigma width entered by the user. The output file format is one row per channel, with each row \
+containing the channel number then a space followed by avg value of the first declination bin and so on. \
+The files are ascii and can be opened with any regular text editor. \
+Rerunning the program appends to existing datafiles, so those need to be moved or deleted before running \
+this program again.\n\n");
 }
 
 static void compute_clean_bins (double **binarrayX, int *countX, double *binX, int num_bins, float nsigma, int *outliercounts)
@@ -220,7 +228,7 @@ int main(int argc, char * argv[])
 	/* Process command line arguments */ 
 	if (argc != 8) 
 	{
-		print_usage();
+		print_usage(argv[0]);
 		return EXIT_FAILURE;
 	} 
 	else 

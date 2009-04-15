@@ -38,8 +38,8 @@ spec2fits: spec2fits.c common.o smooth.o spec.o rfi.o markdata.o
 	cp spec2fits $(BIN)
 
 spectral_analysis: spectral_analysis.c stats.o fluxdata.o common.o jsd/jsd_futil.o
-        $(CC) $(CFLAGS) -lm -o spectral_analysis stats.o fluxdata.o common.o jsd/jsd_futil.o spectral_analysis.c
-        cp spectral_analysis $(BIN)
+	$(CC) $(CFLAGS) -lm -o spectral_analysis stats.o fluxdata.o common.o jsd/jsd_futil.o spectral_analysis.c
+	cp spectral_analysis $(BIN)
 
 spectra: spectramain.o common.o spec.o
 	$(CC) $(CFLAGS) -lm -o spectra common.o spec.o spectramain.o
@@ -64,8 +64,8 @@ fitscat: fitscat.c programs/fitsio.a
 	$(CC) $(CFLAFGS) -lm -o fitscat fitscat.c programs/fitsLib.a
 	mv fitscat $(BIN)
 
-dtm2spec: dtm2spec.c
-	$(CC) $(CFLAGS) -I. -lm -o dtm2spec dtm2spec.c
+dtm2spec: dtm2spec.c dtm2spec.h jsd/jsd_futil.o
+	$(CC) $(CFLAGS) -I. -lm -o dtm2spec dtm2spec.c jsd/jsd_futil.o
 	cp dtm2spec $(BIN)
 
 cimafits2spec: cimafits2spec.c cimafits2.h

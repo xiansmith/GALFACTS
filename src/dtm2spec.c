@@ -3,37 +3,38 @@
 #include "galfactsLib.h"
 #include "spec.h"
 #include "dtm2spec.h"
+#include "jsd/jsd_futil.h"
 
 #define MAX_ROWS 109
 static inline void cnvrt_end_sint(short int *x)
 {
 	short int result;
-	((unsigned char*)&result)[0] = ((unsigned char*)x)[1];	
-	((unsigned char*)&result)[1] = ((unsigned char*)x)[0];	
+	((unsigned char*)&result)[0] = ((unsigned char*)x)[1];
+	((unsigned char*)&result)[1] = ((unsigned char*)x)[0];
 	*x = result;
 }
 
 static inline void cnvrt_end_int(int *x)
 {
 	int result;
-	((unsigned char*)&result)[0] = ((unsigned char*)x)[3];	
-	((unsigned char*)&result)[1] = ((unsigned char*)x)[2];	
-	((unsigned char*)&result)[2] = ((unsigned char*)x)[1];	
-	((unsigned char*)&result)[3] = ((unsigned char*)x)[0];	
+	((unsigned char*)&result)[0] = ((unsigned char*)x)[3];
+	((unsigned char*)&result)[1] = ((unsigned char*)x)[2];
+	((unsigned char*)&result)[2] = ((unsigned char*)x)[1];
+	((unsigned char*)&result)[3] = ((unsigned char*)x)[0];
 	*x = result;
 }
 
 static inline void cnvrt_end_db(double *x)
 {
 	double result;
-	((unsigned char*)&result)[0] = ((unsigned char*)x)[7];	
-	((unsigned char*)&result)[1] = ((unsigned char*)x)[6];	
-	((unsigned char*)&result)[2] = ((unsigned char*)x)[5];	
-	((unsigned char*)&result)[3] = ((unsigned char*)x)[4];	
-	((unsigned char*)&result)[4] = ((unsigned char*)x)[3];	
-	((unsigned char*)&result)[5] = ((unsigned char*)x)[2];	
-	((unsigned char*)&result)[6] = ((unsigned char*)x)[1];	
-	((unsigned char*)&result)[7] = ((unsigned char*)x)[0];	
+	((unsigned char*)&result)[0] = ((unsigned char*)x)[7];
+	((unsigned char*)&result)[1] = ((unsigned char*)x)[6];
+	((unsigned char*)&result)[2] = ((unsigned char*)x)[5];
+	((unsigned char*)&result)[3] = ((unsigned char*)x)[4];
+	((unsigned char*)&result)[4] = ((unsigned char*)x)[3];
+	((unsigned char*)&result)[5] = ((unsigned char*)x)[2];
+	((unsigned char*)&result)[6] = ((unsigned char*)x)[1];
+	((unsigned char*)&result)[7] = ((unsigned char*)x)[0];
 	*x = result;
 }
 
@@ -44,12 +45,15 @@ int main(int argc,char* argv[])
 	char *proj_code;
 	char *date;
 	char *datadir;
+	char *filelistname;
 	int band;
 	int start_file;
-	
-	if(argc !=8)
+	int config_not_written=1;
+
+
+	if(argc !=7)
 	{
-		printf("usage: dtm2spec <proj_code> <date> <band> <beam> <datadir> <start_file nnnnn> <num_files>\n");
+		printf("usage: dtm2spec <proj_code> <date> <band> <beam> <datadir> <filelist>\n");
 		return 0;
 	}
 	else
@@ -59,23 +63,22 @@ int main(int argc,char* argv[])
 		band = atoi(argv[3]);
 		beam = atoi(argv[4]);
 		datadir = argv[5];
-                start_file = atoi(argv[6]);
-		num_files = atoi(argv[7]);
+ 		filelistname = argv[6];
 	}
 
-	FILE *datafile,*specfile;
-	char datafilename[100+1],specfilename[40+1];
-	
-	sprintf(specfilename,"%s.%s.b%1ds%1d.spec",proj_code,date,beam,band);
+	FILE *datafile,*specfile,*cfg_file,*listfile;
+	char datafilename[100+1],specfilename[40+1],cfgfilename[40+1];
+	listfile = fopen(filelistname,"r");
+	num_files = jsd_line_count(listfile);
+	printf("Number of files to be processed:%d\n",num_files);
+
+	sprintf(specfilename,"%s.%s.b%1ds%1d.lths.spec",proj_code,date,beam,band);
 	if ( (specfile = fopen(specfilename, "wb") ) == NULL )
-	{ 
+	{
 		printf("ERROR: can't open data file for writing '%s'\n", specfilename);
 		return 0;
 	}
 
-	printf("Size of row struct: %ld\n",sizeof(GFLIB_ROW));
-	printf("Size of data struct: %ld\n",sizeof(GFLIB_DATA));
-	printf("Size of stat struct: %ld\n",sizeof(GFLIB_PDEVSTAT));
 	char buf[LINELEN+1];
 	long int offset = MAIN_HEADER + BINTABLE_HEADER;
 	int f,g,k,l,found = FALSE;
@@ -83,20 +86,20 @@ int main(int argc,char* argv[])
 	{
 		int naxis1,naxis2;
 		GFLIB_ROW row1,row2;
-		SpecPointingBlock SPBlock;	
+		SpecPointingBlock SPBlock;
 		float Aon[MAX_CHANNELS],Aoff[MAX_CHANNELS],Bon[MAX_CHANNELS],Boff[MAX_CHANNELS];
 		float XXon[MAX_CHANNELS],XXoff[MAX_CHANNELS],YYon[MAX_CHANNELS],YYoff[MAX_CHANNELS];
 		float Uon[MAX_CHANNELS],Uoff[MAX_CHANNELS],Von[MAX_CHANNELS],Voff[MAX_CHANNELS];
 		float XYon[MAX_CHANNELS],XYoff[MAX_CHANNELS],YXon[MAX_CHANNELS],YXoff[MAX_CHANNELS];
 
-		sprintf(datafilename,"%s/%s_dtm.%s.b%1ds%1dg0.%.5d.fits",datadir,proj_code,date,beam,band,start_file+f);
+		fscanf(listfile,"%s",datafilename);
 		if ( (datafile = fopen(datafilename, "r") ) == NULL )
-		{ 
+		{
 			printf("ERROR: can't open data file for reading '%s'\n", datafilename);
 			return 0;
 		}
 		printf("Opened the datafile:%s\n",datafilename);
-	
+
 		do
 		{
 			fread(buf,sizeof(char),LINELEN,datafile);
@@ -108,7 +111,7 @@ int main(int argc,char* argv[])
 				found = TRUE;
 			}
 		}while(!found);
-	
+
 		found = FALSE;
 		do
 		{
@@ -129,32 +132,76 @@ int main(int argc,char* argv[])
 			fseek(datafile,offset+g*naxis1,SEEK_SET);
 			fread(&row1,sizeof(GFLIB_ROW),1,datafile);
 			fread(&row2,sizeof(GFLIB_ROW),1,datafile);
-			if(!g)
-			{
-				cnvrt_end_db(&row1.cf);
-				cnvrt_end_db(&row1.fdelt);
-				printf("Center Frequency (MHz): %f\n",row1.cf/1000000);
-				printf("Channel Width (kHz): %f\n",row1.fdelt/1000);
-			}
 
 			cnvrt_end_db(&row1.RA);
 			cnvrt_end_db(&row2.RA);
 			cnvrt_end_db(&row1.DEC);
 			cnvrt_end_db(&row2.DEC);
-			cnvrt_end_db(&row1.AST);
-			cnvrt_end_db(&row2.AST);
+			cnvrt_end_db(&row1.lst);
+			cnvrt_end_db(&row2.lst);
+			cnvrt_end_db(&row1.mjdxxobs);
+			cnvrt_end_db(&row1.azimuth);
+			cnvrt_end_db(&row1.elevatio);
+			cnvrt_end_db(&row2.azimuth);
+			cnvrt_end_db(&row2.elevatio);
+			cnvrt_end_db(&row1.req_raj);
+			cnvrt_end_db(&row1.req_decj);
+			cnvrt_end_db(&row2.req_raj);
+			cnvrt_end_db(&row2.req_decj);
+			cnvrt_end_db(&row1.alfa_ang);
 
-//			printf("RA: %f,DEC: %f,AST: %f\n",row1.RA,row1.DEC,row1.AST);
+			if(config_not_written)
+			{
+				sprintf(cfgfilename,"%s.%s.b%ds%d.lths.spec_cfg",proj_code,date,beam,band);
+				if ( (cfg_file = fopen(cfgfilename, "w") ) == NULL )
+				{
+					printf("ERROR: can't open config file '%s'\n", cfgfilename);
+					return 0;
+				}
+
+				cnvrt_end_db(&row1.tdelt);
+				fprintf(cfg_file,"%f\n",row1.tdelt);
+				fprintf(cfg_file,"%i\n",RAW_CHANNELS);
+				cnvrt_end_db(&row1.cf);
+				fprintf(cfg_file,"%f\n",row1.cf/1000000);
+				cnvrt_end_db(&row1.fdelt);
+				fprintf(cfg_file,"%f\n",-1*row1.fdelt/1000);
+				fprintf(cfg_file,"1 %i 4 2 0\n",RAW_CHANNELS);
+				fprintf(cfg_file,"%s\n",proj_code);
+				fprintf(cfg_file,"%f\n",row1.mjdxxobs);
+				fprintf(cfg_file,"AO\n");
+				fprintf(cfg_file,"Integration time (ms):%f\n",row1.tdelt*1000);
+				fprintf(cfg_file,"MJD: %f\n",row1.mjdxxobs);
+				fprintf(cfg_file,"Center freq (MHz): %f\n",row1.cf/1000000);
+				fprintf(cfg_file,"Channel band (kHz): %f\n",-1*row1.fdelt/1000);
+				fprintf(cfg_file,"Number of channels/record: %d\n",RAW_CHANNELS);
+				fprintf(cfg_file,"RA at start (degrees): %f\n",row1.RA);
+				fprintf(cfg_file,"DEC at start (degrees): %f\n",row1.DEC);
+				fprintf(cfg_file,"LST at start (seconds): %f\n",row1.lst);
+				fprintf(cfg_file,"ALFA angle (degrees) at start: %f\n",row1.alfa_ang);
+				fprintf(cfg_file,"Project ID: %s\n",proj_code);
+				fclose(cfg_file);
+				config_not_written = 0;
+			}
+
 			for(k=0;k<DUMPS_PER_ROW;k++)
 			{
-				SPBlock.centralBeam.raj_true_in_hours=(row1.RA + k*(row2.RA-row1.RA)/DUMPS_PER_ROW)/15;
-				SPBlock.centralBeam.decj_true_in_degrees=(row1.DEC + k*(row2.DEC-row1.DEC)/DUMPS_PER_ROW);
-				SPBlock.centralBeam.atlantic_solar_time_now_in_sec=\
-				(row1.AST+k*(row2.AST-row1.AST)/DUMPS_PER_ROW);
-
+				if(!beam)
+				{
+					SPBlock.centralBeam.raj_true_in_hours=row1.RA/15 + k*(row2.RA-row1.RA)/(DUMPS_PER_ROW)/15;
+					SPBlock.centralBeam.decj_true_in_degrees=row1.DEC + k*(row2.DEC-row1.DEC)/(DUMPS_PER_ROW);
+					SPBlock.centralBeam.atlantic_solar_time_now_in_sec=\
+					row1.lst + k*(row2.lst-row1.lst)/(DUMPS_PER_ROW);
+				}
+				else
+				{
+					SPBlock.outerBeams[beam-1].raj_true_in_hours=row1.RA/15 + k*(row2.RA-row1.RA)/(DUMPS_PER_ROW)/15;
+					SPBlock.outerBeams[beam-1].decj_true_in_degrees=row1.DEC + k*(row2.DEC-row1.DEC)/(DUMPS_PER_ROW);
+					SPBlock.centralBeam.atlantic_solar_time_now_in_sec=\
+					row1.lst + k*(row2.lst-row1.lst)/(DUMPS_PER_ROW);
+				}
 				cnvrt_end_sint(&row1.staton[k].fftAccum);
 				cnvrt_end_sint(&row1.statoff[k].fftAccum);
-				
 				fwrite(&SPBlock,sizeof(SpecPointingBlock),1,specfile);
 				for(l=0;l<RAW_CHANNELS;l++)
 				{
@@ -193,10 +240,9 @@ int main(int argc,char* argv[])
 //					XYoff[l] = Uoff[l];
 //					YXon[l] = Von[l];
 //					YXoff[l] = Voff[l];
-					
-					
-				}//l loop for each channel
 
+
+				}//l loop for each channel
 				fwrite(&XXon,sizeof(float),MAX_CHANNELS,specfile);
 				fwrite(&YYon,sizeof(float),MAX_CHANNELS,specfile);
 				fwrite(&XYon,sizeof(float),MAX_CHANNELS,specfile);
@@ -208,7 +254,7 @@ int main(int argc,char* argv[])
 			}//k loop num dumps
 			cnvrt_end_db(&row2.RA);
 			cnvrt_end_db(&row2.DEC);
-			cnvrt_end_db(&row2.AST);
+			cnvrt_end_db(&row2.lst);
 
 		}//naxis2 loop g
 		fclose(datafile);

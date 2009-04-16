@@ -160,12 +160,12 @@ int main(int argc,char* argv[])
 				}
 
 				cnvrt_end_db(&row1.tdelt);
-				fprintf(cfg_file,"%f\n",row1.tdelt);
+				fprintf(cfg_file,"%f\n",row1.tdelt*1000);
 				fprintf(cfg_file,"%i\n",RAW_CHANNELS);
 				cnvrt_end_db(&row1.cf);
 				fprintf(cfg_file,"%f\n",row1.cf/1000000);
 				cnvrt_end_db(&row1.fdelt);
-				fprintf(cfg_file,"%f\n",-1*row1.fdelt/1000);
+				fprintf(cfg_file,"%f\n",-1*row1.fdelt*RAW_CHANNELS/1000);
 				fprintf(cfg_file,"1 %i 4 2 0\n",RAW_CHANNELS);
 				fprintf(cfg_file,"%s\n",proj_code);
 				fprintf(cfg_file,"%f\n",row1.mjdxxobs);

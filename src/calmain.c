@@ -23,17 +23,17 @@ static int read_tcal(const char * filename, float * Tcalx, float * Tcaly)
     char line[80+1];
     char * tok;
 //	const int START_CHAN = 30; //TODO: this is a hack for the start channel number
-    
+
     file = fopen(filename, "r");
     if (file == NULL) {
         printf("ERROR: unable to open file %s\n", filename);
         return -1;
     }
-    
+
     fgets(line, 80, file);
     p = 0;
     do {
-        if (line[0] != '#') 
+        if (line[0] != '#')
         {
             tok = strtok(line, " ");
             Tcalx[p] = atof(tok);
@@ -42,10 +42,10 @@ static int read_tcal(const char * filename, float * Tcalx, float * Tcaly)
             //printf("%f, %f\n", Tcalx[p], Tcaly[p]);
             p++;
         }
-        
+
         fgets(line, 80, file);
     } while (!feof(file));
-    
+
     fclose(file);
     return p;
 }
@@ -61,7 +61,7 @@ void write_cal_fits(SpecRecord dataset[], int size, float fcen, float df, int lo
 	const char * calyyfile = "calyy2.fits";
 	const char * calxyfile = "calxy2.fits";
 	const char * calyxfile = "calyx2.fits";
-	
+
 	printf("Requesting malloc for %ld bytes of memory\n",(highchan-lowchan) * size * sizeof(float));
 	float *caldataxx  = (float *) malloc ((highchan-lowchan) * size * sizeof(float));
 	if (caldataxx == NULL) {
@@ -115,7 +115,7 @@ void write_cal_fits(SpecRecord dataset[], int size, float fcen, float df, int lo
 	writefits_map (calyxfile, caldatayx, &hpar);
 	sprintf (hpar.object, "Calbration values for YY");
 	writefits_map (calyyfile, caldatayy, &hpar);
-	
+
 	free(caldataxx);
 	free(caldataxy);
 	free(caldatayx);
@@ -145,28 +145,28 @@ static void create_annotations(SpecRecord dataset[], int size)
 
 	//plot the starting dot as yellow
 	//TODO: perhaps this should be a circle
-	fprintf(annfile, "COLOUR %s\n", "YELLOW"); 
+	fprintf(annfile, "COLOUR %s\n", "YELLOW");
 	fprintf(annfile, "DOT W %7.4f %7.4f #%7.2f\n", dataset[0].RA, dataset[0].DEC, dataset[0].AST);
 
 	for (n=1; n<size-1; n++)
 	{
 		if (dataset[n].flagBAD) {
-			fprintf(annfile, "COLOUR %s\n", "RED"); 
+			fprintf(annfile, "COLOUR %s\n", "RED");
 		} else {
 			fprintf(annfile, "COLOUR %s\n", "GREEN");
 		}
-		fprintf(annfile, "DOT W %7.4f %7.4f #%7.2f\n", 
+		fprintf(annfile, "DOT W %7.4f %7.4f #%7.2f\n",
 			dataset[n].RA, dataset[n].DEC, dataset[n].AST);
 
 		//write a red circle around pointing ranges of change that are too high
 		h = (dataset[n+1].AST - dataset[n-1].AST) / 2;
 		secderiv = (dataset[n-1].DEC - 2*dataset[n].DEC + dataset[n+1].DEC) / (h*h);
-		if (fabs(secderiv) > 0.08) 
+		if (fabs(secderiv) > 0.08)
 		{
 			if (!found) { //so we only plot one circle per error
-				found = 1; 
-				fprintf(annfile, "COLOUR %s\n", "RED"); 
-				fprintf(annfile, "CIRCLE W %7.4f %7.4f %7.4f #%7.2f\n", 
+				found = 1;
+				fprintf(annfile, "COLOUR %s\n", "RED");
+				fprintf(annfile, "CIRCLE W %7.4f %7.4f %7.4f #%7.2f\n",
 					dataset[n].RA, dataset[n].DEC, 0.025, dataset[n].AST);
 				printf("WARN: DEC pointing error detected\n");
 			}
@@ -177,7 +177,7 @@ static void create_annotations(SpecRecord dataset[], int size)
 
 		/* no longer needed since it was fixed in the first stage processing
 		//correct for a known pointing error when dec does not change
-		if (dataset[n].DEC == dataset[n+1].DEC) 
+		if (dataset[n].DEC == dataset[n+1].DEC)
 		{
 			int limit = (n+10 < size) ? 10 : n+10-size;
 			double dec_change = (dataset[n+limit].DEC - dataset[n].DEC) / 10.0;
@@ -190,19 +190,19 @@ static void create_annotations(SpecRecord dataset[], int size)
 		*/
 	}
 	fprintf(annfile, "DOT W %7.4f %7.4f #%7.2f\n", dataset[n].RA, dataset[n].DEC, dataset[n].AST);
-	
+
 	fclose(annfile);
 }
 
 
 
 static void process_dataset(const char * datadirname, const char * datedir, const char * subdir, int beam, int band, float numSigma, float numSigmaThresh, int lowchan, int highchan, int tsmooth, int ignoreRFI, int rfiTolerance, int rfiSpan, int ignoreA_low, int ignoreA_high, float Tcalx[], float Tcaly[])
-{	
-	
+{
+
 	FILE * datafile, *cfgfile;
 	int numRecords;
 	SpecRecord * dataset;
-	ConfigData cfgData;	
+	ConfigData cfgData;
 	int i;
 	float df;
 	float freq[MAX_CHANNELS];
@@ -223,7 +223,7 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 		sprintf(globpattern, "%s/%s/*.*.beam%i.*.spec", datadirname, datedir, beam);
 	else
 		sprintf(globpattern, "%s/%s/*.*.b*%is*%i.*.spec", datadirname, datedir, beam, band);
-		
+
 	glob(globpattern, 0, NULL, &globbuf);
 	if (globbuf.gl_pathc < 1) {
 		printf("ERROR: unable to find file with pattern %s\n", globpattern);
@@ -232,11 +232,11 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 		printf("DIAGNOSTIC: found file %s \n", globbuf.gl_pathv[0]); //SSG
 
 	strncpy(datafilename, globbuf.gl_pathv[0], 128);
-	//globfree(&globbuf);	
+	//globfree(&globbuf);
 
 	if ( (datafile = fopen(datafilename, "rb") ) == NULL )
-	{ 
-		printf("ERROR: can't open data file '%s'\n", datafilename); 
+	{
+		printf("ERROR: can't open data file '%s'\n", datafilename);
 		return;
 	}
 
@@ -249,17 +249,17 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 		sprintf(globpattern, "%s/%s/*.*.beam%i.*.spec_cfg", datadirname, datedir, beam);
 	else
 		sprintf(globpattern, "%s/%s/*.*.b*%is*%i.*.spec_cfg", datadirname, datedir, beam, band);
-		
+
 	glob(globpattern, 0, NULL, &globbuf);
-	
+
 	if (globbuf.gl_pathc < 1) {
 		printf("ERROR: unable to find file with pattern %s\n", globpattern);
 	}
 	strncpy(cfgfilename, globbuf.gl_pathv[0], 128);
-	//globfree(&globfree);	
+	//globfree(&globfree);
 	if ( (cfgfile = fopen(cfgfilename, "r") ) == NULL )
-	{ 
-		printf("ERROR: can't open config file '%s'\n", cfgfilename); 
+	{
+		printf("ERROR: can't open config file '%s'\n", cfgfilename);
 		return;
 	}
 
@@ -270,12 +270,12 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 	fclose(cfgfile);
 
 	/* calculate the channel frequencies */
-	fcen = cfgData.centerMHz; 
+	fcen = cfgData.centerMHz;
 	df = cfgData.bandwitdhkHz / MAX_CHANNELS / 1000;
 	printf("Center frequency: %fMHz\n", fcen);
 	printf("Channel bandwidth: %fMHz\n", df);
 	for (i=0; i<MAX_CHANNELS; i++) {
-		freq[i] = fcen + ((float)(i - 127)) * df;
+		freq[i] = fcen + ((float)(i + 1 - MAX_CHANNELS/2)) * df;
 	}
 
 	/* read data file */
@@ -288,7 +288,7 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 		printf("ERROR: Skipping %s %s: there are no records!\n", datedir, subdir);
 		return;
 	}
-	
+
 
 	/* determine the field size */
 	maxRA = 0.0;
@@ -303,7 +303,7 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 		maxDEC = (pRec->DEC > maxDEC) ? pRec->DEC : maxDEC;
 	}
 	printf("Data ranges from RA (%f, %f) DEC (%f, %f)\n", minRA, maxRA, minDEC, maxDEC);
-	
+
 	/* mark bad datapoints */
 	sprintf(badfilename, "%s/%s/bad_datapoints.dat", datadirname, datedir);
 	printf("Marking bad data points\n");
@@ -318,7 +318,7 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 	printf("Performing frequency smoothing\n");
 	perform_freq_smoothing(dataset, numRecords, lowchan, highchan);
 
-	if (!ignoreRFI) 
+	if (!ignoreRFI)
 	{
 		/* Perform the RFI detection */
 		printf("Performing aerostat RFI blanking\n");
@@ -335,7 +335,7 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 
 	/* Write out the annotations */
 	printf("Creating annotations\n");
-	create_annotations(dataset, numRecords); 
+	create_annotations(dataset, numRecords);
 
 	/* Compute the cal values */
 	printf("Compute the raw values of cal\n");
@@ -410,8 +410,8 @@ int main(int argc, char *argv[])
 		<rfispan> \n", argv[0]);
 //		printf("eg: %s /n/swift2/galfacts/data/A1863/SPEC beam1 1 3.5 25 230 0 25 0 0 3.5 0.03 5 10\n", argv[0]);
 		return EXIT_FAILURE;
-	} 
-	else 
+	}
+	else
 	{
 		datadirname = argv[1];
 		subdir = argv[2];
@@ -438,7 +438,7 @@ int main(int argc, char *argv[])
 
 	//Handle the Tcal correction file
 	num_tcal = read_tcal(tcalfilename, Tcalx, Tcaly);
-	if (num_tcal < 0) 
+	if (num_tcal < 0)
 	{
 		printf("ERROR: unable to read %s\n", tcalfilename);
 		printf("Setting all Tcal parameters to 1.00\n");
@@ -449,9 +449,9 @@ int main(int argc, char *argv[])
 		}
 //		return EXIT_FAILURE;
 	}
-	else if (num_tcal < MAX_CHANNELS) 
+	else if (num_tcal < MAX_CHANNELS)
 	{
-		printf("ERROR: Only read %i factors from %s, but require %i\n", 
+		printf("ERROR: Only read %i factors from %s, but require %i\n",
 		num_tcal, tcalfilename, MAX_CHANNELS);
 		printf("Setting all Tcal parameters to 1.00\n");
 		for(i = 0;i < MAX_CHANNELS;i++)
@@ -460,19 +460,19 @@ int main(int argc, char *argv[])
 			Tcaly[i] = 1.0;
 		}
 //		return EXIT_FAILURE;
-	} 
-	else 
+	}
+	else
 	{
 		printf("Read %i factors from %s\n", num_tcal, tcalfilename);
 	}
 
 	printf("Channels (%i, %i]\n", lowchan, highchan);
-	
-	if (ignoreRFI) 
+
+	if (ignoreRFI)
 	{
 		printf("Ignoring RFI\n");
-	} 
-	else 
+	}
+	else
 	{
 		printf("RFI Tolerance: %i%%\n", rfiTolerance);
 		printf("RFI Spanning: %i\n", rfiSpan);
@@ -485,7 +485,7 @@ int main(int argc, char *argv[])
 	numdirs = get_date_dirs(datadirname, &datedirs);
 	printf("Found %i data directories in %s\n", numdirs, datadirname);
 	beamcounter = -1; //SSG
-	for (mjd=0; mjd<numdirs; mjd++) 
+	for (mjd=0; mjd<numdirs; mjd++)
 	{
 		const char * datedir = datedirs[mjd];
 		mode_t mode = S_IRWXU|S_IRWXG|S_IRWXO;

@@ -3,6 +3,7 @@
 #include <math.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 #include <dirent.h>
 #include <unistd.h>
 #include "fluxdata.h"
@@ -132,7 +133,7 @@ static void analyze_channel(FluxWappData *wappdata, int beam, float dec_min, flo
 	FILE * spectralfileQ;
 	FILE * spectralfileU;
 	FILE * spectralfileV;
-	char filename[32+1];
+	char filename[100+1];
 	float decgrain = (dec_max-dec_min)/num_bins; //actual grain (bin) size
 
 	//allocate requisite memory for data structures
@@ -227,7 +228,7 @@ int main(int argc, char * argv[])
 	float maxDEC,minDEC;
 	int i;
 	FILE * datafile;
-	char filename[32+1];
+	char filename[100+1];
 	int binsize = 0;
 
 	/* Process command line arguments */
@@ -278,6 +279,7 @@ int main(int argc, char * argv[])
 
 	float decgrain = (dec_max-dec_min)/num_bins;
 	int beam;
+	int filedes;
 	if(multibeam)
 	{
 		for(beam = 0;beam <7;beam++)
@@ -291,6 +293,9 @@ int main(int argc, char * argv[])
 			}
 			fprintf(datafile,"\n");
 			fclose(datafile);
+			filedes = open(filename,0x666);
+			fchmod(filedes,S_IRWXU|S_IRWXG|S_IRWXO);
+			close(filedes);
 			sprintf(filename,"dec_spectra/Q_beam%d_dec_spectra.dat",beam);
 			datafile = fopen(filename,"w");
 			fprintf(datafile,"#bin->");
@@ -300,6 +305,9 @@ int main(int argc, char * argv[])
 			}
 			fprintf(datafile,"\n");
 			fclose(datafile);
+			filedes = open(filename,0x666);
+			fchmod(filedes,S_IRWXU|S_IRWXG|S_IRWXO);
+			close(filedes);
 			sprintf(filename,"dec_spectra/U_beam%d_dec_spectra.dat",beam);
 			datafile = fopen(filename,"w");
 			fprintf(datafile,"#bin->");
@@ -309,6 +317,9 @@ int main(int argc, char * argv[])
 			}
 			fprintf(datafile,"\n");
 			fclose(datafile);
+			filedes = open(filename,0x666);
+			fchmod(filedes,S_IRWXU|S_IRWXG|S_IRWXO);
+			close(filedes);
 			sprintf(filename,"dec_spectra/V_beam%d_dec_spectra.dat",beam);
 			datafile = fopen(filename,"w");
 			fprintf(datafile,"#bin->");
@@ -318,6 +329,9 @@ int main(int argc, char * argv[])
 			}
 			fprintf(datafile,"\n");
 			fclose(datafile);
+			filedes = open(filename,0x666);
+			fchmod(filedes,S_IRWXU|S_IRWXG|S_IRWXO);
+			close(filedes);
 		}
 	}
 	else
@@ -332,6 +346,9 @@ int main(int argc, char * argv[])
 		}
 		fprintf(datafile,"\n");
 		fclose(datafile);
+		filedes = open(filename,0x666);
+		fchmod(filedes,S_IRWXU|S_IRWXG|S_IRWXO);
+		close(filedes);
 		sprintf(filename,"dec_spectra/Q_beam%d_dec_spectra.dat",beam);
 		datafile = fopen(filename,"w");
 		fprintf(datafile,"#bin->");
@@ -341,6 +358,9 @@ int main(int argc, char * argv[])
 		}
 		fprintf(datafile,"\n");
 		fclose(datafile);
+		filedes = open(filename,0x666);
+		fchmod(filedes,S_IRWXU|S_IRWXG|S_IRWXO);
+		close(filedes);
 		sprintf(filename,"dec_spectra/U_beam%d_dec_spectra.dat",beam);
 		datafile = fopen(filename,"w");
 		fprintf(datafile,"#bin->");
@@ -350,6 +370,9 @@ int main(int argc, char * argv[])
 		}
 		fprintf(datafile,"\n");
 		fclose(datafile);
+		filedes = open(filename,0x666);
+		fchmod(filedes,S_IRWXU|S_IRWXG|S_IRWXO);
+		close(filedes);
 		sprintf(filename,"dec_spectra/V_beam%d_dec_spectra.dat",beam);
 		datafile = fopen(filename,"w");
 		fprintf(datafile,"#bin->");
@@ -359,6 +382,9 @@ int main(int argc, char * argv[])
 		}
 		fprintf(datafile,"\n");
 		fclose(datafile);
+		filedes = open(filename,0x666);
+		fchmod(filedes,S_IRWXU|S_IRWXG|S_IRWXO);
+		close(filedes);
 	}
 	sprintf(filename,"Days.list");
 	datafile = fopen(filename,"r");
@@ -396,6 +422,11 @@ int main(int argc, char * argv[])
 	{
 		sprintf(filename,"%s/beam0/fluxtime%04i.dat",files[i],lowchan);
 		datafile = fopen(filename,"r");
+		if(datafile == NULL)
+		{
+			printf("ERROR: Could not open the data file %s\n",filename);
+			return(EXIT_FAILURE);
+		}
 		binsize+= jsd_line_count(datafile);
 		fclose(datafile);
 	}

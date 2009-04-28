@@ -16,7 +16,7 @@ void compute_stats_on_stats(const PolStatistics * stats, int size, PolStatistics
 	double sumOffXX, sumOffYY;
 	double sumOnXX, sumOnYY;
 
-	//cached mean values 
+	//cached mean values
 	double meanOffXX, meanOffYY;
 	double meanOnXX, meanOnYY;
 
@@ -24,7 +24,7 @@ void compute_stats_on_stats(const PolStatistics * stats, int size, PolStatistics
 
 	sumOffXX = sumOffYY = 0;
 	sumOnXX = sumOnYY = 0;
-	for (i=0; i<size; i++) 
+	for (i=0; i<size; i++)
 	{
 		const PolStatistics * pStat = &(stats[i]);
 
@@ -50,7 +50,7 @@ void compute_stats_on_stats(const PolStatistics * stats, int size, PolStatistics
 
 	sumOffXX = sumOffYY = 0;
 	sumOnXX = sumOnYY = 0;
-	for (i=0; i<size; i++) 
+	for (i=0; i<size; i++)
 	{
 		const PolStatistics * pStat = &(stats[i]);
 		sumOffXX += SQR(pStat->sigmaOffXX - meanOffXX);
@@ -81,7 +81,7 @@ void compute_stats_on_diffs(const SpecRecord * pRec, const PolDifferences * pDif
 	double sumOffXX, sumOffYY;
 	double sumOnXX, sumOnYY;
 
-	//cached mean values 
+	//cached mean values
 	double meanOffXX, meanOffYY;
 	double meanOnXX, meanOnYY;
 
@@ -90,7 +90,7 @@ void compute_stats_on_diffs(const SpecRecord * pRec, const PolDifferences * pDif
 	count = 0;
 	sumOffXX = sumOffYY = 0;
 	sumOnXX = sumOnYY = 0;
-	for (i=lowchan; i<highchan; i++) 
+	for (i=lowchan; i<highchan; i++)
 	{
 		if (pRec->flagRFI[i] == RFI_NONE)
 		{
@@ -118,9 +118,9 @@ void compute_stats_on_diffs(const SpecRecord * pRec, const PolDifferences * pDif
 	count = 0;
 	sumOffXX = sumOffYY = 0;
 	sumOnXX = sumOnYY = 0;
-	for (i=lowchan; i<highchan; i++) 
+	for (i=lowchan; i<highchan; i++)
 	{
-		if (pRec->flagRFI[i] == RFI_NONE) 
+		if (pRec->flagRFI[i] == RFI_NONE)
 		{
 			sumOffXX += SQR(pDiff->OffXX[i] - meanOffXX);
 			sumOffYY += SQR(pDiff->OffYY[i] - meanOffYY);
@@ -145,20 +145,25 @@ void compute_stats_on_diffs(const SpecRecord * pRec, const PolDifferences * pDif
 void compute_diffs(const SpecRecord * pRec, PolDifferences * pDiff, int lowchan, int highchan)
 {
 	int i;
-
 	//pre-compute the diffs for all adjacent channels for efficiency
-	for (i=lowchan; i<highchan; i++) 
+	for (i=lowchan; i<highchan-1; i++)
 	{
 		pDiff->OffXX[i] = pRec->caloff.xx[i+1] - pRec->caloff.xx[i];
 		pDiff->OffYY[i] = pRec->caloff.yy[i+1] - pRec->caloff.yy[i];
 		pDiff->OnXX[i] = pRec->calon.xx[i+1] - pRec->calon.xx[i];
 		pDiff->OnYY[i] = pRec->calon.yy[i+1] - pRec->calon.yy[i];
 	}
+	//fixed the bug , diffs make sense only for highchan - 1,
+	//stuff highchan-1 value to highchan to avoid distorting statistics
+	pDiff->OffXX[highchan] = pDiff->OffXX[highchan-1];
+	pDiff->OffYY[highchan] = pDiff->OffYY[highchan-1];
+	pDiff->OnXX[highchan] = pDiff->OnXX[highchan-1];
+	pDiff->OnYY[highchan] = pDiff->OnYYcl[highchan-1];
 }
 
 void print_means(FILE * file, const SpecRecord * pRec, const PolStatistics * pStat)
 {
-	fprintf(file, "%8.2f %8.6f %8.6f %8.6f %8.6f \n", 
+	fprintf(file, "%8.2f %8.6f %8.6f %8.6f %8.6f \n",
 			pRec->AST, pStat->meanOffXX, pStat->meanOffYY,
 			pStat->meanOnXX, pStat->meanOnYY);
 }
@@ -166,7 +171,7 @@ void print_means(FILE * file, const SpecRecord * pRec, const PolStatistics * pSt
 
 void print_sigmas(FILE * file, const SpecRecord * pRec, const PolStatistics * pStat)
 {
-	fprintf(file, "%8.2f %8.6f %8.6f %8.6f %8.6f\n", 
+	fprintf(file, "%8.2f %8.6f %8.6f %8.6f %8.6f\n",
 		pRec->AST, pStat->sigmaOffXX, pStat->sigmaOffYY,
 		pStat->sigmaOnXX, pStat->sigmaOnYY);
 }
@@ -175,13 +180,13 @@ void print_diffs(FILE * file, const SpecRecord * pRec, const PolDifferences * pD
 {
 	int i;
 	for (i=lowchan; i<highchan; i++) {
-		fprintf(file, "%8.2f %8.6f %8.6f %8.6f %8.6f \n", 
+		fprintf(file, "%8.2f %8.6f %8.6f %8.6f %8.6f \n",
 			pRec->AST, pDiff->OffXX[i], pDiff->OffYY[i],
 			pDiff->OnXX[i], pDiff->OnYY[i]);
 	}
 }
 
-/* data on either side of an RFI detection may not be detected as RFI, but is suspect 
+/* data on either side of an RFI detection may not be detected as RFI, but is suspect
  * nonetheless.  This routine broadens the the detections across the specified span.
  */
 void rfi_spanning(SpecRecord dataset[], int size, int lowchan, int highchan, int span)
@@ -189,9 +194,9 @@ void rfi_spanning(SpecRecord dataset[], int size, int lowchan, int highchan, int
 	int n, i, chan;
 
 	//iterate over each time step and span RFI across timesteps
-	for (chan=lowchan; chan<highchan; chan++) 
+	for (chan=lowchan; chan<highchan; chan++)
 	{
-		for (n=0; n<size; n++) 
+		for (n=0; n<size; n++)
 		{
 			if (dataset[n].flagRFI[chan]) {
 				for (i=n-span/2; i<n+span/2; i++) {
@@ -204,7 +209,7 @@ void rfi_spanning(SpecRecord dataset[], int size, int lowchan, int highchan, int
 	}
 }
 
-//counts the number of datapoints for each channel from highchan to lowchan.  
+//counts the number of datapoints for each channel from highchan to lowchan.
 //If more than rfiTolerance percentage of the points are RFI,
 //RFI flagged datapoints, then the entire channel is flagged as RFI.
 void rfi_blanking(SpecRecord dataset[], int numRecords, int lowchan, int highchan, int rfiTolerance)
@@ -214,7 +219,7 @@ void rfi_blanking(SpecRecord dataset[], int numRecords, int lowchan, int highcha
 	int rfiCount;
 	int rfiPercent;
 
-	for (chan = lowchan; chan < highchan; chan++) 
+	for (chan = lowchan; chan < highchan; chan++)
 	{
 		rfiCount = 0;
 		for (i=0; i<numRecords; i++) {
@@ -228,7 +233,7 @@ void rfi_blanking(SpecRecord dataset[], int numRecords, int lowchan, int highcha
 			printf("Blanking channel %i since %i%% of the points are RFI\n", chan, rfiPercent);
 			for (i=0; i<numRecords; i++) {
 				dataset[i].flagRFI[chan] = RFI_OVERLIMIT;
-			}			
+			}
 		}
 	}
 }
@@ -243,18 +248,18 @@ void rfi_write(SpecRecord dataset[], int size, int lowchan, int highchan, float 
 	rfifile = fopen("rfi.dat","w");
 	fprintf(rfifile, "# chan freq RA DEC AST OffXX OffYY OnXX OnYY code\n");
 
-	for (n=0; n<size; n++) 
+	for (n=0; n<size; n++)
 	{
 		SpecRecord * pRec = &(dataset[n]);
 
 		//now that the channels are marked as RFI, write them out
-		for (chan=lowchan; chan<highchan; chan++) { 
+		for (chan=lowchan; chan<highchan; chan++) {
 		 	if (pRec->flagRFI[chan] != RFI_NONE) {
 				fprintf(rfifile,
-					"%3i %9.6f %9.6f %9.6f %8.2f " 
+					"%3i %9.6f %9.6f %9.6f %8.2f "
 					"%8.6f %8.6f %8.6f %8.6f "
-					"%0#6x\n", 
-					chan, freq[chan], pRec->RA, pRec->DEC, pRec->AST,  
+					"%0#6x\n",
+					chan, freq[chan], pRec->RA, pRec->DEC, pRec->AST,
 					pRec->caloff.xx[chan], pRec->caloff.yy[chan],
 					pRec->calon.xx[chan], pRec->calon.yy[chan],
 					pRec->flagRFI[chan]);
@@ -270,14 +275,14 @@ void rfi_write(SpecRecord dataset[], int size, int lowchan, int highchan, float 
 // highchan - the highest channel number to do computations for
 // numSigma - the number of sigma away from the mean the difference should be rejected
 // ignore?_[low|high] - two ranges of channels to ignore from an RFI perspective
-void rfi_detection(SpecRecord dataset[], int size, int lowchan, int highchan, float numSigma, 
-	float numSigmaThresh, int ignoreA_low, int ignoreA_high, 
+void rfi_detection(SpecRecord dataset[], int size, int lowchan, int highchan, float numSigma,
+	float numSigmaThresh, int ignoreA_low, int ignoreA_high,
 	int ignoreB_low, int ignoreB_high)
 {
 	FILE * finalmeanfile;
 	FILE * finalsigmafile;
 	FILE * sigmathreshfile;
-	
+
 	PolStatistics sigmaStat;
 	PolStatistics * stats;
 	PolDifferences * diffs;
@@ -308,7 +313,7 @@ void rfi_detection(SpecRecord dataset[], int size, int lowchan, int highchan, fl
 
 	//iterate over each time step and calculate a final sigma over the
 	//frequency domain
-	for (i=0; i<size; i++) 
+	for (i=0; i<size; i++)
 	{
 		int chan;
 		char outlierFound;
@@ -323,12 +328,12 @@ void rfi_detection(SpecRecord dataset[], int size, int lowchan, int highchan, fl
 		compute_diffs(pRec, pDiff, lowchan, highchan);
 
 		//clear the channel flags
-		for (chan=lowchan; chan<highchan; chan++) { 
+		for (chan=lowchan; chan<highchan; chan++) {
 			pRec->flagRFI[chan] = RFI_NONE;
-		}	
+		}
 
 
-		//now iterate over the channels 
+		//now iterate over the channels
 		//compute sigma for channels not flagged as excluded
 		//apply sigma to exclude any channels
 		//repeat while we still find outliers
@@ -340,7 +345,7 @@ void rfi_detection(SpecRecord dataset[], int size, int lowchan, int highchan, fl
 			//we now have sigma values for a particular timestep
 			//now iterate over the frequencies and mark outliers
 			outlierFound = FALSE;
-			for (chan=lowchan; chan<highchan; chan++) 
+			for (chan=lowchan; chan<highchan; chan++)
 			{
 				if ((chan >= ignoreA_low && chan <= ignoreA_high) ||
 					(chan >= ignoreB_low && chan <= ignoreB_high)) {
@@ -348,9 +353,9 @@ void rfi_detection(SpecRecord dataset[], int size, int lowchan, int highchan, fl
 			}
 				if (pRec->flagRFI[chan] == RFI_NONE)
 				{
-					if ( (fabs(pStat->meanOffXX - pDiff->OffXX[chan]) > (numSigma * pStat->sigmaOffXX)) 
-						|| (fabs(pStat->meanOffYY - pDiff->OffYY[chan]) > (numSigma * pStat->sigmaOffYY)) 
-						|| (fabs(pStat->meanOnXX - pDiff->OnXX[chan]) > (numSigma * pStat->sigmaOnXX)) 
+					if ( (fabs(pStat->meanOffXX - pDiff->OffXX[chan]) > (numSigma * pStat->sigmaOffXX))
+						|| (fabs(pStat->meanOffYY - pDiff->OffYY[chan]) > (numSigma * pStat->sigmaOffYY))
+						|| (fabs(pStat->meanOnXX - pDiff->OnXX[chan]) > (numSigma * pStat->sigmaOnXX))
 						|| (fabs(pStat->meanOnYY - pDiff->OnYY[chan]) > (numSigma * pStat->sigmaOnYY)) ) {
 						pRec->flagRFI[chan] = 1;
 						pRec->flagRFI[chan+1] = 1;
@@ -359,11 +364,11 @@ void rfi_detection(SpecRecord dataset[], int size, int lowchan, int highchan, fl
 				}
 			}
 		} while (outlierFound);
-	
+
 	}	//we now have a final sigma
 
 	//determine the distribution of the sigmas and set thresholds
-	compute_stats_on_stats(stats, size, &sigmaStat);	
+	compute_stats_on_stats(stats, size, &sigmaStat);
 	sigmaThreshOffXX = sigmaStat.sigmaOffXX * numSigmaThresh + sigmaStat.meanOffXX;
 	sigmaThreshOffYY = sigmaStat.sigmaOffYY * numSigmaThresh + sigmaStat.meanOffYY;
 	sigmaThreshOnXX = sigmaStat.sigmaOnXX * numSigmaThresh + sigmaStat.meanOnXX;
@@ -377,9 +382,9 @@ void rfi_detection(SpecRecord dataset[], int size, int lowchan, int highchan, fl
 	fprintf(sigmathreshfile, "%8.6f %8.6f %8.6f %8.6f \n",
 			sigmaThreshOffXX, sigmaThreshOffYY,
 			sigmaThreshOnXX, sigmaThreshOnYY);
-	
+
 	//iterate over each time step and mark RFI in the channels
-	for (i=0; i<size; i++) 
+	for (i=0; i<size; i++)
 	{
 		int chan;
 
@@ -391,14 +396,14 @@ void rfi_detection(SpecRecord dataset[], int size, int lowchan, int highchan, fl
 		if (pRec->flagBAD) continue;
 
 		//clear the channel flags
-		for (chan=lowchan; chan<highchan; chan++) { 
+		for (chan=lowchan; chan<highchan; chan++) {
 			pRec->flagRFI[chan] = RFI_NONE;
-		}	
+		}
 
 
-		//do one last pass over the channels and mark the flags using the 
+		//do one last pass over the channels and mark the flags using the
 		//final values of sigma and the means
-		for (chan=lowchan; chan<highchan; chan++) 
+		for (chan=lowchan; chan<highchan; chan++)
 		{
 			//skip over channels that are to be excluded
 			if ((chan >= ignoreA_low && chan <= ignoreA_high) ||
@@ -464,18 +469,18 @@ void aerostat_rfi_blanking(SpecRecord dataset[], int size, int lowchan, int high
 	fprintf(file, "COLOUR RED\n");
 
 	//average up the channels to reduce noise as these signals are broadband
-	//they peak on the middle channel (128) which could also be used 
+	//they peak on the middle channel (128) which could also be used
 	printf("Requesting malloc for %lu bytes of memory\n",sizeof(double)*size);
 	offxx = calloc(size, sizeof(double));
 	if (offxx == NULL) {
 		printf("ERROR: malloc failed in aerostat_rfi_blanking() !\n");
 	}
-	printf("Requesting malloc for %lu bytes of memory\n",sizeof(float)*size);	
+	printf("Requesting malloc for %lu bytes of memory\n",sizeof(float)*size);
 	diff1 = calloc(size, sizeof(float));
 	if (diff1 == NULL) {
 		printf("ERROR: malloc failed in aerostat_rfi_blanking() !\n");
 	}
-	printf("Requesting malloc for %lu bytes of memory\n",sizeof(float)*size);	
+	printf("Requesting malloc for %lu bytes of memory\n",sizeof(float)*size);
 	diff2 = calloc(size, sizeof(float));
 	if (diff2 == NULL) {
 		printf("ERROR: malloc failed in aerostat_rfi_blanking() !\n");
@@ -493,7 +498,7 @@ void aerostat_rfi_blanking(SpecRecord dataset[], int size, int lowchan, int high
 		}
 		offxx[i] /= count;
 	}
-	
+
 
 	//compute first differences
 	for (i=0; i<size-1; i++) {
@@ -519,17 +524,17 @@ void aerostat_rfi_blanking(SpecRecord dataset[], int size, int lowchan, int high
 			continue;
 		}
 
-//		if (diff2[i] > 0.07 || diff2[i] < -0.07) 
-		if ((diff2[i] > 0.07 || diff2[i] < -0.07) && i>0) //ssg fixed i > 0 
+//		if (diff2[i] > 0.07 || diff2[i] < -0.07)
+		if ((diff2[i] > 0.07 || diff2[i] < -0.07) && i>0) //ssg fixed i > 0
 		{
 
 			printf("Outofband rfi with diff %f %f\n", diff1[i], diff2[i]);
 			fprintf(file, "LINE W %i %f %i %f\n", 0, dataset[i+1].AST, 30, dataset[i+1].AST);
-			for (j=i-1; j<i+12*5 && j<size; j++) 
+			for (j=i-1; j<i+12*5 && j<size; j++)
 			{
-				for (chan=0; chan<MAX_CHANNELS; chan++) 
+				dataset[j].flagBAD = 1;
+				for (chan=0; chan<MAX_CHANNELS; chan++)
 				{
-					dataset[j].flagBAD = 1;
 					dataset[j].flagRFI[chan] |= RFI_OUTOFBAND;
 				}
 			}
@@ -537,7 +542,7 @@ void aerostat_rfi_blanking(SpecRecord dataset[], int size, int lowchan, int high
 		}
 	}
 
-	fclose(file); 
+	fclose(file);
 	free(offxx);
 	free(diff1);
 	free(diff2);

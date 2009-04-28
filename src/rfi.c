@@ -158,7 +158,7 @@ void compute_diffs(const SpecRecord * pRec, PolDifferences * pDiff, int lowchan,
 	pDiff->OffXX[highchan] = pDiff->OffXX[highchan-1];
 	pDiff->OffYY[highchan] = pDiff->OffYY[highchan-1];
 	pDiff->OnXX[highchan] = pDiff->OnXX[highchan-1];
-	pDiff->OnYY[highchan] = pDiff->OnYYcl[highchan-1];
+	pDiff->OnYY[highchan] = pDiff->OnYY[highchan-1];
 }
 
 void print_means(FILE * file, const SpecRecord * pRec, const PolStatistics * pStat)

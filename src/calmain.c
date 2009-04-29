@@ -13,6 +13,7 @@
 #include <glob.h>
 #include "markdata.h"
 #include "programs/fitsLib.h"
+#include "jsd/jsd_futil.h"
 
 int multibeam; //SSG
 
@@ -482,8 +483,35 @@ int main(int argc, char *argv[])
 	}
 	printf("Time Smooth: %i\n", tsmooth);
 
-	numdirs = get_date_dirs(datadirname, &datedirs);
+	char filename[40+1];
+	sprintf(filename,"Days.list");
+	FILE * dayfile;
+	dayfile = fopen(filename,"r");
+	if(dayfile != NULL)
+	{
+		printf("Found file: \"Days.list\"\n");
+		numdirs = jsd_line_count(dayfile);
+		datedirs = (char **) malloc(sizeof(char*) * numdirs);
+		char tempstr[15];
+		for(i=0;i<numdirs;i++)
+		{
+			fscanf(dayfile,"%s",tempstr);
+			datedirs[i] = (char *) malloc(sizeof(char) * strlen(tempstr));
+			strcpy(datedirs[i],tempstr);
+		}
+		fclose(dayfile);
+	}
+	else
+	{
+		numdirs = get_date_dirs(datadirname, &datedirs);
+	}
+
 	printf("Found %i data directories in %s\n", numdirs, datadirname);
+	printf("The following days will be processed:\n");
+	for(i=0;i<numdirs;i++)
+		printf("%s,",datedirs[i]);
+	printf("\n");
+
 	beamcounter = -1; //SSG
 	for (mjd=0; mjd<numdirs; mjd++)
 	{

@@ -206,15 +206,20 @@ void grid_data(const FluxWappData *wappdata, const MapMetaData *md, float * data
 	memset(dataQ, 0, numbytes);
 	memset(dataU, 0, numbytes);
 	memset(dataV, 0, numbytes);
-
 	//TODO: currently ignoring the upscan/downscan functionality
 	for (d=0; d<wappdata->numDays; d++) 
 	{
+		if(d%7 == 0)
+			printf("Day %s: ",wappdata->daydata[d].mjd);
 		//if (md->gridtype & GRID_UP_SCANS) {
-			grid_fluxdaydata(&wappdata->daydata[d], md, dataI, dataQ, dataU, dataV, weight);
+		printf("beam %d ",d%7);
+		fflush(stdout);
+		if(d%7 == 6)
+			printf("\n");
+		grid_fluxdaydata(&wappdata->daydata[d], md, dataI, dataQ, dataU, dataV, weight);
 		//}
 	}
-
+	printf("\n");
 
 	//------------------- divide sums by weights ----------------------
 	for(j=0;j<n2;j++) {

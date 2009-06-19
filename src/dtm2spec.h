@@ -25,7 +25,7 @@ typedef struct
 	double RA;
 	double DEC;
 	double crval4; //?? not used
-	double AST;
+	double UTC;
 	double tdelt; //time delta ?? integration time per point ??
 	double azimuth;      /* deg D13.5 Actual AZ pointing this beam on sky   */
 	double elevatio;     /* deg D13.5 Actual EL pointing this beam on sky   */

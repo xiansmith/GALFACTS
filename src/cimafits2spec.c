@@ -298,8 +298,8 @@ int main(int argc,char* argv[])
 			cnvrt_end_db(&c2.crval2);
 			cnvrt_end_db(&c1.crval3);
 			cnvrt_end_db(&c2.crval3);
-			cnvrt_end_db(&c1.lst);
-			cnvrt_end_db(&c2.lst);
+			cnvrt_end_db(&c1.crval5);
+			cnvrt_end_db(&c2.crval5);
 			cnvrt_end_db(&c1.mjdxxobs);
 			cnvrt_end_db(&c1.azimuth);
 			cnvrt_end_db(&c1.elevatio);
@@ -352,7 +352,7 @@ int main(int argc,char* argv[])
 				fprintf(htls_cfg_file,"Number of channels/record: %d\n",RAW_CHANNELS/htls_spec_comp);
 				fprintf(htls_cfg_file,"RA at start (degrees): %f\n",c1.crval2);
 				fprintf(htls_cfg_file,"DEC at start (degrees): %f\n",c1.crval3);
-				fprintf(htls_cfg_file,"LST at start (seconds): %f\n",c1.lst);
+				fprintf(htls_cfg_file,"UTC at start (seconds): %f\n",c1.crval5);
 				fprintf(htls_cfg_file,"ALFA angle (degrees) at start: %f\n",c1.alfa_ang);
 				fprintf(htls_cfg_file,"Project ID: %s\n",proj_code);
 				fclose(htls_cfg_file);
@@ -386,7 +386,7 @@ int main(int argc,char* argv[])
 				fprintf(lths_cfg_file,"Number of channels/record: %d\n",RAW_CHANNELS/lths_spec_comp);
 				fprintf(lths_cfg_file,"RA at start (degrees): %f\n",c1.crval2);
 				fprintf(lths_cfg_file,"DEC at start (degrees): %f\n",c1.crval3);
-				fprintf(lths_cfg_file,"LST at start (seconds): %f\n",c1.lst);
+				fprintf(lths_cfg_file,"UTC at start (seconds): %f\n",c1.crval5);
 				fprintf(lths_cfg_file,"ALFA angle (degrees) at start: %f\n",c1.alfa_ang);
 				fprintf(lths_cfg_file,"Project ID: %s\n",proj_code);
 				fclose(lths_cfg_file);
@@ -454,14 +454,14 @@ int main(int argc,char* argv[])
 					spointing_htls[h].centralBeam.raj_true_in_hours=c1.crval2/15 + h*(c2.crval2-c1.crval2)*(2*htls_time_comp)/(DUMPS_PER_ROW)/15;
 					spointing_htls[h].centralBeam.decj_true_in_degrees=c1.crval3 + h*(c2.crval3-c1.crval3)*(2*htls_time_comp)/(DUMPS_PER_ROW);
 					spointing_htls[h].centralBeam.atlantic_solar_time_now_in_sec=\
-					c1.lst + h*(c2.lst-c1.lst)*(2*htls_time_comp)/(DUMPS_PER_ROW);
+					c1.crval5 + h*(c2.crval5-c1.crval5)*(2*htls_time_comp)/(DUMPS_PER_ROW);
 				}
 				else
 				{
 					spointing_htls[h].outerBeams[beam-1].raj_true_in_hours=c1.crval2/15 + h*(c2.crval2-c1.crval2)*(2*htls_time_comp)/(DUMPS_PER_ROW)/15;
 					spointing_htls[h].outerBeams[beam-1].decj_true_in_degrees=c1.crval3 + h*(c2.crval3-c1.crval3)*(2*htls_time_comp)/(DUMPS_PER_ROW);
 					spointing_htls[h].centralBeam.atlantic_solar_time_now_in_sec=\
-					c1.lst + h*(c2.lst-c1.lst)*(2*htls_time_comp)/(DUMPS_PER_ROW);
+					c1.crval5 + h*(c2.crval5-c1.crval5)*(2*htls_time_comp)/(DUMPS_PER_ROW);
 				}
 
 				int k,l;
@@ -609,14 +609,14 @@ int main(int argc,char* argv[])
 					spointing_lths[h].centralBeam.raj_true_in_hours=c1.crval2/15 + h*(c2.crval2-c1.crval2)*(2*lths_time_comp)/(DUMPS_PER_ROW)/15;
 					spointing_lths[h].centralBeam.decj_true_in_degrees=c1.crval3 + h*(c2.crval3-c1.crval3)*(2*lths_time_comp)/(DUMPS_PER_ROW);
 					spointing_lths[h].centralBeam.atlantic_solar_time_now_in_sec=\
-					c1.lst + h*(c2.lst-c1.lst)*(2*lths_time_comp)/(DUMPS_PER_ROW);
+					c1.crval5 + h*(c2.crval5-c1.crval5)*(2*lths_time_comp)/(DUMPS_PER_ROW);
 				}
 				else
 				{
 					spointing_lths[h].outerBeams[beam-1].raj_true_in_hours=c1.crval2/15 + h*(c2.crval2-c1.crval2)*(2*lths_time_comp)/(DUMPS_PER_ROW)/15;
 					spointing_lths[h].outerBeams[beam-1].decj_true_in_degrees=c1.crval3 + h*(c2.crval3-c1.crval3)*(2*lths_time_comp)/(DUMPS_PER_ROW);
 					spointing_lths[h].centralBeam.atlantic_solar_time_now_in_sec=\
-					c1.lst + h*(c2.lst-c1.lst)*(2*htls_time_comp)/(DUMPS_PER_ROW);
+					c1.crval5 + h*(c2.crval5-c1.crval5)*(2*htls_time_comp)/(DUMPS_PER_ROW);
 				}
 				int k,l;
 				num_on=0;

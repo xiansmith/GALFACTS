@@ -137,8 +137,8 @@ int main(int argc,char* argv[])
 			cnvrt_end_db(&row2.RA);
 			cnvrt_end_db(&row1.DEC);
 			cnvrt_end_db(&row2.DEC);
-			cnvrt_end_db(&row1.lst);
-			cnvrt_end_db(&row2.lst);
+			cnvrt_end_db(&row1.UTC);
+			cnvrt_end_db(&row2.UTC);
 			cnvrt_end_db(&row1.mjdxxobs);
 			cnvrt_end_db(&row1.azimuth);
 			cnvrt_end_db(&row1.elevatio);
@@ -177,7 +177,7 @@ int main(int argc,char* argv[])
 				fprintf(cfg_file,"Number of channels/record: %d\n",RAW_CHANNELS);
 				fprintf(cfg_file,"RA at start (degrees): %f\n",row1.RA);
 				fprintf(cfg_file,"DEC at start (degrees): %f\n",row1.DEC);
-				fprintf(cfg_file,"LST at start (seconds): %f\n",row1.lst);
+				fprintf(cfg_file,"UTC at start (seconds): %f\n",row1.UTC);
 				fprintf(cfg_file,"ALFA angle (degrees) at start: %f\n",row1.alfa_ang);
 				fprintf(cfg_file,"Project ID: %s\n",proj_code);
 				fclose(cfg_file);
@@ -191,14 +191,14 @@ int main(int argc,char* argv[])
 					SPBlock.centralBeam.raj_true_in_hours=row1.RA/15 + k*(row2.RA-row1.RA)/(DUMPS_PER_ROW)/15;
 					SPBlock.centralBeam.decj_true_in_degrees=row1.DEC + k*(row2.DEC-row1.DEC)/(DUMPS_PER_ROW);
 					SPBlock.centralBeam.atlantic_solar_time_now_in_sec=\
-					row1.lst + k*(row2.lst-row1.lst)/(DUMPS_PER_ROW);
+					row1.UTC + k*(row2.UTC-row1.UTC)/(DUMPS_PER_ROW);
 				}
 				else
 				{
 					SPBlock.outerBeams[beam-1].raj_true_in_hours=row1.RA/15 + k*(row2.RA-row1.RA)/(DUMPS_PER_ROW)/15;
 					SPBlock.outerBeams[beam-1].decj_true_in_degrees=row1.DEC + k*(row2.DEC-row1.DEC)/(DUMPS_PER_ROW);
 					SPBlock.centralBeam.atlantic_solar_time_now_in_sec=\
-					row1.lst + k*(row2.lst-row1.lst)/(DUMPS_PER_ROW);
+					row1.UTC + k*(row2.UTC-row1.UTC)/(DUMPS_PER_ROW);
 				}
 				cnvrt_end_sint(&row1.staton[k].fftAccum);
 				cnvrt_end_sint(&row1.statoff[k].fftAccum);
@@ -254,7 +254,7 @@ int main(int argc,char* argv[])
 			}//k loop num dumps
 			cnvrt_end_db(&row2.RA);
 			cnvrt_end_db(&row2.DEC);
-			cnvrt_end_db(&row2.lst);
+			cnvrt_end_db(&row2.UTC);
 
 		}//naxis2 loop g
 		fclose(datafile);

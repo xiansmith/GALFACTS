@@ -63,7 +63,7 @@ int main(int argc, char * argv[])
 	char filename[32+1];
 	double *binI,*binQ,*binU,*binV;
 	/* Process command line arguments */ 
-	if (argc != 8) 
+	if (argc != 9) 
 	{
 		print_usage(argv[0]);
 		return EXIT_FAILURE;
@@ -74,10 +74,10 @@ int main(int argc, char * argv[])
 		fit_order = atoi(argv[2]);
 		lowchan = atoi(argv[3]);
 		highchan = atoi(argv[4]);
-		decmin = (float) atof(argv[4]);
-		decmax = (float) atof(argv[5]);
-		num_bins = (float) atoi(argv[6]);
-		nsigma = (float) atof(argv[7]);		
+		decmin = (float) atof(argv[5]);
+		decmax = (float) atof(argv[6]);
+		num_bins = (float) atoi(argv[7]);
+		nsigma = (float) atof(argv[8]);		
 	}
 	
 	printf("\nDeclination dependent polynomial fits program\n\n");

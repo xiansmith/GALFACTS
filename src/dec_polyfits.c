@@ -33,8 +33,8 @@ static void dec_polyfit(double *binI, int num_bins, int fit_order, float decmin,
 		binDEC[i] = (i*(decmax-decmin)/num_bins)+decmin;
 	}
 
-	jsd_minmax(binDEC, num_bins, &min, &max);
-	jsd_normalize(binDEC, num_bins, min, max);
+	//jsd_minmax(binDEC, num_bins, &min, &max);
+	//jsd_normalize(binDEC, num_bins, min, max);
 	
 	jsd_poly_fit(binDEC, binI, num_bins, nsigma, c, fit_order, &chisq);
 	for(i = 0;i < fit_order+1;i++)
@@ -107,8 +107,9 @@ int main(int argc, char * argv[])
 
 	if(multibeam)
 	{
-		for(beam =0;beam < 6;beam++)
+		for(beam =0;beam < 7;beam++)
 		{
+			printf("Beam %d\n",beam);
 			sprintf(filename,"dec_spectra/I_beam%d_dec_spectra.dat",beam);
 			datafileI = fopen(filename,"r");
 			sprintf(filename,"dec_spectra/Q_beam%d_dec_spectra.dat",beam);
@@ -135,16 +136,16 @@ int main(int argc, char * argv[])
 				fscanf(datafileQ,"%d",&readchan);
 				fscanf(datafileU,"%d",&readchan);
 				fscanf(datafileV,"%d",&readchan);
+				
 				for(i = 0;i < num_bins;i++)
 				{
 					fscanf(datafileI," %lf",&binI[i]);
 					fscanf(datafileQ," %lf",&binQ[i]);
 					fscanf(datafileU," %lf",&binU[i]);
 					fscanf(datafileV," %lf",&binV[i]);
-					printf("%lf ",binI[i]);			
+				//	printf("%lf ",binI[i]);			
 				}							
-				printf("\n");
-					
+				
 				if(readchan != chan)
 					continue;
 				
@@ -204,9 +205,7 @@ int main(int argc, char * argv[])
 				fscanf(datafileQ," %lf",&binQ[i]);
 				fscanf(datafileU," %lf",&binU[i]);
 				fscanf(datafileV," %lf",&binV[i]);
-				printf("%lf ",binI[i]);			
 			}							
-			printf("\n");
 				
 			if(readchan != chan)
 				continue;

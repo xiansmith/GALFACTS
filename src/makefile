@@ -41,6 +41,10 @@ spectral_analysis: spectral_analysis.c stats.o fluxdata.o common.o jsd/jsd_futil
 	$(CC) $(CFLAGS) -lm -o spectral_analysis stats.o fluxdata.o common.o jsd/jsd_futil.o spectral_analysis.c
 	cp spectral_analysis $(BIN)
 
+dec_polyfits: dec_polyfits.c jsd/jsd_fit.o
+		$(CC) $(CFLAGS) -lm -o dec_polyfits jsd/jsd_fit.o jsd/nrfit.o jsd/nrutil.o   dec_polyfits.c
+		cp dec_polyfits $(BIN)
+
 spectra: spectramain.o common.o spec.o
 	$(CC) $(CFLAGS) -lm -o spectra common.o spec.o spectramain.o
 	mv spectra $(BIN)

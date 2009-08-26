@@ -7,10 +7,11 @@
 static void print_usage(char *prog)
 {
 	printf("USAGE:\n"
-	"%s <beam[n]> <fit_order> <lowchan> <highchan> <decmin> <decmax> <num_bins> <nsigma>\n\n"
+	"%s <dir> <beam[n]> <fit_order> <lowchan> <highchan> <decmin> <decmax> <num_bins> <nsigma>\n\n"
 	"Description of command line argume  nts:\n"
+	"dir\t\t\t - the base directory with input as well as output files\n"
 	"beam<n>\t\t\t - the beam string (e.g. beam0, beam1, multibeam)\n"
-	"fit_order\t\t - the polynomial fit order'n"
+	"fit_order\t\t - the polynomial fit order\n"
 	"lowchan, highchan\t - the channel range to use\n"
 	"decmin, decmax\t\t - the declination range in degrees\n"
 	"num_bins\t\t - the number of bins\n"
@@ -61,23 +62,25 @@ int main(int argc, char * argv[])
 	FILE *datafileI,*datafileQ,*datafileU,*datafileV;
 	FILE *polyfileI,*polyfileQ,*polyfileU,*polyfileV;
 	char filename[32+1];
+	char * dir;
 	double *binI,*binQ,*binU,*binV;
 	/* Process command line arguments */ 
-	if (argc != 9) 
+	if (argc != 10) 
 	{
 		print_usage(argv[0]);
 		return EXIT_FAILURE;
 	} 
 	else 
 	{
-		wapp = argv[1];
-		fit_order = atoi(argv[2]);
-		lowchan = atoi(argv[3]);
-		highchan = atoi(argv[4]);
-		decmin = (float) atof(argv[5]);
-		decmax = (float) atof(argv[6]);
-		num_bins = (float) atoi(argv[7]);
-		nsigma = (float) atof(argv[8]);		
+		dir =argv[1];
+		wapp = argv[2];
+		fit_order = atoi(argv[3]);
+		lowchan = atoi(argv[4]);
+		highchan = atoi(argv[5]);
+		decmin = (float) atof(argv[6]);
+		decmax = (float) atof(argv[7]);
+		num_bins = (float) atoi(argv[8]);
+		nsigma = (float) atof(argv[9]);		
 	}
 	
 	printf("\nDeclination dependent polynomial fits program\n\n");
@@ -110,22 +113,22 @@ int main(int argc, char * argv[])
 		for(beam =0;beam < 7;beam++)
 		{
 			printf("Beam %d\n",beam);
-			sprintf(filename,"dec_spectra/I_beam%d_dec_spectra.dat",beam);
+			sprintf(filename,"%s/I_beam%d_dec_spectra.dat",dir,beam);
 			datafileI = fopen(filename,"r");
-			sprintf(filename,"dec_spectra/Q_beam%d_dec_spectra.dat",beam);
+			sprintf(filename,"%s/Q_beam%d_dec_spectra.dat",dir,beam);
 			datafileQ = fopen(filename,"r");
-			sprintf(filename,"dec_spectra/U_beam%d_dec_spectra.dat",beam);
+			sprintf(filename,"%s/U_beam%d_dec_spectra.dat",dir,beam);
 			datafileU = fopen(filename,"r");
-			sprintf(filename,"dec_spectra/V_beam%d_dec_spectra.dat",beam);
+			sprintf(filename,"%s/V_beam%d_dec_spectra.dat",dir,beam);
 			datafileV = fopen(filename,"r");
 			
-			sprintf(filename,"I_beam%d_polyfits.dat",beam);
+			sprintf(filename,"%s/I_beam%d_polyfits.dat",dir,beam);
 			polyfileI = fopen(filename,"w");	
-			sprintf(filename,"Q_beam%d_polyfits.dat",beam);
+			sprintf(filename,"%s/Q_beam%d_polyfits.dat",dir,beam);
 			polyfileQ = fopen(filename,"w");
-			sprintf(filename,"U_beam%d_polyfits.dat",beam);
+			sprintf(filename,"%s/U_beam%d_polyfits.dat",dir,beam);
 			polyfileU = fopen(filename,"w");	
-			sprintf(filename,"V_beam%d_polyfits.dat",beam);
+			sprintf(filename,"%s/V_beam%d_polyfits.dat",dir,beam);
 			polyfileV = fopen(filename,"w");
 														
 			for(chan=lowchan;chan<=highchan;chan++) 
@@ -173,22 +176,22 @@ int main(int argc, char * argv[])
 	else
 	{
 		beam = 	atoi(&wapp[4]);
-		sprintf(filename,"dec_spectra/I_beam%d_dec_spectra.dat",beam);
+		sprintf(filename,"%s/I_beam%d_dec_spectra.dat",dir,beam);
 		datafileI = fopen(filename,"r");
-		sprintf(filename,"dec_spectra/Q_beam%d_dec_spectra.dat",beam);
+		sprintf(filename,"%s/Q_beam%d_dec_spectra.dat",dir,beam);
 		datafileQ = fopen(filename,"r");
-		sprintf(filename,"dec_spectra/U_beam%d_dec_spectra.dat",beam);
+		sprintf(filename,"%s/U_beam%d_dec_spectra.dat",dir,beam);
 		datafileU = fopen(filename,"r");
-		sprintf(filename,"dec_spectra/V_beam%d_dec_spectra.dat",beam);
+		sprintf(filename,"%s/V_beam%d_dec_spectra.dat",dir,beam);
 		datafileV = fopen(filename,"r");
 
-		sprintf(filename,"I_beam%d_polyfits.dat",beam);
+		sprintf(filename,"%s/I_beam%d_polyfits.dat",dir,beam);
 		polyfileI = fopen(filename,"w");	
-		sprintf(filename,"Q_beam%d_polyfits.dat",beam);
+		sprintf(filename,"%s/Q_beam%d_polyfits.dat",dir,beam);
 		polyfileQ = fopen(filename,"w");
-		sprintf(filename,"U_beam%d_polyfits.dat",beam);
+		sprintf(filename,"%s/U_beam%d_polyfits.dat",dir,beam);
 		polyfileU = fopen(filename,"w");	
-		sprintf(filename,"V_beam%d_polyfits.dat",beam);
+		sprintf(filename,"%s/V_beam%d_polyfits.dat",dir,beam);
 		polyfileV = fopen(filename,"w");
 														
 		for(chan=lowchan;chan<=highchan;chan++) 

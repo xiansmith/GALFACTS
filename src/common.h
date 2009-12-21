@@ -11,10 +11,10 @@
 #define MAX_SCAN_LEN 4000
 
 //The maximum number of days
-#define MAX_NUM_DAYS 200
+#define MAX_NUM_DAYS 250
 
 //The maximum number of scans in one direction in a single day
-#define MAX_NUM_SCANS 30
+#define MAX_NUM_SCANS 40
 
 #define NUM_BEAMS 7 //SSG
 //enum STOKES {STOKES_I, STOKES_Q, STOKES_U, STOKES_V};

@@ -72,6 +72,10 @@ dtm2spec: dtm2spec.c dtm2spec.h jsd/jsd_futil.o
 	$(CC) $(CFLAGS) -I. -lm -o dtm2spec dtm2spec.c jsd/jsd_futil.o
 	cp dtm2spec $(BIN)
 
+dfrq2spec: dfrq2spec.c dfrq2spec.h jsd/jsd_futil.o
+	$(CC) $(CFLAGS) -I. -lm -o dfrq2spec dfrq2spec.c jsd/jsd_futil.o
+	cp dfrq2spec $(BIN)
+
 cimafits2spec: cimafits2spec.c cimafits2.h
 	$(CC) $(CFLAGS) -lm -o cimafits2spec cimafits2spec.c
 	cp cimafits2spec $(BIN)

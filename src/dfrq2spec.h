@@ -16,6 +16,7 @@ typedef struct
 {
 	GFLIB_DATA data[DUMPS_PER_ROW];
 	GFLIB_PDEVSTAT stat[DUMPS_PER_ROW];
+	char fill11[64];
 	char object[16];
 	double cf; // center frequency
 	double fdelt; //delta frequency

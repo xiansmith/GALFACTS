@@ -189,7 +189,7 @@ int main(int argc,char* argv[])
 			//Write the spec_cfg files during the first pass
 			if(config_not_written)
 			{
-				sprintf(cfgfilename,"%s.%s.b%ds%d.lths.spec_cfg",proj_code,date,beam,band);
+				sprintf(cfgfilename,"%s.%s.b%ds%d.htls.spec_cfg",proj_code,date,beam,band);
 				if ( (cfg_file = fopen(cfgfilename, "w") ) == NULL )
 				{
 					printf("ERROR: can't open config file '%s'\n", cfgfilename);
@@ -282,7 +282,7 @@ int main(int argc,char* argv[])
 //					XYoff[l] = Uoff[l];
 //					YXon[l] = Von[l];
 //					YXoff[l] = Voff[l];
-
+//					printf("%lf %lf %lf %lf\n",XX[l],YY[l],XY[l],YX[l]);
 
 				}//l loop for each channel
 

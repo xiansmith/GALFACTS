@@ -76,6 +76,10 @@ dfrq2spec: dfrq2spec.c dfrq2spec.h jsd/jsd_futil.o
 	$(CC) $(CFLAGS) -I. -lm -o dfrq2spec dfrq2spec.c jsd/jsd_futil.o
 	cp dfrq2spec $(BIN)
 
+read_spec: read_spec.c read_spec.h
+	$(CC) $(CFLAGS) -I. -lm -o read_spec read_spec.c
+	cp read_spec $(BIN)
+	
 cimafits2spec: cimafits2spec.c cimafits2.h
 	$(CC) $(CFLAGS) -lm -o cimafits2spec cimafits2spec.c
 	cp cimafits2spec $(BIN)

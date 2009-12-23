@@ -52,6 +52,9 @@ int main(int argc,char* argv[])
 {
 	int num_files;
 	int beam;
+	int num_samples = 0;
+	int file_size = 0;
+	float total_time = 0.0;
 	char *proj_code; //a2130
 	char *date; //date of observation
 	char *datadir; //path where the data-files reside
@@ -90,10 +93,10 @@ int main(int argc,char* argv[])
 	}
 
 	FILE *datafile,*specfile,*cfg_file,*listfile;
-	char datafilename[100+1],specfilename[40+1],cfgfilename[40+1];
+	char datafilename[100+1],specfilename[40+1],cfgfilename[40+1],temp[40+1];
 	listfile = fopen(filelistname,"r");
 	num_files = jsd_line_count(listfile);
-	printf("Number of files to be processed:%d\n",num_files);
+	printf("Number of files to be processed: %d\n",num_files);
 
 	sprintf(specfilename,"%s.%s.b%1ds%1d.htls.spec",proj_code,date,beam,band);
 	if ( (specfile = fopen(specfilename, "wb") ) == NULL )
@@ -118,7 +121,8 @@ int main(int argc,char* argv[])
 		float XY[MAX_CHANNELS],YX[MAX_CHANNELS];
 
 		//Use filelist to know which files to process
-		fscanf(listfile,"%s",datafilename);
+		fscanf(listfile,"%s",temp);
+		sprintf(datafilename,"%s/%s",datadir,temp);
 		if ( (datafile = fopen(datafilename, "r") ) == NULL )
 		{
 			printf("ERROR: can't open data file for reading '%s'\n", datafilename);
@@ -185,6 +189,7 @@ int main(int argc,char* argv[])
 			cnvrt_end_db(&row2.req_raj);
 			cnvrt_end_db(&row2.req_decj);
 			cnvrt_end_db(&row1.alfa_ang);
+			cnvrt_end_db(&row1.lst);
 
 			//Write the spec_cfg files during the first pass
 			if(config_not_written)
@@ -198,31 +203,54 @@ int main(int argc,char* argv[])
 
 				cnvrt_end_db(&row1.tdelt);
 				fprintf(cfg_file,"%f\n",row1.tdelt*1000);
-				fprintf(cfg_file,"%i\n",RAW_CHANNELS);
+				fprintf(cfg_file,"%i\n",RAW_CHANNELS*4*4);
 				cnvrt_end_db(&row1.cf);
 				fprintf(cfg_file,"%f\n",row1.cf/1000000);
 				cnvrt_end_db(&row1.fdelt);
 				fprintf(cfg_file,"%f\n",-1*row1.fdelt*RAW_CHANNELS/1000);
-				fprintf(cfg_file,"1 %i 4 2 0\n",RAW_CHANNELS);
+				fprintf(cfg_file,"1 %i 4 1 %i\n",RAW_CHANNELS*4,RAW_CHANNELS/2);//??
 				fprintf(cfg_file,"%s\n",proj_code);
-				fprintf(cfg_file,"%f\n",row1.mjdxxobs);
+				fprintf(cfg_file,"%c%c %c%c %c%c%c%c\n",row1.datexxobs[8],\
+				       row1.datexxobs[9],row1.datexxobs[5],row1.datexxobs[6],\
+				       row1.datexxobs[0],row1.datexxobs[1],row1.datexxobs[2],\
+				       row1.datexxobs[3]);
+				fprintf(cfg_file,"%d %d %d\n",(int)(row1.UTC)/3600,((int)(row1.UTC)%3600)/60,\
+				       (int)(row1.UTC)%60);
 				fprintf(cfg_file,"AO\n");
-				fprintf(cfg_file,"Integration time (ms):%f\n",row1.tdelt*1000);
-				fprintf(cfg_file,"MJD: %f\n",row1.mjdxxobs);
+				fprintf(cfg_file,"+1\n"); //??
+				fprintf(cfg_file,"Original MOCK starting file: %s\n",datafilename);
+				fprintf(cfg_file,"Sample time (us): %f\n",row1.tdelt*1000*1000);
+				//fprintf(cfg_file,"Observation time (s): \n");
+				fprintf(cfg_file,"Time stamp (MJD): %f\n",row1.mjdxxobs);
+				fprintf(cfg_file,"Number of samples/record: %d\n",RAW_CHANNELS); //??
 				fprintf(cfg_file,"Center freq (MHz): %f\n",row1.cf/1000000);
 				fprintf(cfg_file,"Channel band (kHz): %f\n",-1*row1.fdelt/1000);
 				fprintf(cfg_file,"Number of channels/record: %d\n",RAW_CHANNELS);
-				fprintf(cfg_file,"RA at start (degrees): %f\n",row1.RA);
-				fprintf(cfg_file,"DEC at start (degrees): %f\n",row1.DEC);
-				fprintf(cfg_file,"UTC at start (seconds): %f\n",row1.UTC);
-				fprintf(cfg_file,"ALFA angle (degrees) at start: %f\n",row1.alfa_ang);
+				fprintf(cfg_file,"Nifs: 4\n"); //??
+				fprintf(cfg_file,"RA (J2000): %f\n",row1.RA);
+				fprintf(cfg_file,"DEC (J2000): %f\n",row1.DEC);
+				cnvrt_end_db(&row1.glon);
+				cnvrt_end_db(&row1.glat);
+				fprintf(cfg_file,"Gal l: %f\n",row1.glon);
+				fprintf(cfg_file,"Gal b: %f\n",row1.glat);
+				fprintf(cfg_file,"Name: %s\n",proj_code);
+				fprintf(cfg_file,"Lagformat: %d\n",1); //??
+				fprintf(cfg_file,"Sum: %d\n",0); //??
+				fprintf(cfg_file,"Level: %d\n",3); //??
+				fprintf(cfg_file,"AZ at start: %f\n",row1.azimuth);
+				fprintf(cfg_file,"ZA at start: %f\n",90-row1.elevatio);
+				fprintf(cfg_file,"AST at start: %f\n",row1.UTC-14400);
+				fprintf(cfg_file,"LST at start: %f\n",row1.lst);
 				fprintf(cfg_file,"Project ID: %s\n",proj_code);
-				fclose(cfg_file);
+				fprintf(cfg_file,"Observers: \n");
+
 				config_not_written = 0;
 			}
 
 			for(k=0;k<DUMPS_PER_ROW;k++)
 			{
+				num_samples++;
+				//total_time += 0.001;
 				//Interpolate time stamps
 				if(!beam)
 				{
@@ -241,7 +269,7 @@ int main(int argc,char* argv[])
 				cnvrt_end_sint(&row1.stat[k].fftAccum);
 			//	cnvrt_end_sint(&row1.statoff[k].fftAccum);
 				fwrite(&SPBlock,sizeof(SpecPointingBlock),1,specfile);
-
+				file_size += sizeof(SpecPointingBlock);
 				/*Process data converting A,B,U,V into XX,XY,YY,YX values and normalizing with
 				 * respect to fft accumulations
 				 */
@@ -291,6 +319,7 @@ int main(int argc,char* argv[])
 				fwrite(&YY,sizeof(float),MAX_CHANNELS,specfile);
 				fwrite(&XY,sizeof(float),MAX_CHANNELS,specfile);
 				fwrite(&YX,sizeof(float),MAX_CHANNELS,specfile);
+				file_size += sizeof(float)*MAX_CHANNELS*4;
 				//fwrite(&XXoff,sizeof(float),MAX_CHANNELS,specfile);
 				//fwrite(&YYoff,sizeof(float),MAX_CHANNELS,specfile);
 				//fwrite(&XYoff,sizeof(float),MAX_CHANNELS,specfile);
@@ -299,10 +328,18 @@ int main(int argc,char* argv[])
 			cnvrt_end_db(&row2.RA);
 			cnvrt_end_db(&row2.DEC);
 			cnvrt_end_db(&row2.UTC);
-
+			total_time += 0.6;
 		}//naxis2 loop g
 		fclose(datafile);
 	}//num files loop f
 	fclose(specfile);
+	//fix the file size values
+	fprintf(cfg_file,"Observation time (s): %f\n",total_time);
+	fprintf(cfg_file,"File size (bytes): %d\n",file_size);
+	fprintf(cfg_file,"Data size (bytes): %d\n",file_size);
+	fprintf(cfg_file,"Number of samples: %d\n",num_samples);
+	fprintf(cfg_file,"=======================================================================");
+	fclose(cfg_file);
+	printf("Done.\n");
 	return 1;
 }

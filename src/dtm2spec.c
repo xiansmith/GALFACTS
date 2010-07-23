@@ -215,14 +215,14 @@ int main(int argc,char* argv[])
 					cnvrt_end_int(&row1.dataoff[k].U[l]);
 					cnvrt_end_int(&row1.dataoff[k].V[l]);
 					//normalize
-					Aon[l] = (float)(row1.dataon[k].A[l]/row1.staton[k].fftAccum);
-					Bon[l] = (float)(row1.dataon[k].B[l]/row1.staton[k].fftAccum);
-					Uon[l] = (float)((int)row1.dataon[k].U[l]/row1.staton[k].fftAccum);
-					Von[l] = (float)((int)row1.dataon[k].V[l]/row1.staton[k].fftAccum);
-					Aoff[l] = (float)(row1.dataoff[k].A[l]/row1.statoff[k].fftAccum);
-					Boff[l] = (float)(row1.dataoff[k].B[l]/row1.statoff[k].fftAccum);
-					Uoff[l] = (float)((int)row1.dataoff[k].U[l]/row1.statoff[k].fftAccum);
-					Voff[l] = (float)((int)row1.dataoff[k].V[l]/row1.statoff[k].fftAccum);
+					Aon[l] = (float)(row1.dataon[k].A[l])/row1.staton[k].fftAccum;
+					Bon[l] = (float)(row1.dataon[k].B[l])/row1.staton[k].fftAccum;
+					Uon[l] = (float)((int)row1.dataon[k].U[l])/row1.staton[k].fftAccum;
+					Von[l] = (float)((int)row1.dataon[k].V[l])/row1.staton[k].fftAccum;
+					Aoff[l] = (float)(row1.dataoff[k].A[l])/row1.statoff[k].fftAccum;
+					Boff[l] = (float)(row1.dataoff[k].B[l])/row1.statoff[k].fftAccum;
+					Uoff[l] = (float)((int)row1.dataoff[k].U[l])/row1.statoff[k].fftAccum;
+					Voff[l] = (float)((int)row1.dataoff[k].V[l])/row1.statoff[k].fftAccum;
 					//convert to xx yy xy yx
 					XXon[l] = Aon[l]/2;
 					XXoff[l] = Aoff[l]/2;

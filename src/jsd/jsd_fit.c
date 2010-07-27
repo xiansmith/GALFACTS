@@ -37,7 +37,7 @@ void jsd_normalize(double A[], int n, double min, double max)
 	int i;
 
 	for (i=0; i<n; i++) {
-		A[i] = NORMALIZE(A[i], min, max);		
+		A[i] = NORMALIZE(A[i], min, max);
 	}
 }
 void jsd_denormalize(double A[], int n, double min, double max)
@@ -45,7 +45,7 @@ void jsd_denormalize(double A[], int n, double min, double max)
 	int i;
 
 	for (i=0; i<n; i++) {
-		A[i] = DENORMALIZE(A[i], min, max);		
+		A[i] = DENORMALIZE(A[i], min, max);
 	}
 }
 
@@ -103,7 +103,7 @@ void jsd_linear_fit(double X[], double Y[], int size, float nsigma, double C[], 
 
 	eval = malloc(sizeof(double) * size);
 
-	do 
+	do
 	{
 		if (size <= 1) {
 			C[0] = Y[0];
@@ -117,8 +117,8 @@ void jsd_linear_fit(double X[], double Y[], int size, float nsigma, double C[], 
 			C[1] = 0.0;
 			return;
 		}
-		
-		// do the evaluations 
+
+		// do the evaluations
 		mean = 0.0;
 		for (i=0; i<size; i++) {
 			eval[i] = c0+c1*X[i];
@@ -126,7 +126,7 @@ void jsd_linear_fit(double X[], double Y[], int size, float nsigma, double C[], 
 		}
 		mean /= size;
 
-		// calc sigma 
+		// calc sigma
 		sigma = 0.0;
 		for (i=0; i<size; i++) {
 			sigma += SQR(Y[i]-mean);
@@ -134,12 +134,12 @@ void jsd_linear_fit(double X[], double Y[], int size, float nsigma, double C[], 
 		sigma = sqrt(sigma/size);
 
 
-		// determine outliers 
+		// determine outliers
 		outlier = 0;
 		for (i=0; i<size; i++) {
 			if (fabs(mean-Y[i]) > nsigma*sigma) {
 				outlier = 1;
-				//printf("outlier=%g: (size=%i mean=%g sigma=%g nsigma=%g)\n", 
+				//printf("outlier=%g: (size=%i mean=%g sigma=%g nsigma=%g)\n",
 				//	Y[i], size, mean, sigma, nsigma);
 				size = size-1;
 				Y[i] = Y[size];
@@ -224,7 +224,7 @@ int jsd_poly_fit(double X[], double Y[], int size, float nsigma, double C[], int
 		/* calc sigma */
 		sigma = 0.0;
 		for (i=0; i<size; i++) {
-			sigma += SQR(Y[i]-mean);
+			sigma += SQR(diff[i]-mean);
 		}
 		sigma = sqrt(sigma/size);
 
@@ -234,7 +234,7 @@ int jsd_poly_fit(double X[], double Y[], int size, float nsigma, double C[], int
 		for (i=0; i<size; i++) {
 			if (fabs(diff[i]) > nsigma*sigma) {
 				outlier = 1;
-				//printf("outlier=%g: (size=%i mean=%g sigma=%g nsigma=%g)\n", 
+				//printf("outlier=%g: (size=%i mean=%g sigma=%g nsigma=%g)\n",
 				//	Y[i], size, mean, sigma, nsigma);
 				Y[i] = eval[i];
 			}
@@ -321,7 +321,7 @@ void jsd_iterative_fpoly_fit(float X[], float Y[], float sig[], int size, float 
 	V = matrix(1, ma, 1, ma);
 	W = vector(1, ma);
     eval = vector(1, size);
-	
+
 	for (i=0; i<size; i++) {
 		sig[i] = 1.0;
 	}

@@ -1,0 +1,223 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
+#include "decdep.h"
+#include "chebyshev.h"
+//----------------------------------------------------------------------------------------------------------------------------------------
+static void day_dec_dependence(FluxWappData * wappdata, int day, int order, int chan, float *cIc, float *cQc, float *cUc, float *cVc, int avg)
+{
+int Hchan = 2752; // hard wired!!!
+int r, N, R, n, navg;
+if(avg == 0) navg = 1; else navg = avg;
+float Hfreq = 1420.4057, Cfreq = 1450, df = 0.042, freq = Cfreq - ((float)(chan + 1 + navg - MAX_CHANNELS/2.0)) * df;
+float min, max, DEC, nsigma = 2.5; 
+float cI[order+1], cQ[order+1], cU[order+1], cV[order+1];
+
+FluxDayData * daydata = &wappdata->daydata[day];
+R = daydata->numRecords;
+
+float *x = (float*)malloc(R * sizeof(float));
+float *yI = (float*)malloc(R * sizeof(float));
+float *yQ = (float*)malloc(R * sizeof(float));
+float *yU = (float*)malloc(R * sizeof(float));
+float *yV = (float*)malloc(R * sizeof(float));
+
+N = 0; 
+for(r=0; r<R; r++)
+	{
+	if(isfinite(daydata->records[r].stokes.I) && isfinite(daydata->records[r].stokes.Q) && isfinite(daydata->records[r].stokes.U) && isfinite(daydata->records[r].stokes.V))
+		{
+		x[N] = daydata->records[r].DEC;
+		yI[N] = daydata->records[r].stokes.I;
+		yQ[N] = daydata->records[r].stokes.Q;
+		yU[N] = daydata->records[r].stokes.U;
+		yV[N] = daydata->records[r].stokes.V;
+		N++;
+		}
+	}
+
+chebyshev_minmax(x, N, &min, &max); 
+chebyshev_normalize(x, N, min, max);
+
+if(freq > Hfreq - 0.5 && freq < Hfreq +0.5)
+	{
+	for(n=0; n<order+1; n++)
+		{
+		cI[n] = cIc[n + day*(order+1)];
+		cQ[n] = cQc[n + day*(order+1)];
+		cU[n] = cUc[n + day*(order+1)];
+		cV[n] = cVc[n + day*(order+1)];
+		}	
+	}
+else
+	{
+	chebyshev_fit_dec(x, yI, N, nsigma, cI, order);
+	chebyshev_fit_dec(x, yQ, N, nsigma, cQ, order);
+	chebyshev_fit_dec(x, yU, N, nsigma, cU, order);
+	chebyshev_fit_dec(x, yV, N, nsigma, cV, order);
+	for(n=0; n<order+1; n++)
+		{
+		cIc[n + day*(order+1)] = cI[n];
+		cQc[n + day*(order+1)] = cQ[n];
+		cUc[n + day*(order+1)] = cU[n];
+		cVc[n + day*(order+1)] = cV[n];
+		}
+	}
+
+for(r=0; r<R; r++)
+	{
+	if(isfinite(daydata->records[r].stokes.I) && isfinite(daydata->records[r].stokes.Q) && isfinite(daydata->records[r].stokes.U) && isfinite(daydata->records[r].stokes.V))
+		{
+		DEC = CNORMALIZE(daydata->records[r].DEC, min, max);
+		daydata->records[r].stokes.I -= chebyshev_eval(DEC, cI, order);
+		daydata->records[r].stokes.Q -= chebyshev_eval(DEC, cQ, order);
+		daydata->records[r].stokes.U -= chebyshev_eval(DEC, cU, order);
+		daydata->records[r].stokes.V -= chebyshev_eval(DEC, cV, order);
+		}
+	}
+
+free(x); free(yI); free(yQ); free(yU); free(yV);
+}
+//-------------------------------------------------------------------------------
+void beam_gain_calibration(FluxWappData * wappdata)
+{
+int r, day;
+for(day=0; day<wappdata->numDays; day++) 
+	{
+	FluxDayData * daydata = &wappdata->daydata[day];
+	for(r=0; r<daydata->numRecords; r++)
+		{
+		if(isfinite(daydata->records[r].stokes.I))
+			{
+			switch(day%7)
+				{
+				case 0:	daydata->records[r].stokes.I /= ( 0.00122530 * daydata->records[r].DEC + 0.97985562); break;
+				case 1:	daydata->records[r].stokes.I /= ( 0.00116780 * daydata->records[r].DEC + 0.75177204); break;
+				case 2: daydata->records[r].stokes.I /= (-0.00025934 * daydata->records[r].DEC + 0.79175157); break; 
+				case 3: daydata->records[r].stokes.I /= ( 0.00036153 * daydata->records[r].DEC + 0.75028658); break; 
+				case 4: daydata->records[r].stokes.I /= (-0.00090732 * daydata->records[r].DEC + 0.74814666); break; 
+				case 5: daydata->records[r].stokes.I /= (-0.00602525 * daydata->records[r].DEC + 0.96467256); break; 
+				case 6: daydata->records[r].stokes.I /= ( 0.00116780 * daydata->records[r].DEC + 0.75177204); break; // like beam 1
+				default: break;
+				}
+			}
+		}
+	}	
+}
+//-------------------------------------------------------------------------------
+void beam_gain_calibration_table(FluxWappData * wappdata, int cal_low, int cal_high, float cal_table[][7], int chan)
+{
+int r, day;
+/*
+if(chan < cal_low || chan > cal_high)
+	{
+	for(day=0; day<wappdata->numDays; day++) 
+		{
+		FluxDayData * daydata = &wappdata->daydata[day];
+		for(r=0; r<daydata->numRecords; r++)
+			{
+			if(isfinite(daydata->records[r].stokes.I))
+				{
+				switch(day%7)
+					{
+					case 0:	daydata->records[r].stokes.I /= ( cal_table[0][0] * daydata->records[r].DEC + cal_table[1][0]); break;
+					case 1:	daydata->records[r].stokes.I /= ( cal_table[0][1] * daydata->records[r].DEC + cal_table[1][1]); break;
+					case 2: daydata->records[r].stokes.I /= ( cal_table[0][2] * daydata->records[r].DEC + cal_table[1][2]); break;
+					case 3: daydata->records[r].stokes.I /= ( cal_table[0][3] * daydata->records[r].DEC + cal_table[1][3]); break;
+					case 4: daydata->records[r].stokes.I /= ( cal_table[0][4] * daydata->records[r].DEC + cal_table[1][4]); break;
+					case 5: daydata->records[r].stokes.I /= ( cal_table[0][5] * daydata->records[r].DEC + cal_table[1][5]); break;
+					case 6: daydata->records[r].stokes.I /= ( cal_table[0][6] * daydata->records[r].DEC + cal_table[1][6]); break; 
+					default: break;
+					}
+				}
+			}
+		}	
+	}
+	else
+		{
+		for(day=0; day<wappdata->numDays; day++) 
+			{
+			FluxDayData * daydata = &wappdata->daydata[day];
+			for(r=0; r<daydata->numRecords; r++)
+				{
+				if(isfinite(daydata->records[r].stokes.I))
+					{
+					switch(day%7)
+						{
+						case 0:	daydata->records[r].stokes.I /= ( cal_table[0][0] * daydata->records[r].DEC + cal_table[chan - cal_low +2][0]); break;
+						case 1:	daydata->records[r].stokes.I /= ( cal_table[0][1] * daydata->records[r].DEC + cal_table[chan - cal_low +2][1]); break;
+						case 2: daydata->records[r].stokes.I /= ( cal_table[0][2] * daydata->records[r].DEC + cal_table[chan - cal_low +2][2]); break;
+						case 3: daydata->records[r].stokes.I /= ( cal_table[0][3] * daydata->records[r].DEC + cal_table[chan - cal_low +2][3]); break;
+						case 4: daydata->records[r].stokes.I /= ( cal_table[0][4] * daydata->records[r].DEC + cal_table[chan - cal_low +2][4]); break;
+						case 5: daydata->records[r].stokes.I /= ( cal_table[0][5] * daydata->records[r].DEC + cal_table[chan - cal_low +2][5]); break;
+						case 6: daydata->records[r].stokes.I /= ( cal_table[0][6] * daydata->records[r].DEC + cal_table[chan - cal_low +2][6]); break; 
+						default: break;
+						}
+					}
+				}
+			}				
+		}
+*/
+
+
+if(chan == 0)
+	{
+	for(day=0; day<wappdata->numDays; day++) 
+		{
+		FluxDayData * daydata = &wappdata->daydata[day];
+		for(r=0; r<daydata->numRecords; r++)
+			{
+			if(isfinite(daydata->records[r].stokes.I))
+				{
+				switch(day%7)
+					{
+					case 0:	daydata->records[r].stokes.I /= ( cal_table[0][0] * daydata->records[r].DEC + cal_table[1][0]); break;
+					case 1:	daydata->records[r].stokes.I /= ( cal_table[0][1] * daydata->records[r].DEC + cal_table[1][1]); break;
+					case 2: daydata->records[r].stokes.I /= ( cal_table[0][2] * daydata->records[r].DEC + cal_table[1][2]); break;
+					case 3: daydata->records[r].stokes.I /= ( cal_table[0][3] * daydata->records[r].DEC + cal_table[1][3]); break;
+					case 4: daydata->records[r].stokes.I /= ( cal_table[0][4] * daydata->records[r].DEC + cal_table[1][4]); break;
+					case 5: daydata->records[r].stokes.I /= ( cal_table[0][5] * daydata->records[r].DEC + cal_table[1][5]); break;
+					case 6: daydata->records[r].stokes.I /= ( cal_table[0][6] * daydata->records[r].DEC + cal_table[1][6]); break; 
+					default: break;
+					}
+				}
+			}
+		}	
+	}
+else if(chan >= cal_low && chan <= cal_high)
+		{
+		for(day=0; day<wappdata->numDays; day++) 
+			{
+			FluxDayData * daydata = &wappdata->daydata[day];
+			for(r=0; r<daydata->numRecords; r++)
+				{
+				if(isfinite(daydata->records[r].stokes.I))
+					{
+					switch(day%7)
+						{
+						case 0:	daydata->records[r].stokes.I /= ( cal_table[0][0] * daydata->records[r].DEC + cal_table[chan - cal_low +2][0]); break;
+						case 1:	daydata->records[r].stokes.I /= ( cal_table[0][1] * daydata->records[r].DEC + cal_table[chan - cal_low +2][1]); break;
+						case 2: daydata->records[r].stokes.I /= ( cal_table[0][2] * daydata->records[r].DEC + cal_table[chan - cal_low +2][2]); break;
+						case 3: daydata->records[r].stokes.I /= ( cal_table[0][3] * daydata->records[r].DEC + cal_table[chan - cal_low +2][3]); break;
+						case 4: daydata->records[r].stokes.I /= ( cal_table[0][4] * daydata->records[r].DEC + cal_table[chan - cal_low +2][4]); break;
+						case 5: daydata->records[r].stokes.I /= ( cal_table[0][5] * daydata->records[r].DEC + cal_table[chan - cal_low +2][5]); break;
+						case 6: daydata->records[r].stokes.I /= ( cal_table[0][6] * daydata->records[r].DEC + cal_table[chan - cal_low +2][6]); break; 
+						default: break;
+						}
+					}
+				}
+			}				
+		}
+
+}
+//-------------------------------------------------------------------------------
+void calculate_dec_dependence(FluxWappData * wappdata, int order, int chan, float *cIc, float *cQc, float *cUc, float *cVc, int avg)
+{
+int d;
+for(d=0; d<wappdata->numDays; d++) 
+	{
+	printf("Day %d of %d\n", d+1, wappdata->numDays);
+	day_dec_dependence(wappdata, d, order, chan, cIc, cQc, cUc, cVc, avg);
+	}
+}
+//-------------------------------------------------------------------------------

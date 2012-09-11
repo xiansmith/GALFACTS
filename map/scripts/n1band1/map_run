@@ -1,0 +1,60 @@
+#!/bin/bash
+#clear
+
+# Executable directory
+BIN=/n/ras/people/mircea/map/bin
+#BIN=/export/fox/processed/bin
+
+#Field
+FIELD="N1"
+
+#Band
+BAND="1"
+
+#Central frequency
+CNTRFRQ="1300"
+
+#RA min & max
+RAMIN="20.0"
+RAMAX="107.0"
+
+#DEC min & max
+DECMIN="19.7"
+DECMAX="37.6"
+
+#CELLSIZE max resolution is 3.5
+CELLSIZE="1.0"
+
+#radius of spread, multiple of resolution 3.5, recommended 1.5 - 2.0
+PATCH="2.0"
+
+# 1 upscan, 2 downscan, 3 both, for creating images
+GRIDTYPE="3"
+
+BALGAIN="0.142"
+
+BALEPSILON="0.000001"
+
+BWORDER="6"
+
+DECORDER="12"
+
+SOURCE="GALFACTS_N1"
+
+# First channel
+LOWCHAN="0"
+
+# Last channel
+HIGHCHAN="1"
+
+# AVG=0 for average image, AVG=1,2,...10 for average cube
+AVG="0"
+
+# AVG first channel
+AVG_LOWCHAN="50"
+
+# AVG last channel
+AVG_HIGHCHAN="2589"
+
+
+$BIN/map4096 multibeam $CNTRFRQ $LOWCHAN $HIGHCHAN $RAMIN $RAMAX $DECMIN $DECMAX $CELLSIZE $PATCH $GRIDTYPE $BALGAIN $BALEPSILON $BWORDER $DECORDER $AVG $AVG_LOWCHAN $AVG_HIGHCHAN "$SOURCE" $FIELD $BAND

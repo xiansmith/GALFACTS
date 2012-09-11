@@ -1,0 +1,7 @@
+#!/bin/bash
+clear
+./run_cal0 &
+./run_cal1 &
+./run_cal2 &
+
+

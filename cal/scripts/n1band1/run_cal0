@@ -1,0 +1,66 @@
+#!/bin/bash
+clear
+
+# Executable directory
+BIN=/n/ras/people/mircea/cal/bin
+#BIN=/export/fox/processed/bin
+
+# Field
+FIELD="N1"
+
+# Data directory
+DATADIR=/export/fox/data/N1/band1
+
+# Beam pattern
+BEAM="1110000"
+
+# Band selection
+BAND="1"
+
+# First channel
+LOWCHAN="50"
+
+# Last channel
+HIGHCHAN="2589"
+
+# Frequency domain RFI: 
+# RFIF="0", no RFI in frquency domain
+# RFIF="1", second derivative
+RFIF="1"
+
+# Time domain RFI: 
+# RFIT="0", no RFI in time domain
+# RFIT="1", sigma - second derivative
+# RFIT="2", average - second derivative
+# RFIT="3", difference
+RFIT="2"
+
+# Frequency domain, sigma multiplier
+NUMSIGMAF="4.0"
+
+# Time domain, sigma multiplier
+NUMSIGMAT="4.0"
+
+# Frequency smoothing selector 
+FREQSMOOTHING="0"
+
+#UV Adaptive filtering 1/0
+UVDENOISING=1
+TAU=1
+LAMBDA=0
+
+# Hidrogen frequency, band
+HIDROGENFREQ="1420.4057"
+HIDROGENBAND="0.5"
+
+# Files selectors
+CALSKYFILES="0"
+ANNFILES="0"
+
+#CAL fit/smooth selection, fit=1, smooth=0
+FITSMOOTH=0
+
+# Cal smoothing window (recommended 1000)
+WINDOW=1000
+
+$BIN/cal4096 $FIELD $DATADIR $BEAM $BAND $LOWCHAN $HIGHCHAN $RFIF $RFIT $NUMSIGMAF $NUMSIGMAT $FREQSMOOTHING $UVDENOISING $TAU $LAMBDA $HIDROGENFREQ $HIDROGENBAND $CALSKYFILES $ANNFILES $FITSMOOTH $WINDOW

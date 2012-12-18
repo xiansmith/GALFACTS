@@ -112,7 +112,7 @@ static void create_header_param_list(header_param_list * hpar_ptr, MapMetaData *
 		do
 			{
 			fscanf(BadChannelsFile, "%d %d\n", &chan1, &chan2);
-			printf("Excluded: chan1 = %d chan2 = %d\n", chan1, chan2);
+			//printf("Excluded: chan1 = %d chan2 = %d\n", chan1, chan2);
 			for(i=chan1; i<=chan2; i++)
 				{
 				badchannels[i] = 1;
@@ -140,7 +140,7 @@ static void create_header_param_list(header_param_list * hpar_ptr, MapMetaData *
 
 		// find highest good channel for crval[2]
 		firstGoodChan = 1;
-		for( i=md->avg_highchan; i <= md->avg_lowchan; i-- )
+		for( i=md->avg_highchan; i > md->avg_lowchan; i-- )
 		{
 			if( badchannels[i] != 1 )
 			{
@@ -159,7 +159,7 @@ static void create_header_param_list(header_param_list * hpar_ptr, MapMetaData *
 		hpar_ptr->crval[2] = avgfreq;
 		hpar_ptr->cdelt[2] = md->df * (md->avg_highchan - md->avg_lowchan);  // for avg md->df * md->n3
 
-		printf("XXX For average channel got chanCount=%d fstart=%f freqsum=%f avgfreq=%f goodLowChan=%d goodHighChan=%d\n", chanCount, fstart, freqsum, avgfreq, goodLowChan, goodHighChan );
+		//printf("XXX For average channel got chanCount=%d fstart=%f freqsum=%f avgfreq=%f goodLowChan=%d goodHighChan=%d\n", chanCount, fstart, freqsum, avgfreq, goodLowChan, goodHighChan );
 
 	}
 

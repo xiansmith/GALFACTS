@@ -57,6 +57,7 @@ static void create_fits_cube(const char *field, FluxWappData * wappdata, char * 
 	printf("Start Frequency: %f\n", md->fstart);
  	printf("Balance Loop Gain: %f\n", balgain);
  	printf("Balance Epsilon: %f\n", balepsilon);
+	printf("FWHM: %f\n", md->fwhm);
 
 	numbytes = md->n1 * md->n2 * sizeof (float);
 	dataI   = (float *) malloc (numbytes);
@@ -67,7 +68,7 @@ static void create_fits_cube(const char *field, FluxWappData * wappdata, char * 
 	
 	if (!dataI || !dataQ || !dataU || !dataV || !weight){printf("ERROR: memory allocation of %i bytes failed !\n", numbytes); return;}
 
-	init_psf_lookup_table(65537, 9.1);
+	init_psf_lookup_table(65537, 9.1, md->fwhm);
 	init_psf_map(md->fwhm, md->cellsize, md->beamwidths);
 	
 
@@ -219,7 +220,7 @@ float pfit_lambda;
 /* Process command line arguments */ 
 /* Convert args into more usable units were required */
 
-if(argc != 22){printf("Usage: %s <parameters_list>\n", argv[0]); return EXIT_FAILURE;} 
+if(argc != 23){printf("Usage: %s <parameters_list>\n", argv[0]); return EXIT_FAILURE;} 
 
 wapp = argv[1];
 md.fcen = (float) atof(argv[2]);
@@ -243,8 +244,8 @@ md.avg_highchan = atoi(argv[18]);
 md.title = argv[19];
 char *field; field = argv[20];
 md.band = atoi(argv[21]);
+md.fwhm = atoi(argv[22]); //2.0; //TODO: paramaterize this
 
-md.fwhm = 2.0; //TODO: paramaterize this
 md.RAcen = (md.ramax + md.ramin)/2.0;
 md.DECcen = (md.decmax + md.decmin)/2.0;
 md.RArange =  md.ramax - md.ramin;

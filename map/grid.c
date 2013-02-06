@@ -7,7 +7,8 @@
 #include "grid.h"
 #include "programs/fitsLib.h"
 
-#define FWHM      2.0                    // FWHM of psf in arc minutes
+//#define FWHM        1.5
+//#define FWHM      2.0                    // FWHM of psf in arc minutes
 //#define FWHM      1.5                    // FWHM of psf in arc minutes
 
 //original PSF
@@ -65,7 +66,7 @@ static int psf_size;
 //#define PSF(offset) ( exp(-2.772589 * DSQR(offset/fwhm)) )
 //#define psf(offset) (psf_lookup_table[(int)(offset/psf_step)])
 
-void init_psf_lookup_table(int size, float maxVal)
+void init_psf_lookup_table(int size, float maxVal, float fwhm)
 {
 	int i;
 	register float offset = 0.0;
@@ -74,7 +75,7 @@ void init_psf_lookup_table(int size, float maxVal)
 	psf_lookup_table = malloc (sizeof(float) * size);
 	for (i=0; i<size; i++) {
 		offset += psf_step;
-		psf_lookup_table[i] = (exp(-2.772589*(offset/FWHM)*(offset/FWHM)));
+		psf_lookup_table[i] = (exp(-2.772589*(offset/fwhm)*(offset/fwhm)));
 	}
 }
 

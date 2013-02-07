@@ -12,5 +12,6 @@ void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int siz
 void rfi_detection_time_domain3(const char *field, SpecRecord dataset[], int size, int lowchan, int highchan, float numSigma, float hidrogenfreq, float hidrogenband, float freq[]);
 void outofbandrfi_ann(SpecRecord dataset[], int size, int lowchan, int highchan);
 void rfi_ann(SpecRecord dataset[], int size, int lowchan, int highchan, float freq[]); 
+void strongsource_rfi_exclusions( SpecRecord dataset[], int numRecords, int lowchan, int highchan );
 #endif
 

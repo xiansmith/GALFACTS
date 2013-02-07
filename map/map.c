@@ -183,19 +183,42 @@ void start_fits_cubes(const char * wapp, MapMetaData *md)
 	sprintf (hparV.object, "%s Stokes V", md->title);
 	sprintf (hparW.object, "%s Weight Cube", md->title);
 
-
-	snprintf (filename, 64, "images/%s_%04i_%04i_Icube.fits",md->title, md->lowchan, md->highchan-1 );
+	
+	if( (int)md->lowchan == 0 ) {
+		snprintf (filename, 64, "images/%s_average_image_I.fits",md->title);
+         } else {
+		snprintf (filename, 64, "images/%s_%04i_%04i_I.fits",md->title, md->lowchan, md->highchan-1 );
+	}
 	fitsI = fopen(filename, "w");
-	snprintf (filename, 64, "images/%s_%04i_%04i_Qcube.fits",md->title, md->lowchan, md->highchan-1 );
+	
+	if( (int)md->lowchan == 0 ) {
+		snprintf (filename, 64, "images/%s_average_image_Q.fits",md->title);
+	} else {
+		snprintf (filename, 64, "images/%s_%04i_%04i_Q.fits",md->title, md->lowchan, md->highchan-1 );
+	}	
 	fitsQ = fopen(filename, "w");
-	snprintf (filename, 64, "images/%s_%04i_%04i_Ucube.fits",md->title, md->lowchan, md->highchan-1 );
+
+	if( (int)md->lowchan == 0 ) {
+		snprintf (filename, 64, "images/%s_average_image_U.fits",md->title);
+	} else {
+		snprintf (filename, 64, "images/%s_%04i_%04i_U.fits",md->title, md->lowchan, md->highchan-1 );
+	}	
 	fitsU = fopen(filename, "w");
-	snprintf (filename, 64, "images/%s_%04i_%04i_Vcube.fits",md->title, md->lowchan, md->highchan-1 );
+
+	if( (int)md->lowchan == 0 ) {
+		snprintf (filename, 64, "images/%s_average_image_V.fits",md->title);
+	} else {
+		snprintf (filename, 64, "images/%s_%04i_%04i_V.fits",md->title, md->lowchan, md->highchan-1 );
+	}	
 	fitsV = fopen(filename, "w");
-	snprintf (filename, 64, "images/%s_%04i_%04i_Weightcube.fits",md->title, md->lowchan, md->highchan-1 );
+
+	if( (int)md->lowchan == 0 ) {
+		snprintf (filename, 64, "images/%s_average_image_Weight.fits",md->title);
+	} else {
+		snprintf (filename, 64, "images/%s_%04i_%04i_Weight.fits",md->title, md->lowchan, md->highchan-1 );
+	}	
 	fitsW = fopen(filename, "w");
-
-
+	
 	if (fitsI == NULL || fitsQ == NULL || fitsU == NULL || fitsV == NULL || fitsW==NULL) {
 		printf("ERROR: failed to open fits files\n");
 	}

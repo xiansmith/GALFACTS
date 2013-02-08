@@ -138,6 +138,8 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 	int numRecords, k;
 	SpecRecord * dataset;
 
+
+
 	start_clock();
 	globbuf.gl_offs = 1;
 	if(band == -1) sprintf(globpattern, "%s/%s/*.*.beam%i.*.spec", datadirname, datedir, beam); 
@@ -185,6 +187,10 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 	if (numRecords <= 0){printf("ERROR: Skipping %s %s: there are no records!\n", datedir, subdir); return;}
 	read_clock(); start_clock();
 	
+
+
+
+
 	printf("Marking bad data points\n");
 	char badfilename[128+1]; 
 	sprintf(badfilename, "%s/%s/bad_datapoints.dat", datadirname, datedir);
@@ -204,7 +210,7 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 		rfi_detection_frequency_domain(dataset, numRecords, lowchan, highchan, numSigmaF, hidrogenfreq, hidrogenband, freq);
 		}
 	
-	read_clock(); start_clock();
+	read_clock();
 	
 	switch( RFIT )
 		{
@@ -225,8 +231,17 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 		}		
 	read_clock(); start_clock();
 	
+	if ( RFIT ) {
+		printf("enter rfi exclusion\n");
+		strongsource_rfi_exclusions( dataset, numRecords, lowchan, highchan );
+		printf("exit rfi exclusion \n");
+	}
+
+	read_clock(); start_clock();
+
 	mark_bad_channels(dataset, numRecords, lowchan, highchan, numSigmaT, hidrogenfreq, hidrogenband, freq, badchannels);
 	
+	read_clock(); start_clock();
 	if(annfiles && (RFIF || RFIT))
 		{
 		printf("Create out of band RFI annotation files\n");
@@ -257,7 +272,7 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 	calculate_stokes(dataset, numRecords, lowchan, highchan, RFIF, calskyfiles, Tcalx, Tcaly, uvDenoising, uvDenoisingTau, uvDenoisingLambda);
 	read_clock(); start_clock();
 	printf("Writing channel data\n");
-	write_binary_channel_data(dataset, numRecords, lowchan, highchan);
+	write_binary_channel_data_singlefile(dataset, numRecords, lowchan, highchan);
 	read_clock(); start_clock();
 	printf("Writing average data\n");
 	average_stokes(dataset, numRecords, lowchan, highchan, hidrogenfreq, hidrogenband, freq);
@@ -310,6 +325,8 @@ int main(int argc, char *argv[])
 	float Tcaly[MAX_CHANNELS];
 	read_tcal("Tcal.dat", Tcalx, Tcaly);
 
+
+
 	FILE * BadChannelsFile; BadChannelsFile = fopen("BadChannels.list", "r");
 
 	int *badchannels = (int*)calloc(MAX_CHANNELS, sizeof(int));
@@ -329,6 +346,15 @@ int main(int argc, char *argv[])
 		while(!feof(BadChannelsFile));	
 		fclose(BadChannelsFile);
 		}
+
+
+	// read and process bad data file
+	FILE *baddatafile = fopen("baddata","rt");
+	char header[80+1];
+	float lowRA = 0.0, highRA = 0.0;
+	int badlowchan = 0, badhighchan = 0, bad = 0;
+	char badmjd[6];
+	char badbeam[8]={0};
 		
 	// Handle the Days.list file
 	FILE * dayfile; dayfile = fopen("Days.list", "r");
@@ -377,17 +403,58 @@ int main(int argc, char *argv[])
 				subdir = subdirname;
 				mkdir(subdir, mode);
 				chdir(subdir);
-				printf("Processing: %s\n",subdirname);
-				process_dataset(field, datadirname, datedir, subdir, beamcounter, band, lowchan, highchan, \
-				RFIF, RFIT, numSigmaF, numSigmaT, freqSmoothing, \
-				uvDenoising, uvDenoisingTau, uvDenoisingLambda, \
-				hidrogenfreq, hidrogenband, calskyfiles, annfiles, fit_smooth, window, Tcalx, Tcaly, badchannels); 
-				printf("---------------------------------------------------\n"); 
+				bad = 0;
+
+
+				if(baddatafile != NULL)
+				{
+
+				rewind( baddatafile );
+				//read out the #header
+				fgets(header,80,baddatafile);
+				while(!feof(baddatafile))
+					{
+					// read out a line of bad data file
+					fscanf(baddatafile,"%s %s", &badmjd, badbeam);
+					//printf("bad beam pattern: %s %d %d %f %f\n", badbeam, badlowchan, badhighchan, lowRA, highRA);
+					// check to see if mjd beam and channel match the current ones, if so stop reading further
+					// we now have the RA range for the bad data for this day
+
+					//printf( "\n ** %s %s", badmjd, datedir);
+					//printf( "beam compare = %s", badbeam );
+
+					if( (atoi(badmjd) == atoi(datedir)) && (badbeam[beamcounter] == '1') )
+						{
+						bad = 1;
+						break;
+						//for implementation read code at line no 361
+						}
+					}
+
+				}
+
+				if ( bad ) {
+					printf( "\nSkipping");
+					//printf("Skipping processing of day %s beam %s due to entry in bad data file", subdir, beamcounter);
+				}
+				else {
+					printf("\nProcessing: %s\n",subdirname);
+					process_dataset(field, datadirname, datedir, subdir, beamcounter, band, lowchan, highchan, \
+									RFIF, RFIT, numSigmaF, numSigmaT, freqSmoothing, \
+									uvDenoising, uvDenoisingTau, uvDenoisingLambda, \
+									hidrogenfreq, hidrogenband, calskyfiles, annfiles, fit_smooth, window, Tcalx, Tcaly, badchannels);
+				}
+
+				printf("---------------------------------------------------\n");
 				chdir("..");
+
+
 				}
 			}
 		chdir("..");
 		}
+
+	fclose(baddatafile);
 
 	for (i=0; i<numdirs; i++) free(datedirs[i]);
 	free(datedirs); //free(subdir);

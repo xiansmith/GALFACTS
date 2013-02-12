@@ -453,9 +453,7 @@ int main(int argc, char *argv[])
 			}
 		chdir("..");
 		}
-
-	fclose(baddatafile);
-
+	if(baddatafile != NULL) fclose(baddatafile);
 	for (i=0; i<numdirs; i++) free(datedirs[i]);
 	free(datedirs); //free(subdir);
 	free(badchannels);

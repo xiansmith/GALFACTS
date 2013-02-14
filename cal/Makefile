@@ -1,0 +1,3 @@
+all: cal
+cal:
+	gcc -O3 -ffast-math -fshort-enums -fno-common -D_GNU_SOURCE -o cal calmain.c denoising.c rfi.c stokes.c calibrate.c common.c smooth.c spec.c markdata.c jsd_futil.c jsd_util.c chebyshev.c -lm

@@ -1,9 +1,10 @@
-#include	 <math.h>
+#include <math.h>
 #include "stokes.h"
 #include "rfi.h"
 #include "cal.h"
 #include "fluxdata.h"
 #include "denoising.h"
+#include "chebyshev.h"
 #include "errno.h"//SSG
 //----------------------------------------------------------------------------------------------------------------------------------------
 extern int errno; //SSG
@@ -37,12 +38,21 @@ static void compute_gains(const SpecRecord * pRec, GainSet * pGain, int lowchan,
 		{
 		pGain->x[i] = sqrt(Tcalx[i]/pRec->cal.xx[i]);
 		pGain->y[i] = sqrt(Tcaly[i]/pRec->cal.yy[i]);
-		calU = pRec->cal.xy[i] + pRec->cal.yx[i];
-		calV = pRec->cal.xy[i] - pRec->cal.yx[i];
-		pGain->phi[i] = atan2(calV, calU);
 		}
 }
 //----------------------------------------------------------------------------------------------------------------------------------------
+static void compute_phases(const SpecRecord * pRec, GainSet * pGain, int lowchan, int highchan, float Tcalx[], float Tcaly[])
+{
+        int i;
+        double calU, calV;
+
+        for (i=lowchan; i<highchan; i++)
+                {
+                calU = pRec->cal.xy[i] + pRec->cal.yx[i];
+                calV = pRec->cal.xy[i] - pRec->cal.yx[i];
+                pGain->phi[i] = atan2(calV, calU);
+                }
+}
 
 // Uses obsStokes to calibrate the calStokes
 
@@ -105,7 +115,7 @@ static void compute_observed_stokes(const SpecRecord * pRec, StokesSet * ObsCal,
 
 	for (i=lowchan; i<highchan; i++)
 		{
-		cal.xx = pRec->calon.xx[i] - pRec->caloff.xx[i];
+/*		cal.xx = pRec->calon.xx[i] - pRec->caloff.xx[i];
 		cal.yy = pRec->calon.yy[i] - pRec->caloff.yy[i];
 		cal.xy = pRec->calon.xy[i] - pRec->caloff.xy[i];
 		cal.yx = pRec->calon.yx[i] - pRec->caloff.yx[i];
@@ -113,7 +123,13 @@ static void compute_observed_stokes(const SpecRecord * pRec, StokesSet * ObsCal,
 		ObsCal->I[i] = cal.xx + cal.yy;
 		ObsCal->Q[i] = cal.xx - cal.yy;      
 		ObsCal->U[i] = cal.xy + cal.yx;
-		ObsCal->V[i] = cal.xy - cal.yx;
+		ObsCal->V[i] = cal.xy - cal.yx;*/
+
+		//Use smoothed cal
+                ObsCal->I[i] = pRec->cal.xx[i] + pRec->cal.yy[i];
+                ObsCal->Q[i] = pRec->cal.xx[i] - pRec->cal.yy[i];
+                ObsCal->U[i] = pRec->cal.xy[i] + pRec->cal.yx[i];
+                ObsCal->V[i] = pRec->cal.xy[i] - pRec->cal.yx[i];
 
 	 	data.xx = pRec->caloff.xx[i] + (pRec->calon.xx[i] - pRec->cal.xx[i]);
 	 	data.xy = pRec->caloff.xy[i] + (pRec->calon.xy[i] - pRec->cal.xy[i]);
@@ -236,6 +252,48 @@ void calculate_stokes(SpecRecord dataset[], int size, int lowchan, int highchan,
 		//gainp = fopen("gain_p.dat", "w"); fprintf(gainp, "AST   gainPhy[chan]...\n");
 		}
 
+	//Uses average phases over all time datapoints for better S/N
+        float av_phi[MAX_CHANNELS];
+        for(n=lowchan; n<highchan; n++) av_phi[n] = 0.0;
+
+	int count = 0;
+        for (i=0; i<size; i++)
+                {
+                pRec = &(dataset[i]);
+                if (pRec->flagBAD) continue;
+
+                compute_phases(pRec, &gain, lowchan, highchan, Tcalx, Tcaly);
+
+                for(n=lowchan; n<highchan; n++) av_phi[n] += gain.phi[n];
+		count++;
+                }
+
+        for(n=lowchan; n<highchan; n++)
+        {
+                av_phi[n] /= count;
+                gain.phi[n] = av_phi[n];
+        }
+
+        if(uvDenoising)
+                {
+                float min,max;
+                float C[2];
+                float *x; x = (float*)malloc((highchan - lowchan)*sizeof(float));
+                float *chans; chans = (float*)malloc((highchan - lowchan)*sizeof(float));
+                for(n=lowchan; n<highchan; n++) x[n-lowchan] = gain.phi[n];
+                for(n=lowchan; n<highchan; n++) chans[n-lowchan] = n;
+
+		//linear fit
+                chebyshev_minmax(chans, highchan-lowchan, &min, &max);
+                chebyshev_normalize(chans, highchan-lowchan, min, max);
+                chebyshev_fit_bw(chans, x, highchan-lowchan, 2.5, C, 1);
+                for(n=lowchan; n<highchan; n++)
+                {
+                         gain.phi[n] = chebyshev_eval(CNORMALIZE(n,min,max),C,1);
+                }
+                free(x);
+                }
+
 	
 	//iterate over each time step
 	for (i=0; i<size; i++) 
@@ -247,7 +305,7 @@ void calculate_stokes(SpecRecord dataset[], int size, int lowchan, int highchan,
 
 		compute_gains(pRec, &gain, lowchan, highchan, Tcalx, Tcaly);
 		
-		if(uvDenoising)
+		/*if(uvDenoising)
 			{
 			float *x; x = (float*)malloc((highchan - lowchan)*sizeof(float));
 			for(n=lowchan; n<highchan; n++) x[n-lowchan] = gain.phi[n];
@@ -255,7 +313,7 @@ void calculate_stokes(SpecRecord dataset[], int size, int lowchan, int highchan,
 			for(n=lowchan; n<highchan; n++) gain.phi[n] = x[n-lowchan];
 			free(x);
 			}
-
+		*/
 		calibrate_stokes(&CalCal, &gain, &ObsCal, lowchan, highchan);
 
 		calibrate_stokes(&TrueSky, &gain, &ObsSky, lowchan, highchan);

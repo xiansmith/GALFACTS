@@ -43,7 +43,7 @@ to allocate these data sturcutres and must be externally freed.
 @param beam - the beam number to read for [0..6]
 @return the number of records read
 */
-int read_datafile(FILE * pFile, SpecRecord ** pDataset, int beam)
+int read_datafile(FILE * pFile, SpecRecord ** pDataset, int beam, float RAmin,float RAmax,float DECmin,float DECmax)
 {
 	int numRead;
 	int numExpected;
@@ -72,7 +72,10 @@ int read_datafile(FILE * pFile, SpecRecord ** pDataset, int beam)
 		numRead += fread_record(rec, pFile, beam);
 		printf("%f %%\r", numRead*100.0/numExpected);
 		rec->RA *= 15.0; //convert to degrees
-		
+
+		//set data outset imaging window as bad
+	        if(rec->DEC > DECmax || rec->DEC < DECmin || rec->RA > RAmax || rec->RA < RAmin)
+                        rec->flagBAD = 1;		
 		//just for 54787 beam6 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         //if(rec->AST >= 21720.0){printf("Breaking out ...\n"); break;}
 		} 
@@ -146,16 +149,16 @@ static int fread_record(SpecRecord * rec, FILE * datafile, int beam)
 
    //fix for central spike
 	int count = 0;
-	for (count = 2046;count<=2050;count++)
+	for (count = MAX_CHANNELS/2 - 7;count<=MAX_CHANNELS/2+7;count++)
 	{
-		rec->calon.xx[count] = (rec->calon.xx[2045]+rec->calon.xx[2051])/2.0;
-		rec->calon.yy[count] = (rec->calon.yy[2045]+rec->calon.yy[2051])/2.0;
-		rec->calon.xy[count] = (rec->calon.xy[2045]+rec->calon.xy[2051])/2.0;
-		rec->calon.yx[count] = (rec->calon.yx[2045]+rec->calon.yx[2051])/2.0;
-		rec->caloff.xx[count] = (rec->caloff.xx[2045]+rec->caloff.xx[2051])/2.0;
-		rec->caloff.yy[count] = (rec->caloff.yy[2045]+rec->caloff.yy[2051])/2.0;
-		rec->caloff.xy[count] = (rec->caloff.xy[2045]+rec->caloff.xy[2051])/2.0;
-		rec->caloff.yx[count] = (rec->caloff.yx[2045]+rec->caloff.yx[2051])/2.0;
+		rec->calon.xx[count] = (rec->calon.xx[MAX_CHANNELS/2-7]+rec->calon.xx[MAX_CHANNELS/2+7])/2.0;
+		rec->calon.yy[count] = (rec->calon.yy[MAX_CHANNELS/2-7]+rec->calon.yy[MAX_CHANNELS/2+7])/2.0;
+		rec->calon.xy[count] = (rec->calon.xy[MAX_CHANNELS/2-7]+rec->calon.xy[MAX_CHANNELS/2+7])/2.0;
+		rec->calon.yx[count] = (rec->calon.yx[MAX_CHANNELS/2-7]+rec->calon.yx[MAX_CHANNELS/2+7])/2.0;
+		rec->caloff.xx[count] = (rec->caloff.xx[MAX_CHANNELS/2-7]+rec->caloff.xx[MAX_CHANNELS/2+7])/2.0;
+		rec->caloff.yy[count] = (rec->caloff.yy[MAX_CHANNELS/2-7]+rec->caloff.yy[MAX_CHANNELS/2+7])/2.0;
+		rec->caloff.xy[count] = (rec->caloff.xy[MAX_CHANNELS/2-7]+rec->caloff.xy[MAX_CHANNELS/2+7])/2.0;
+		rec->caloff.yx[count] = (rec->caloff.yx[MAX_CHANNELS/2-7]+rec->caloff.yx[MAX_CHANNELS/2+7])/2.0;
 	}
 
     //return result

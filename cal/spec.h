@@ -154,7 +154,7 @@ typedef struct {
 } SpecRecord;
 
 
-int read_datafile(FILE * pFile, SpecRecord ** pDataset, int beam);
+int read_datafile(FILE * pFile, SpecRecord ** pDataset, int beam,float RAmin,float RAmax,float DECmin,float DECmax);
 int read_cfgfile(FILE * pFile, ConfigData * pCfg);
 
 void print_data(SpecRecord dataset[], int numRecords, int lowchan, int highchan, float freq[]);

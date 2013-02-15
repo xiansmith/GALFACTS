@@ -128,7 +128,7 @@ static void create_annotations(SpecRecord dataset[], int size)
 //--------------------------------------------------------------------------------------------------------
 static void process_dataset(const char *field, const char *datadirname, const char *datedir, const char *subdir, int beam, int band, int lowchan, int highchan, \
 int RFIF, int RFIT, float numSigmaF, float numSigmaT, int freqSmoothing, \
-int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfreq, float hidrogenband, int calskyfiles, int annfiles, int fit_smooth, int window, float Tcalx[], float Tcaly[], int *badchannels)
+int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfreq, float hidrogenband, int calskyfiles, int annfiles, int fit_smooth, int window, float Tcalx[], float Tcaly[], int *badchannels, float RAmin,float RAmax,float DECmin,float DECmax)
 {
 	FILE * datafile, *cfgfile;
 	glob_t globbuf;
@@ -181,7 +181,7 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 	
 	read_clock(); start_clock();
 	printf("Reading data file: %s. \n", datafilename);
-	numRecords = read_datafile(datafile, &dataset, beam);
+	numRecords = read_datafile(datafile, &dataset, beam, RAmin, RAmax, DECmin, DECmax);
 	fclose(datafile);
 	printf("Read %i records\n", numRecords);
 	if (numRecords <= 0){printf("ERROR: Skipping %s %s: there are no records!\n", datedir, subdir); return;}
@@ -287,7 +287,7 @@ int main(int argc, char *argv[])
 	int i, j;
 	clock_t time0 = clock();
 
-	if (argc != 21) 
+	if (argc != 25) 
 		{
 		printf("Usage: %s <parameters_list>\n", argv[0]);
 		return EXIT_FAILURE;
@@ -319,7 +319,13 @@ int main(int argc, char *argv[])
 	int annfiles = atoi(argv[18]); printf("annfiles = %d\n", annfiles);
 	int fit_smooth = atoi(argv[19]); printf("fit/smooth selection= %d\n", fit_smooth);
 	int window = atoi(argv[20]); printf("smoothing window = %d\n", window);
-	
+
+	// The imaging window. This helps reject highcal datapoints which mes up fitting
+	float RAmin = atof(argv[21]); printf("RA min = %f\n",RAmin);
+	float RAmax = atof(argv[22]); printf("RA max = %f\n",RAmax);
+	float DECmin = atof(argv[23]); printf("DEC min = %f\n",DECmin);
+	float DECmax = atof(argv[24]); printf("DEC max = %f\n",DECmax);
+
 	// Handle the Tcal correction file
 	float Tcalx[MAX_CHANNELS];
 	float Tcaly[MAX_CHANNELS];
@@ -442,7 +448,7 @@ int main(int argc, char *argv[])
 					process_dataset(field, datadirname, datedir, subdir, beamcounter, band, lowchan, highchan, \
 									RFIF, RFIT, numSigmaF, numSigmaT, freqSmoothing, \
 									uvDenoising, uvDenoisingTau, uvDenoisingLambda, \
-									hidrogenfreq, hidrogenband, calskyfiles, annfiles, fit_smooth, window, Tcalx, Tcaly, badchannels);
+									hidrogenfreq, hidrogenband, calskyfiles, annfiles, fit_smooth, window, Tcalx, Tcaly, badchannels, RAmin,RAmax,DECmin,DECmax);
 				}
 
 				printf("---------------------------------------------------\n");

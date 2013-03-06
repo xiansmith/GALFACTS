@@ -36,7 +36,7 @@ static void print_usage(void)
 	"\n");
 }
 //-------------------------------------------------------------------------------
-static void create_fits_cube(const char *field, FluxWappData * wappdata, char * wapp, MapMetaData * md, float balgain, float balepsilon, int bw_order, int dec_order)
+static void create_fits_cube(const char *field, FluxWappData * wappdata, char * wapp, MapMetaData * md, float balgain, float balepsilon, int bw_order, int dec_order, int day_iter, int scan_iter)
 {
 	float *dataI, *dataQ, *dataU, *dataV, *weight; 
 	int chan, n;
@@ -164,7 +164,7 @@ static void create_fits_cube(const char *field, FluxWappData * wappdata, char * 
 			find_intersections(wappdata);							
 			
 			printf("Performing basketweaving...\n"); 
-			balance_data(wappdata, 100, 100, balgain, balepsilon, bw_order); 
+			balance_data(wappdata, day_iter, scan_iter, balgain, balepsilon, bw_order);
 		
 			//printf("Writing basketweaved time series ...\n"); fluxwappdata_writechan_binary(wappdata,chan); 
 		
@@ -216,11 +216,13 @@ int bw_order;
 int dec_order;
 int pfit_type;
 float pfit_lambda;
+int day_iter = 0;
+int scan_iter = 0;
 
 /* Process command line arguments */ 
 /* Convert args into more usable units were required */
 
-if(argc != 23){printf("Usage: %s <parameters_list>\n", argv[0]); return EXIT_FAILURE;} 
+if(argc != 25){printf("Usage: %s <parameters_list>\n", argv[0]); return EXIT_FAILURE;}
 
 wapp = argv[1];
 md.fcen = (float) atof(argv[2]);
@@ -245,6 +247,10 @@ md.title = argv[19];
 char *field; field = argv[20];
 md.band = atoi(argv[21]);
 md.fwhm = atoi(argv[22]); //2.0; //TODO: paramaterize this
+day_iter = atoi(argv[23]);
+scan_iter = atoi(argv[24]);
+
+
 
 md.RAcen = (md.ramax + md.ramin)/2.0;
 md.DECcen = (md.decmax + md.decmin)/2.0;
@@ -279,7 +285,7 @@ else multibeam = 0;
 wappdata = fluxwappdata_alloc(wapp, files, numDays);
 
 printf("Creating a frequency cube\n");
-create_fits_cube(field, wappdata, wapp, &md, balgain, balepsilon, bw_order, dec_order);
+create_fits_cube(field, wappdata, wapp, &md, balgain, balepsilon, bw_order, dec_order, day_iter, scan_iter);
 	
 free(files);
 

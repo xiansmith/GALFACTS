@@ -242,11 +242,13 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 	mark_bad_channels(dataset, numRecords, lowchan, highchan, numSigmaT, hidrogenfreq, hidrogenband, freq, badchannels);
 	
 	read_clock(); start_clock();
-	if(annfiles && (RFIF || RFIT))
+	if(annfiles)
 		{
-		printf("Create out of band RFI annotation files\n");
-		outofbandrfi_ann(dataset, numRecords, lowchan, highchan);
-		rfi_ann(dataset, numRecords, lowchan, highchan, freq);
+		if( RFIF || RFIT ) {
+			printf("Create out of band RFI annotation files\n");
+			outofbandrfi_ann(dataset, numRecords, lowchan, highchan);
+			//rfi_ann(dataset, numRecords, lowchan, highchan, freq);
+		}
 		printf("Creating pointing annotation file\n"); 
 		create_annotations(dataset, numRecords);
 		read_clock(); start_clock();

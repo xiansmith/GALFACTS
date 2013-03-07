@@ -266,8 +266,9 @@ void strongsource_rfi_exclusions( SpecRecord dataset[], int numRecords, int lowc
 	int hitcount = 0;
 	int badcount = 0;
 
-	FILE *StrongSourceFile;
-	StrongSourceFile = fopen("../../rfi.list", "r");
+	FILE *StrongSourceFile = fopen("../../rfi.list", "r");
+	FILE *AnnotationFile = fopen("../../rfiexception.ann", "w");
+	fprintf(AnnotationFile, "COLOUR YELLOW\n");
 
 	if(StrongSourceFile != NULL) {
 		sourcecount = jsd_line_count(StrongSourceFile);
@@ -336,6 +337,9 @@ void strongsource_rfi_exclusions( SpecRecord dataset[], int numRecords, int lowc
 				{
 					// GOT A HIT, remove the RFI flag
 					//printf("Source at %f %f in dataset at %f %f\n",  s[k][0], s[k][1], dataset[i].RA, dataset[i].DEC  );
+
+					fprintf(AnnotationFile, "CROSS %f %f 0.2 0.2\n", dataset[i].RA, dataset[i].DEC);
+
 					for(j = lowchan; j < highchan - 1; j++)
 					{
 						if( dataset[i].flagRFI[j] == RFI_OUTOFBAND)
@@ -536,19 +540,20 @@ void outofbandrfi_ann(SpecRecord dataset[], int size, int lowchan, int highchan)
 	file = fopen("outofbandrfi.ann", "w");
 	fprintf(file, "COLOUR RED\n");
 
+	/*
 	for (i = 0; i < size; i++)
 		{
 		if(dataset[i].flagRFI[lowchan] && RFI_OUTOFBAND) fprintf(file, "LINE W %i %f %i %f\n", i, dataset[i].RA, 30, dataset[i].AST);
 		}	
-	fclose(file);
-/*
-	file = fopen("rfi_rd.ann", "w");
+	fclose(file);*/
+
+	//file = fopen("rfi_rd.ann", "w");
 	for (i = 0; i < size; i++)
 		{
-		if(dataset[i].flagRFI[lowchan] && RFI_OUTOFBAND) fprintf(file, "%f %f %f\n", dataset[i].RA, dataset[i].DEC, dataset[i].AST);
+		if(dataset[i].flagRFI[lowchan] && RFI_OUTOFBAND) fprintf(file, "CROSS %f %f 0.2 0.2\n", dataset[i].RA, dataset[i].DEC);
 		}	
 	fclose(file);
-*/
+
 }
 
 void rfi_ann(SpecRecord dataset[], int size, int lowchan, int highchan, float freq[])

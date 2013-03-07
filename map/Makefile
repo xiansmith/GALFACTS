@@ -9,3 +9,6 @@ map:
 	jsd/jsd_futil.c jsd/jsd_util.c \
 	programs/io.c programs/fitsio.c programs/fitsLib.a \
 	-lm
+clean:
+	rm -f map programs/*.o programs/*.a
+	echo Clean complete

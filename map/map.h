@@ -30,6 +30,14 @@ typedef struct {
 	int avg_highchan;
 	int cavg;
 	int band;
+	float balgain;
+	float balepsilon;
+	int bw_order;
+	int dec_order;
+	char field[5];
+	int day_iter;
+	int scan_iter;
+
 } MapMetaData;
 
 void write_fits_maps(const char * wapp, MapMetaData *md, float dataI[], float dataQ[], float dataU[], float dataV[]);

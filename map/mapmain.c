@@ -36,7 +36,7 @@ static void print_usage(void)
 	"\n");
 }
 //-------------------------------------------------------------------------------
-static void create_fits_cube(const char *field, FluxWappData * wappdata, char * wapp, MapMetaData * md, float balgain, float balepsilon, int bw_order, int dec_order, int day_iter, int scan_iter)
+static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData * md)
 {
 	float *dataI, *dataQ, *dataU, *dataV, *weight; 
 	int chan, n;
@@ -55,8 +55,8 @@ static void create_fits_cube(const char *field, FluxWappData * wappdata, char * 
 	printf("Grid Type: %i\n", md->gridtype);
 	printf("Center Frequency: %f\n", md->fcen); 
 	printf("Start Frequency: %f\n", md->fstart);
- 	printf("Balance Loop Gain: %f\n", balgain);
- 	printf("Balance Epsilon: %f\n", balepsilon);
+ 	printf("Balance Loop Gain: %f\n", md->balgain);
+ 	printf("Balance Epsilon: %f\n", md->balepsilon);
 	printf("FWHM: %f\n", md->fwhm);
 
 	numbytes = md->n1 * md->n2 * sizeof (float);
@@ -133,10 +133,10 @@ static void create_fits_cube(const char *field, FluxWappData * wappdata, char * 
 	
 	start_fits_cubes(wapp, md);
 	
-	float *cIc = (float*)malloc(wappdata->numDays*(dec_order+1) * sizeof(float));
-	float *cQc = (float*)malloc(wappdata->numDays*(dec_order+1) * sizeof(float));
-	float *cUc = (float*)malloc(wappdata->numDays*(dec_order+1) * sizeof(float));
-	float *cVc = (float*)malloc(wappdata->numDays*(dec_order+1) * sizeof(float));
+	float *cIc = (float*)malloc(wappdata->numDays*(md->dec_order+1) * sizeof(float));
+	float *cQc = (float*)malloc(wappdata->numDays*(md->dec_order+1) * sizeof(float));
+	float *cUc = (float*)malloc(wappdata->numDays*(md->dec_order+1) * sizeof(float));
+	float *cVc = (float*)malloc(wappdata->numDays*(md->dec_order+1) * sizeof(float));
 	
 		chan = md->lowchan;
 		while(chan < md->highchan)
@@ -145,15 +145,15 @@ static void create_fits_cube(const char *field, FluxWappData * wappdata, char * 
 			printf("Reading data ...\n"); 
 			if(md->band)
 				{
-				fluxwappdata_readchan_binary1(field, wappdata, chan, BASKETWEAVE, md->avg, md->decmin, md->decmax);// band 1 avg cubes
+				fluxwappdata_readchan_binary1(md->field, wappdata, chan, BASKETWEAVE, md->avg, md->decmin, md->decmax);// band 1 avg cubes
 				}
 				else 
 					{
-					fluxwappdata_readchan_binary0(field, wappdata, chan, BASKETWEAVE, md->avg, md->decmin, md->decmax);// general
+					fluxwappdata_readchan_binary0(md->field, wappdata, chan, BASKETWEAVE, md->avg, md->decmin, md->decmax);// general
 					}
 	
 			printf("Removing DEC dependence...\n"); 
-			calculate_dec_dependence(wappdata, dec_order, chan, cIc, cQc, cUc, cVc, md->avg); 							
+			calculate_dec_dependence(wappdata, md->dec_order, chan, cIc, cQc, cUc, cVc, md->avg);
 
 			printf("Beam gain calibration...\n"); 		
 			if(cal_flag) beam_gain_calibration_table(wappdata, cal_low, cal_high, cal_table, chan); 
@@ -164,7 +164,7 @@ static void create_fits_cube(const char *field, FluxWappData * wappdata, char * 
 			find_intersections(wappdata);							
 			
 			printf("Performing basketweaving...\n"); 
-			balance_data(wappdata, day_iter, scan_iter, balgain, balepsilon, bw_order);
+			balance_data(wappdata, md->day_iter, md->scan_iter, md->balgain, md->balepsilon, md->bw_order);
 		
 			//printf("Writing basketweaved time series ...\n"); fluxwappdata_writechan_binary(wappdata,chan); 
 		
@@ -210,10 +210,6 @@ int numDays;
 //TODO: it would be nice to make these defaults
 //at the moment the values have no effect
 char * wapp;
-float balgain;
-float balepsilon;
-int bw_order;
-int dec_order;
 int pfit_type;
 float pfit_lambda;
 int day_iter = 0;
@@ -236,19 +232,19 @@ md.cellsize = (float) atof(argv[9]) / 60.0; //convert to degrees
 md.patch = atoi(argv[10]); //TODO: remove this
 md.beamwidths = atoi(argv[10]);
 md.gridtype = atoi(argv[11]);
-balgain = (float) atof(argv[12]);
-balepsilon = (float) atof(argv[13]);
-bw_order = atoi(argv[14]);
-dec_order = atoi(argv[15]); 
+md.balgain = (float) atof(argv[12]);
+md.balepsilon = (float) atof(argv[13]);
+md.bw_order = atoi(argv[14]);
+md.dec_order = atoi(argv[15]);
 md.avg = atoi(argv[16]); 
 md.avg_lowchan = atoi(argv[17]);
 md.avg_highchan = atoi(argv[18]);
 md.title = argv[19];
-char *field; field = argv[20];
+strcpy( md.field, argv[20]);
 md.band = atoi(argv[21]);
 md.fwhm = atoi(argv[22]); //2.0; //TODO: paramaterize this
-day_iter = atoi(argv[23]);
-scan_iter = atoi(argv[24]);
+md.day_iter = atoi(argv[23]);
+md.scan_iter = atoi(argv[24]);
 
 
 
@@ -285,7 +281,7 @@ else multibeam = 0;
 wappdata = fluxwappdata_alloc(wapp, files, numDays);
 
 printf("Creating a frequency cube\n");
-create_fits_cube(field, wappdata, wapp, &md, balgain, balepsilon, bw_order, dec_order, day_iter, scan_iter);
+create_fits_cube(wappdata, wapp, &md );
 	
 free(files);
 

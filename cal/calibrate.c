@@ -259,6 +259,10 @@ void smooth_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int w
 	gaussian_filter(Yxy, size, w, window);
 	gaussian_filter(Yyx, size, w, window);
 */
+
+	//In this case window is actually the number of iterations for diffusion smoothing
+	//Carried over the variable name from the other fitting routines that actually 
+	//used a smoothing window.
         diffusion_filter(Yxx, size, window);
         diffusion_filter(Yyy, size, window);
         diffusion_filter(Yxy, size, window);

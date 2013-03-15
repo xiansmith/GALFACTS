@@ -143,15 +143,9 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 			{
 			printf("Channel: %i \n", chan);
 			printf("Reading data ...\n"); 
-			if(md->band)
-				{
-				fluxwappdata_readchan_binary1(md->field, wappdata, chan, BASKETWEAVE, md->avg, md->decmin, md->decmax);// band 1 avg cubes
-				}
-				else 
-					{
-					fluxwappdata_readchan_binary0(md->field, wappdata, chan, BASKETWEAVE, md->avg, md->decmin, md->decmax);// general
-					}
-	
+
+			fluxwappdata_readchan_binary(md->field, md->band, wappdata, chan, BASKETWEAVE, md->avg, md->decmin, md->decmax);
+
 			printf("Removing DEC dependence...\n"); 
 			calculate_dec_dependence(wappdata, md->dec_order, chan, cIc, cQc, cUc, cVc, md->avg);
 

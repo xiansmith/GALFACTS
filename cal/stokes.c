@@ -527,3 +527,74 @@ void write_binary_channel_data(SpecRecord dataset[], int size, int lowchan, int 
 		}
 	printf("\n");
 }
+
+
+void write_binary_channel_data_single_file(SpecRecord dataset[], int numRecords, int lowchan, int highchan)
+{
+	int n;
+	float I, Q, U, V, fRA, fDEC, fAST;
+	FILE *fluxfile;
+	FILE *fluxconfig;
+	char filename[32+1];
+	char configfilename[32+1];
+	int chan;
+	int startRecord;
+
+	snprintf(filename, 32, "fluxtime.dat", chan);
+	fluxfile = fopen(filename, "wb");
+	if(fluxfile == NULL)
+		{
+		printf("ERROR: unable to open file %s\n", filename);
+		printf("DIAGNOSTIC: errno %d\n",errno);//SSG
+		return;
+		}
+
+	snprintf(configfilename, 32, "fluxtime.dat_cfg", chan);
+	fluxconfig = fopen(configfilename, "wb");
+	if(fluxconfig == NULL)
+	{
+		printf("ERROR: unable to open file %s\n", filename);
+		printf("DIAGNOSTIC: errno %d\n",errno);//SSG
+		return;
+	}
+
+	startRecord = 0;
+
+	for(chan=lowchan; chan<highchan; chan++)
+		{
+		fprintf(fluxconfig, "%d %d %d\n", chan, startRecord, numRecords);
+
+		for(n=0; n<numRecords; n++)
+			{
+			fRA = dataset[n].RA;
+			fDEC = dataset[n].DEC;
+			fAST = dataset[n].AST;
+			if(dataset[n].flagBAD || dataset[n].flagRFI[chan] != RFI_NONE)
+				{
+				I = NAN;
+				Q = NAN;
+				U = NAN;
+				V = NAN;
+				}
+				else
+				{
+				I = dataset[n].stokes.I[chan];
+				Q = dataset[n].stokes.Q[chan];
+				U = dataset[n].stokes.U[chan]/2.0; // UV correction
+				V = dataset[n].stokes.V[chan]/2.0; // UV correction
+				}
+			fwrite(&fRA, sizeof(float), 1, fluxfile);
+			fwrite(&fDEC, sizeof(float), 1, fluxfile);
+			fwrite(&fAST, sizeof(float), 1, fluxfile);
+			fwrite(&I, sizeof(float), 1, fluxfile);
+			fwrite(&Q, sizeof(float), 1, fluxfile);
+			fwrite(&U, sizeof(float), 1, fluxfile);
+			fwrite(&V, sizeof(float), 1, fluxfile);
+			startRecord++;
+			}
+		//printf("%f\r", (chan - lowchan + 1)*100.0/(highchan - lowchan));
+		}
+	fclose(fluxfile);
+	fclose(fluxconfig);
+	printf("\n");
+}

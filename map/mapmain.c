@@ -10,7 +10,7 @@
 #include "map.h"
 #include "scan.h"
 #include "decdep.h"
-
+#include "correctUV.h"
 // MAPMAIN with Chebyshev fitting
 
 int multibeam; 
@@ -148,6 +148,9 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 
 			printf("Removing DEC dependence...\n"); 
 			calculate_dec_dependence(wappdata, md->dec_order, chan, cIc, cQc, cUc, cVc, md->avg);
+			
+			printf("Apply the feed coupling mueller matrix correction...\n");
+			correct_UV(wappdata,chan);
 
 			printf("Beam gain calibration...\n"); 		
 			if(cal_flag) beam_gain_calibration_table(wappdata, cal_low, cal_high, cal_table, chan); 

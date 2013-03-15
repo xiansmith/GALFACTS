@@ -66,6 +66,11 @@ static void calibrate_stokes(StokesSet * calStokes, const GainSet * gain, const 
 
 		calStokes->Q[i] =  ((gain->x[i]*gain->x[i] - gain->y[i]*gain->y[i])/4.0) * obsStokes->I[i] + ((gain->x[i]*gain->x[i] + gain->y[i]*gain->y[i])/4.0) * obsStokes->Q[i];
 
+
+		//The factor of 2 might be missing in these calculations below giving bigger U and V that are fixed later. Need
+		// to confirm. The original assumption that the spectrometer was spitting values a factor of 2 too large
+		// may be incorrect. nonetheless we are dividing by 2 later and hence the output is all good. but it may
+		//be better to fix it here if the problem is actually here.
 		calStokes->U[i] = (gain->x[i]*gain->y[i]) * (cos(gain->phi[i]) * obsStokes->U[i] + sin(gain->phi[i])*obsStokes->V[i]);
 
 		calStokes->V[i] = (gain->x[i]*gain->y[i]) * (-sin(gain->phi[i]) * obsStokes->U[i] + cos(gain->phi[i])*obsStokes->V[i]);
@@ -253,7 +258,7 @@ void calculate_stokes(SpecRecord dataset[], int size, int lowchan, int highchan,
 		}
 
 	//Uses average phases over all time datapoints for better S/N
-        float av_phi[MAX_CHANNELS];
+/*        float av_phi[MAX_CHANNELS];
         for(n=lowchan; n<highchan; n++) av_phi[n] = 0.0;
 
 	int count = 0;
@@ -293,7 +298,7 @@ void calculate_stokes(SpecRecord dataset[], int size, int lowchan, int highchan,
                 }
                 free(x);
                 }
-
+*/
 	
 	//iterate over each time step
 	for (i=0; i<size; i++) 
@@ -302,6 +307,19 @@ void calculate_stokes(SpecRecord dataset[], int size, int lowchan, int highchan,
 		if (pRec->flagBAD) continue;
 		
 		compute_observed_stokes(pRec, &ObsCal, &ObsSky, lowchan, highchan);
+
+		//Better to calculate phases for individual time stamps
+		//Also better to use diffusion smoothing instead of a linear fit.
+                compute_phases(pRec, &gain, lowchan, highchan, Tcalx, Tcaly);
+
+                if(uvDenoising)
+                {
+                         float *x; x = (float*)malloc((highchan - lowchan)*sizeof(float));
+                         for(n=lowchan; n<highchan; n++) x[n-lowchan] = gain.phi[n];
+                         diffusion_filter(x, highchan - lowchan, 100);
+                         for(n=lowchan; n<highchan; n++) gain.phi[n] = x[n-lowchan];
+                         free(x);
+                }
 
 		compute_gains(pRec, &gain, lowchan, highchan, Tcalx, Tcaly);
 		

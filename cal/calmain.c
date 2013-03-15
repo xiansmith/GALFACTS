@@ -329,13 +329,6 @@ int main(int argc, char *argv[])
 	float DECmin = atof(argv[23]); printf("DEC min = %f\n",DECmin);
 	float DECmax = atof(argv[24]); printf("DEC max = %f\n",DECmax);
 
-	// Handle the Tcal correction file
-	float Tcalx[MAX_CHANNELS];
-	float Tcaly[MAX_CHANNELS];
-	read_tcal("Tcal.dat", Tcalx, Tcaly);
-
-
-
 	FILE * BadChannelsFile; BadChannelsFile = fopen("BadChannels.list", "r");
 
 	int *badchannels = (int*)calloc(MAX_CHANNELS, sizeof(int));
@@ -407,13 +400,20 @@ int main(int argc, char *argv[])
 		for(beamcounter = 0; beamcounter < 7; beamcounter++) 
 			{
 			if(beam[beamcounter]=='1')
-				{
+			{
+
+	                        // Read the Tcal correction file for the right beam
+        	                float Tcalx[MAX_CHANNELS];
+                	        float Tcaly[MAX_CHANNELS];
+	                        char tcalfile[32];
+        	                sprintf(tcalfile,"../Tcal%d.dat",beamcounter);
+                	        read_tcal(tcalfile, Tcalx, Tcaly);
+
 				sprintf(subdirname,"beam%d", beamcounter);
 				subdir = subdirname;
 				mkdir(subdir, mode);
 				chdir(subdir);
 				bad = 0;
-
 
 				if(baddatafile != NULL)
 				{
@@ -424,6 +424,8 @@ int main(int argc, char *argv[])
 				while(!feof(baddatafile))
 					{
 					// read out a line of bad data file
+
+					//throws a warning is this correct !!
 					fscanf(baddatafile,"%s %s", &badmjd, badbeam);
 					//printf("bad beam pattern: %s %d %d %f %f\n", badbeam, badlowchan, badhighchan, lowRA, highRA);
 					// check to see if mjd beam and channel match the current ones, if so stop reading further

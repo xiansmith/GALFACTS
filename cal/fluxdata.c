@@ -247,6 +247,15 @@ int fluxwappdata_readchan(FluxWappData * wappdata, int chan, int id)
         count++;
     }
 
+    // load frequency from freq.dat, add it to wappdata->freq
+
+    //FILE *freq_file;
+	//freq_file=fopen("freq.dat", "w");
+	// XXX read freq.dat get freq[chan]
+	//for(int k=0; k<MAX_CHANNELS; k++) fprintf(freq_file, "%d\t%f\n", k, freq[k]);
+	//fclose(freq_file);
+    //wappdata->freq =
+
     return count;
 }
 //----------------------------------------------------------------------------------------------------------

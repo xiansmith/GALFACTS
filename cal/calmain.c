@@ -230,21 +230,12 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 					break;
 		}		
 	read_clock(); start_clock();
-	
-	if ( RFIT ) {
-		printf("enter rfi exclusion\n");
-		strongsource_rfi_exclusions( dataset, numRecords, lowchan, highchan );
-		printf("exit rfi exclusion \n");
-	}
-
-	read_clock(); start_clock();
-
 	mark_bad_channels(dataset, numRecords, lowchan, highchan, numSigmaT, hidrogenfreq, hidrogenband, freq, badchannels);
-	
 	read_clock(); start_clock();
 	if(annfiles)
+	{
+		if( RFIF || RFIT )
 		{
-		if( RFIF || RFIT ) {
 			printf("Create out of band RFI annotation files\n");
 			outofbandrfi_ann(dataset, numRecords, lowchan, highchan);
 			//rfi_ann(dataset, numRecords, lowchan, highchan, freq);
@@ -252,7 +243,7 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 		printf("Creating pointing annotation file\n"); 
 		create_annotations(dataset, numRecords);
 		read_clock(); start_clock();
-		}
+	}
 
 	printf("Compute the raw values of cal\n");
 	compute_raw_cal(dataset, numRecords, lowchan, highchan);
@@ -273,13 +264,21 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 	printf("Calculating Stokes parameters\n");
 	calculate_stokes(dataset, numRecords, lowchan, highchan, RFIF, calskyfiles, Tcalx, Tcaly, uvDenoising, uvDenoisingTau, uvDenoisingLambda);
 	read_clock(); start_clock();
-	printf("Writing channel data\n");
-	//write_binary_channel_data(dataset, numRecords, lowchan, highchan);
+
+	printf("Writing channel data to single file\n");
 	write_binary_channel_data_single_file(dataset, numRecords, lowchan, highchan);
+	// old method: write_binary_channel_data(dataset, numRecords, lowchan, highchan);
+
 	read_clock(); start_clock();
+	printf("Writing RFI plot data\n");
+	write_rfi_data( dataset, numRecords, lowchan, highchan );
 	printf("Writing average data\n");
 	average_stokes(dataset, numRecords, lowchan, highchan, hidrogenfreq, hidrogenband, freq);
+
+	// new method, new filename but old format
+	// average data is still in channel 0, but no longer overwrite the real channel 0
 	write_binary_channel_data(dataset, numRecords, 0, 1);
+
 	read_clock();	
 	free(dataset);
 	return;	
@@ -290,9 +289,10 @@ int main(int argc, char *argv[])
 	int i, j;
 	clock_t time0 = clock();
 
-	if (argc != 25) 
+	if ((argc < 25) || (argc > 26))
 		{
 		printf("Usage: %s <parameters_list>\n", argv[0]);
+		printf("Got %d arguments\n", argc );
 		return EXIT_FAILURE;
 		}
 	printf("***************************************************\n"); 
@@ -328,6 +328,8 @@ int main(int argc, char *argv[])
 	float RAmax = atof(argv[22]); printf("RA max = %f\n",RAmax);
 	float DECmin = atof(argv[23]); printf("DEC min = %f\n",DECmin);
 	float DECmax = atof(argv[24]); printf("DEC max = %f\n",DECmax);
+
+	char *day = argv[25];
 
 	FILE * BadChannelsFile; BadChannelsFile = fopen("BadChannels.list", "r");
 
@@ -380,6 +382,13 @@ int main(int argc, char *argv[])
 			{
 			numdirs = get_date_dirs(datadirname, &datedirs);
 			}
+
+	// if we give a day via command line, just run that one day
+	if( day != NULL ) {
+		strncpy(datedirs[0], day, sizeof(day));
+		numdirs = 1;
+	}
+
 	printf("Found %i data directories in %s\n", numdirs, datadirname);
 	printf("The following days will be processed:\n");
 	for(i=0; i < numdirs; i++) printf("%s,", datedirs[i]); printf("\n");

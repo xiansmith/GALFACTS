@@ -507,7 +507,14 @@ void write_binary_channel_data(SpecRecord dataset[], int size, int lowchan, int 
 	
 	for(chan=lowchan; chan<highchan; chan++) 
 		{
-		snprintf(filename, 32, "fluxtime%04i.dat", chan);
+		// average channel is still written out the old way
+		// but lets name it something better
+		if( highchan == 1 && lowchan == 0 ) {
+			snprintf(filename, 32, "average.dat");
+		} else {
+			// if we get here, we aren't calling the new single file code method
+			snprintf(filename, 32, "fluxtime%04i.dat", chan);
+		}
 		fluxfile = fopen(filename, "wb");
 		if(fluxfile == NULL)
 			{
@@ -545,8 +552,7 @@ void write_binary_channel_data(SpecRecord dataset[], int size, int lowchan, int 
 		}
 	printf("\n");
 }
-
-
+//----------------------------------------------------------------------------------------------------------------------------------------
 void write_binary_channel_data_single_file(SpecRecord dataset[], int numRecords, int lowchan, int highchan)
 {
 	int n;
@@ -558,7 +564,9 @@ void write_binary_channel_data_single_file(SpecRecord dataset[], int numRecords,
 	int chan;
 	int startRecord;
 
-	snprintf(filename, 32, "fluxtime.dat", chan);
+
+
+	snprintf(filename, 32, "fluxtime.dat");
 	fluxfile = fopen(filename, "wb");
 	if(fluxfile == NULL)
 		{
@@ -567,7 +575,7 @@ void write_binary_channel_data_single_file(SpecRecord dataset[], int numRecords,
 		return;
 		}
 
-	snprintf(configfilename, 32, "fluxtime.dat_cfg", chan);
+	snprintf(configfilename, 32, "fluxtime.dat_cfg");
 	fluxconfig = fopen(configfilename, "wb");
 	if(fluxconfig == NULL)
 	{
@@ -579,28 +587,29 @@ void write_binary_channel_data_single_file(SpecRecord dataset[], int numRecords,
 	startRecord = 0;
 
 	for(chan=lowchan; chan<highchan; chan++)
-		{
+	{
+		// write config file entry
 		fprintf(fluxconfig, "%d %d %d\n", chan, startRecord, numRecords);
 
 		for(n=0; n<numRecords; n++)
-			{
+		{
 			fRA = dataset[n].RA;
 			fDEC = dataset[n].DEC;
 			fAST = dataset[n].AST;
 			if(dataset[n].flagBAD || dataset[n].flagRFI[chan] != RFI_NONE)
-				{
+			{
 				I = NAN;
 				Q = NAN;
 				U = NAN;
 				V = NAN;
-				}
-				else
-				{
+			}
+			else
+			{
 				I = dataset[n].stokes.I[chan];
 				Q = dataset[n].stokes.Q[chan];
 				U = dataset[n].stokes.U[chan]/2.0; // UV correction
 				V = dataset[n].stokes.V[chan]/2.0; // UV correction
-				}
+			}
 			fwrite(&fRA, sizeof(float), 1, fluxfile);
 			fwrite(&fDEC, sizeof(float), 1, fluxfile);
 			fwrite(&fAST, sizeof(float), 1, fluxfile);
@@ -609,10 +618,59 @@ void write_binary_channel_data_single_file(SpecRecord dataset[], int numRecords,
 			fwrite(&U, sizeof(float), 1, fluxfile);
 			fwrite(&V, sizeof(float), 1, fluxfile);
 			startRecord++;
-			}
-		//printf("%f\r", (chan - lowchan + 1)*100.0/(highchan - lowchan));
 		}
+	//printf("%f\r", (chan - lowchan + 1)*100.0/(highchan - lowchan));
+	}
 	fclose(fluxfile);
 	fclose(fluxconfig);
 	printf("\n");
+}
+
+void write_rfi_data( SpecRecord dataset[], int numRecords, int lowchan, int highchan )
+{
+	FILE *freqRFI = fopen( "rfifrq.dat", "w");
+	FILE *timeRFI = fopen( "rfitime.dat", "w");
+
+	if (freqRFI == NULL || timeRFI == NULL ) {
+		printf("ERROR: unable to open rfi files\n");
+		return;
+	}
+
+	int chan, n, i, freqCount=0, timeCount=0;
+	float fRA, fDEC, fAST;
+
+
+	for(n=0; n<numRecords; n++)
+	{
+		if( dataset[n].flagBAD )
+		{
+			fRA = dataset[n].RA;
+			fDEC = dataset[n].DEC;
+			fAST = dataset[n].AST;
+
+			if( dataset[n].flagRFI[lowchan] == RFI_OUTOFBAND )
+			{
+				timeCount++;
+				fprintf( timeRFI, "%f %f %f\n,", fRA, fDEC, fAST );
+			}
+
+		}
+
+		for(chan=lowchan; chan<highchan; chan++)
+		{
+			if( dataset[n].flagRFI[chan] ==  RFI_CALOFF_XX ||
+					dataset[n].flagRFI[chan] ==  RFI_CALOFF_XY ||
+					dataset[n].flagRFI[chan] ==  RFI_CALOFF_YX  ||
+					dataset[n].flagRFI[chan] ==  RFI_CALOFF_YY )
+			{
+				fprintf( freqRFI, "%d %d\n", n, chan );
+				freqCount++;
+			}
+		}
+	}
+
+	//printf("After, found freq  = %d and time = %d", freqCount, timeCount);
+
+	fclose( freqRFI );
+	fclose( timeRFI );
 }

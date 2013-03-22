@@ -18,7 +18,7 @@ k += fread(&pRec->stokes.I, sizeof(float), 1, file);
 k += fread(&pRec->stokes.Q, sizeof(float), 1, file);
 k += fread(&pRec->stokes.U, sizeof(float), 1, file);
 k += fread(&pRec->stokes.V, sizeof(float), 1, file);
-
+//printf("RA %f\n", pRec->RA);
 
 return k;
 }
@@ -260,11 +260,15 @@ int fluxdaydata_read_binary_single_file(const char *field, FluxDayData *daydata,
 		}
 
 	} else {
-		printf("No fluxtime config found. Can not recover, exiting\n");
-		exit(1);
+		// average image is old method, so don't exit
+		if( chan != 0 ) {
+			printf("No fluxtime config found. Can not recover, exiting\n");
+			exit(1);
+		}
+		//exit(1);
 	}
 
-	//printf( "Get data from single binary file. Fetching channel %d at position %d for %d numRecords\n", cfgChan, cfgStart, cfgNumRecords);
+	printf( "Get data from single binary file. Fetching channel %d at position %d for %d numRecords\n", cfgChan, cfgStart, cfgNumRecords);
 
 	// we could assume numRecords never changes, but just in case
 	numRecords = cfgNumRecords;
@@ -314,15 +318,13 @@ if(baddatafile != NULL)
 ////////////
 
 		// seek to right record, without overflowing the long
-		// 13GB files will overflow the offset (long) if we seek to (recordSize * numRecords)
-		// fseek64 could work but unsure about westgrid compatibility, requires LFS support
-		int i, ret, seekcount;
 		long recordSize = sizeof(float) * 7;
+		int ret = fseek(infile, recordSize * cfgStart, SEEK_SET);
 
-		for( i=0; i < cfgStart; i++ ) {
-			ret = fseek(infile, recordSize, SEEK_CUR );
-			seekcount++;
+		if ( ret != 0 ) {
+			printf("ERROR: Error seeking in binary file with error %d\n", ret );
 		}
+
 
 k = 0;
 int flag = 0;
@@ -455,34 +457,63 @@ for(m=0; m<wappdata->numDays; m++)
 		char filename[64+1];
 		char configfilename[64+1];
 		if(!strcmp(wappdata->wapp,"multibeam"))
-			{
+		{
 			j = m%7;
 			sprintf(beamno,"beam%d",j);
 			if(id == CLEAN)
 			{
-					sprintf(filename, "%s/%s/balance.dat", daydata->mjd, beamno);
-					sprintf(configfilename, "%s/%s/balance.dat_cfg", daydata->mjd, beamno);
+				sprintf(filename, "%s/%s/balance.dat", daydata->mjd, beamno);
+				sprintf(configfilename, "%s/%s/balance.dat_cfg", daydata->mjd, beamno);
 
 			}
 			if(id == BASKETWEAVE)
-				{
-					sprintf(filename, "%s/%s/fluxtime.dat", daydata->mjd, beamno);
-					sprintf(configfilename, "%s/%s/fluxtime.dat_cfg", daydata->mjd, beamno);
-				}
-			}
-		else
 			{
-			j = atoi(&wappdata->wapp[4]);
-			if(id == CLEAN) sprintf(filename, "%s/%s/balanceB%04i.dat", daydata->mjd, wappdata->wapp, chan+n);
-			if(id == BASKETWEAVE) sprintf(filename, "%s/%s/fluxtime%04i.dat", daydata->mjd, wappdata->wapp, chan+n);
+				sprintf(filename, "%s/%s/fluxtime.dat", daydata->mjd, beamno);
+				sprintf(configfilename, "%s/%s/fluxtime.dat_cfg", daydata->mjd, beamno);
 			}
+		}
+		else
+		{
+			j = atoi(&wappdata->wapp[4]);
+			if(id == CLEAN)
+			{
+				sprintf(filename, "%s/%s/balance.dat", daydata->mjd, wappdata->wapp);
+				sprintf(configfilename, "%s/%s/balance.dat_cfg", daydata->mjd, wappdata->wapp);
+
+			}
+			if(id == BASKETWEAVE)
+			{
+				sprintf(filename, "%s/%s/fluxtime.dat", daydata->mjd, wappdata->wapp);
+				sprintf(configfilename, "%s/%s/fluxtime.dat_cfg", daydata->mjd, wappdata->wapp);
+			}
+		}
 		infile = fopen(filename, "rb");
 		configfile = fopen(configfilename, "r");
 		if(infile != NULL) 
 			{
+			// we are looking for average image, read average.dat instead
+			if( chan == 0 && avg == 0 ) {
+				fclose( infile );
+				sprintf(filename, "%s/%s/average.dat", daydata->mjd, beamno);
+				FILE * avgfile = fopen(filename, "rb");
+
+				if( avgfile != NULL )
+				{
+					numread = fluxdaydata_read_binary(field, tempdata, infile, j, 0, atoi(daydata->mjd));
+				}
+				else
+				{
+					printf("Error. Looking for average.dat for average image, failed. Exitting.\n");
+					exit(1);
+
+				}
+			}
+			else
+			{
+				//numread = fluxdaydata_read_binary(field, tempdata, infile, j, chan+n, atoi(daydata->mjd));
+				numread = fluxdaydata_read_binary_single_file(field, tempdata, infile, configfile, j, chan+n, atoi(daydata->mjd));
+			}
 			printf("Opened file %s\n",filename);
-			//numread = fluxdaydata_read_binary(field, tempdata, infile, j, chan+n, atoi(daydata->mjd));
-			numread = fluxdaydata_read_binary_single_file(field, tempdata, infile, configfile, j, chan+n, atoi(daydata->mjd));
 			printf("read %d records.\n",tempdata->numRecords );
 			fclose(infile);
 			if(n==0)
@@ -856,6 +887,48 @@ int fluxwappdata_writechan_binary(FluxWappData * wappdata, int chan)
 		//fprintf(file, "#RA DEC AST I Q U V\n"); //SSG
         numRecords = daydata->numRecords;
         for (k=0; k<numRecords; k++) 
+			{
+			fluxrecord_write_binary(&daydata->records[k], file);
+			}
+        fclose(file);
+        count++;
+		}
+return count;
+}
+/**********************************************************************/
+int fluxwappdata_writechan_binary_single(FluxWappData * wappdata, int chan)
+{
+    int m;
+    int count;
+
+    count = 0;
+    for(m=0; m<wappdata->numDays; m++)
+		{
+        int k;
+        FILE *file;
+        int numRecords;
+        char filename[64+1];
+		char tempstring[6];
+        FluxDayData * daydata = &wappdata->daydata[m];
+		//SSG
+		if(multibeam)
+			{
+			sprintf(tempstring,"beam%d",m%7);
+	        sprintf(filename, "%s/%s/balance.dat", daydata->mjd, tempstring);
+			}
+		else
+	    sprintf(filename, "%s/%s/balance.dat", daydata->mjd, wappdata->wapp);
+		//SSG
+		file = fopen(filename, "wb");
+		if(file == NULL)
+			{
+			printf("ERROR: can't open output file %s\n", filename);
+			continue;
+			}
+		else //SSG
+		//fprintf(file, "#RA DEC AST I Q U V\n"); //SSG
+        numRecords = daydata->numRecords;
+        for (k=0; k<numRecords; k++)
 			{
 			fluxrecord_write_binary(&daydata->records[k], file);
 			}

@@ -70,7 +70,7 @@ int read_datafile(FILE * pFile, SpecRecord ** pDataset, int beam, float RAmin,fl
 		{
 		SpecRecord * rec = &((*pDataset)[numRead]);
 		numRead += fread_record(rec, pFile, beam);
-		printf("%f %%\r", numRead*100.0/numExpected);
+		//printf("%f %%\r", numRead*100.0/numExpected);
 		rec->RA *= 15.0; //convert to degrees
 
 		//set data outset imaging window as bad

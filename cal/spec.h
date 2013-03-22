@@ -145,6 +145,7 @@ typedef struct {
 	double RA;
 	double DEC;
 	double AST;
+	//double freq;  add this once fluxdata loads and computes frequency
 	PolSet calon;
 	PolSet caloff;
 	PolSet cal;

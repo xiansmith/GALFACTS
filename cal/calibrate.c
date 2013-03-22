@@ -20,7 +20,7 @@ void compute_raw_cal(SpecRecord dataset[], int size, int lowchan, int highchan)
 			dataset[n].cal.xy[i] = dataset[n].calon.xy[i] - dataset[n].caloff.xy[i];
 			dataset[n].cal.yx[i] = dataset[n].calon.yx[i] - dataset[n].caloff.yx[i];
 			}
-		printf("%f %%\r", (n + 1)*100.0/size);
+		//printf("%f %%\r", (n + 1)*100.0/size);
 		}
 	printf("\n");
 }
@@ -106,7 +106,7 @@ void linear_fit_cal(SpecRecord dataset[], int size, int lowchan, int highchan, i
 				}
 			}
 		
-		printf("%f %%\r", (chan - lowchan + 1)*100.0/(highchan - lowchan));
+		//printf("%f %%\r", (chan - lowchan + 1)*100.0/(highchan - lowchan));
 		}
 	printf("\n");
 	free(XRA);
@@ -295,7 +295,7 @@ void smooth_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int w
 			dataset[n].cal.xy[chan] = Yxy[n]*Fxy[chan-lowchan];
 			dataset[n].cal.yx[chan] = Yyx[n]*Fyx[chan-lowchan];
 			}
-		printf("%f %%\r", (chan - lowchan + 1)*100.0/(highchan - lowchan));
+		//printf("%f %%\r", (chan - lowchan + 1)*100.0/(highchan - lowchan));
 		}
 	printf("\n");
 

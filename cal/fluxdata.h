@@ -70,6 +70,7 @@ typedef struct {
 typedef struct {
 	char wapp[WAPP_LEN+1];
 	int numDays;
+	//double freq; add frequency here
 	FluxDayData * daydata;
 	ScanDayData * scanDayData;
 } FluxWappData;
@@ -83,6 +84,8 @@ int fluxwappdata_writeavg(FluxWappData * wappdata);
 int fluxwappdata_writechan(FluxWappData * wappdata, int chan);
 FluxWappData * fluxwappdata_alloc(const char *wapp, char **days, int numDays);
 void fluxwappdata_free(FluxWappData * wappdata);
+int fluxdaydata_read_binary_single_file(const char *field, FluxDayData *daydata, FILE *infile, FILE *configfile, int beam, int chan, int day);
+
 
 #endif //_FLUXDATA_H
 

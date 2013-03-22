@@ -160,6 +160,8 @@ void rfi_detection_time_domain1(const char *field, SpecRecord dataset[], int siz
 	float signal[size][8];
 	int rfi_count = 0;
 
+
+
 	for(i = 0; i < size; i++)
 		{
 		if(!dataset[i].flagBAD)
@@ -267,7 +269,7 @@ void strongsource_rfi_exclusions( SpecRecord dataset[], int numRecords, int lowc
 	int badcount = 0;
 
 	FILE *StrongSourceFile = fopen("../../rfi.list", "r");
-	FILE *AnnotationFile = fopen("../../rfiexception.ann", "w");
+	FILE *AnnotationFile = fopen("rfiexception.ann", "w");
 	fprintf(AnnotationFile, "COLOUR YELLOW\n");
 
 	if(StrongSourceFile != NULL) {
@@ -310,17 +312,17 @@ void strongsource_rfi_exclusions( SpecRecord dataset[], int numRecords, int lowc
 			} else {
 				printf( "num was something strange = %d", num );
 			}
-			//printf("Found RA = %f DEC = %f\n", RA, DEC );
+			printf("Found RA = %f DEC = %f\n", RA, DEC );
 		}
 
 		while(!feof(StrongSourceFile));
 		fclose(StrongSourceFile);
 	} else {
-		printf("no rfi source list file found\n");
+		printf("No rfi source list file found\n");
 		return;
 	}
 
-	printf("Counted %d RFI exceptions\n", count);
+	//printf("Counted %d RFI exceptions\n", count);
 
 	//for ( i = 0; i < sourcecount; i++ ) {
 	//	printf( "RA = %f\n", s[i][1] );
@@ -344,7 +346,7 @@ void strongsource_rfi_exclusions( SpecRecord dataset[], int numRecords, int lowc
 					{
 						if( dataset[i].flagRFI[j] == RFI_OUTOFBAND)
 						{
-							dataset[i].flagRFI[j] = RFI_NONE;
+							dataset[i].flagRFI[j] &= ~RFI_OUTOFBAND;
 							hitcount++;
 							dataset[i].flagBAD = 0;
 						}
@@ -356,7 +358,7 @@ void strongsource_rfi_exclusions( SpecRecord dataset[], int numRecords, int lowc
 		}
 	}
 	//printf("Visited %d records, found bad %d ,  lowchan = %d highchan = %d", numRecords, badcount, lowchan, highchan );
-	//printf("final rfi removal hitcount = %d\n", hitcount );
+	printf("final rfi removal hitcount = %d\n", hitcount );
 
 	for (i = 0; i < sourcecount; i++) {
 	  free(s[i]);
@@ -369,13 +371,60 @@ void strongsource_rfi_exclusions( SpecRecord dataset[], int numRecords, int lowc
 void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int size, int lowchan, int highchan, float numSigma, float hidrogenfreq, float hidrogenband, float freq[])
 {
 // average
-	int i, j, k, N;
+	int i, k, N,j,cur=0;
 	float mean[8], sigma[8], diff, delta, minf=hidrogenfreq-hidrogenband, maxf=hidrogenfreq+hidrogenband, nSigma = numSigma;
 	char outlierFound;
 	float signal[size][8];
 	int rfi_count = 0;
 	int rfi_chancount = 0;
 	int outliercount = 0;
+
+	float RA, DEC, radius = 0.06666;
+	float s[10000][3];
+	int sourcecount;
+	int exceptionCount = 0;
+	int badcount = 0;
+
+	FILE *StrongSourceFile = fopen("../../rfi.list", "r");
+	FILE *AnnotationFile = fopen("rfiexception.ann", "w");
+	fprintf(AnnotationFile, "COLOUR YELLOW\n");
+
+
+	if(StrongSourceFile != NULL) {
+		sourcecount = jsd_line_count(StrongSourceFile);
+		rewind(StrongSourceFile);
+
+		for ( i = 0; i < sourcecount; i++)
+		{
+			int num, ret;
+			float fileradius;
+			char line[80];
+
+			ret = fgets( line, 80, StrongSourceFile);
+
+			if( ! ret ) {
+				printf("in rfi.c, exception loading got a ret of %d\n", ret );
+			}
+
+			num = sscanf( line, "%f %f %f", &RA, &DEC, &fileradius );
+
+			s[cur][0] = RA;
+			s[cur][1] = DEC;
+			s[cur][2] = radius;
+
+
+			if( num == 3 ) {
+				s[cur][2] = fileradius;
+			}
+
+			cur++;
+		}
+
+	}
+	else
+	{
+		printf("No time domain RFI exception list file found\n");
+	}
 	
 	for(i = 0; i < size; i++)
 		{
@@ -419,7 +468,7 @@ void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int siz
 		outlierFound = 0;
 		for(i = 1; i < size - 1; i++)
 			{
-			if(field[0] == 'N' && field[1] == '1' && ((dataset[i].RA>82.9333 && dataset[i].RA<84.0666) || (dataset[i].RA>68.95 && dataset[i].RA<69.6))) continue; // Just for N1!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			//if(field[0] == 'N' && field[1] == '1' && ((dataset[i].RA>82.9333 && dataset[i].RA<84.0666) || (dataset[i].RA>68.95 && dataset[i].RA<69.6))) continue; // Just for N1!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			if(dataset[i].flagBAD && dataset[i-1].flagBAD && dataset[i+1].flagBAD) continue;
 			if( fabs(signal[i+1][0] - 2*signal[i][0] + signal[i-1][0] - mean[0]) > numSigma*sigma[0] ||
 				fabs(signal[i+1][1] - 2*signal[i][1] + signal[i-1][1] - mean[1]) > numSigma*sigma[1] ||
@@ -430,10 +479,35 @@ void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int siz
 				fabs(signal[i+1][6] - 2*signal[i][6] + signal[i-1][6] - mean[6]) > numSigma*sigma[6] ||
 				fabs(signal[i+1][7] - 2*signal[i][7] + signal[i-1][7] - mean[7]) > numSigma*sigma[7])
 				{
-				dataset[i-1].flagBAD = 1;
-				dataset[i].flagBAD = 1;
-				dataset[i+1].flagBAD = 1;
-				for(k = lowchan; k < highchan; k++)
+
+				int exception = 0;
+
+				if ( StrongSourceFile != NULL )
+				{
+					// found an outlier, check if its a strong source
+					for( k = 0; k < sourcecount; k++ )
+					{
+						// radius must be greater than 0
+						if( s[k][2] > 0.00) {
+							if( sqrt( powf(dataset[i].RA - s[k][0],2) + powf(dataset[i].DEC - s[k][1],2) ) < s[k][2]  )
+							{
+								// GOT A HIT, remove the RFI flag
+								//printf("Exception hit at %f %f in dataset at %f %f\n",  s[k][0], s[k][1], dataset[i].RA, dataset[i].DEC  );
+								fprintf(AnnotationFile, "CROSS %f %f 0.2 0.2\n", dataset[i].RA, dataset[i].DEC);
+								exception = 1;
+								exceptionCount++;
+								break;
+							}
+						}
+					}
+				}
+
+				if ( !exception )
+				{
+					dataset[i-1].flagBAD = 1;
+					dataset[i].flagBAD = 1;
+					dataset[i+1].flagBAD = 1;
+					for(k = lowchan; k < highchan; k++)
 					{
 						rfi_chancount++;
 						{
@@ -443,14 +517,18 @@ void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int siz
 						rfi_count += 3;
 						}
 					}
-				outlierFound = 1;
-				outliercount++;
+					outlierFound = 1;
+					outliercount++;
+					}
 				}
 			}
 		}
 	while(outlierFound);
 
-	printf("!!! Found %d RFI points in %d channels and %d outliers\n", rfi_count, rfi_chancount, outliercount);
+	fclose( AnnotationFile );
+
+	printf("Time domain. Found %d outliers and %d exceptions\n", outliercount, exceptionCount);
+	//printf("!!! Found %d RFI points in %d channels and %d outliers\n", rfi_count, rfi_chancount, outliercount);
 }
 
 void rfi_detection_time_domain3(const char *field, SpecRecord dataset[], int size, int lowchan, int highchan, float numSigma, float hidrogenfreq, float hidrogenband, float freq[])
@@ -550,7 +628,7 @@ void outofbandrfi_ann(SpecRecord dataset[], int size, int lowchan, int highchan)
 	//file = fopen("rfi_rd.ann", "w");
 	for (i = 0; i < size; i++)
 		{
-		if(dataset[i].flagRFI[lowchan] && RFI_OUTOFBAND) fprintf(file, "CROSS %f %f 0.2 0.2\n", dataset[i].RA, dataset[i].DEC);
+		if(dataset[i].flagRFI[lowchan] == RFI_OUTOFBAND) fprintf(file, "CROSS %f %f 0.2 0.2\n", dataset[i].RA, dataset[i].DEC);
 		}	
 	fclose(file);
 

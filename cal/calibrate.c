@@ -3,7 +3,7 @@
 #include "calibrate.h"
 #include "rfi.h"
 #include "chebyshev.h"
-
+#include <string.h>
 //----------------------------------------------------------------------------------------------------------
 //pre-compute the raw cal for every channel
 //void compute_raw_cal(SpecRecord dataset[], int size)
@@ -11,18 +11,45 @@
 void compute_raw_cal(SpecRecord dataset[], int size, int lowchan, int highchan)
 {
 	int n, i;
+
+//To make plots of the fits
+        FILE * outfile = fopen("rawbandcal.dat","w");
+        if(outfile == NULL)
+        {
+                printf("Cant open rawbandcal.dat\n");
+                exit(1);
+        }
+        PolAvg avgcal; 
+
 	for(n=0; n<size; n++)
-		{
-		for(i=lowchan; i<highchan; i++)
-			{
-			dataset[n].cal.xx[i] = dataset[n].calon.xx[i] - dataset[n].caloff.xx[i];
-			dataset[n].cal.yy[i] = dataset[n].calon.yy[i] - dataset[n].caloff.yy[i];
-			dataset[n].cal.xy[i] = dataset[n].calon.xy[i] - dataset[n].caloff.xy[i];
-			dataset[n].cal.yx[i] = dataset[n].calon.yx[i] - dataset[n].caloff.yx[i];
-			}
-		//printf("%f %%\r", (n + 1)*100.0/size);
-		}
+	{
+                int count =0;
+                memset(&avgcal, 0, sizeof(PolAvg));
+                if(dataset[n].flagBAD) continue;
+
+                for(i=lowchan; i<highchan; i++)
+                {
+
+                        if(dataset[n].flagRFI[i] == RFI_NONE)
+                        {
+                               dataset[n].cal.xx[i] = dataset[n].calon.xx[i] - dataset[n].caloff.xx[i];
+                               dataset[n].cal.yy[i] = dataset[n].calon.yy[i] - dataset[n].caloff.yy[i];
+                               dataset[n].cal.xy[i] = dataset[n].calon.xy[i] - dataset[n].caloff.xy[i];
+                               dataset[n].cal.yx[i] = dataset[n].calon.yx[i] - dataset[n].caloff.yx[i];
+                               avgcal.xx += dataset[n].cal.xx[i];
+                               avgcal.yy += dataset[n].cal.yy[i];
+                               avgcal.xy += dataset[n].cal.xy[i];
+                               avgcal.yx += dataset[n].cal.yx[i];
+                               count++;
+                        }
+                 }
+                 fprintf(outfile, "%05i %7.6f %7.6f %7.6f %7.6f\n",n,\
+                 avgcal.xx/count, avgcal.yy/count, avgcal.xy/count, avgcal.yx/count);
+                 printf("%f %%\r", (n + 1)*100.0/size);
+	}
+
 	printf("\n");
+        fclose(outfile);
 }
 //----------------------------------------------------------------------------------------------------------
 void linear_fit_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int RFIF)
@@ -298,6 +325,38 @@ void smooth_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int w
 		//printf("%f %%\r", (chan - lowchan + 1)*100.0/(highchan - lowchan));
 		}
 	printf("\n");
+
+//For making plots of the fits
+        FILE * outfile2 = fopen("smoothcal.dat","w");
+        if(outfile2 == NULL)
+        {
+                printf("Can't open smoothcal.dat\n");
+                exit(1);
+        }
+        PolAvg avgcal;
+        int i;
+        for(n=0; n<size; n++)
+        {
+                int count = 1;
+                memset(&avgcal, 0, sizeof(PolAvg));
+                if(dataset[n].flagBAD) continue;
+                for(i=lowchan; i<highchan; i++)
+                {
+                       if(dataset[n].flagRFI[i] == RFI_NONE)
+                       {
+                                avgcal.xx += dataset[n].cal.xx[i];
+                                avgcal.yy += dataset[n].cal.yy[i];
+                                avgcal.xy += dataset[n].cal.xy[i];
+                                avgcal.yx += dataset[n].cal.yx[i];
+                                count++;
+                       }
+                }
+                fprintf(outfile2, "%05i %7.6f %7.6f %7.6f %7.6f\n",n,\
+                avgcal.xx/count, avgcal.yy/count, avgcal.xy/count, avgcal.yx/count);
+                printf("%f %%\r", (n + 1)*100.0/size);
+        }
+
+        fclose(outfile2);
 
 	free(Yxx);
 	free(Yyy);

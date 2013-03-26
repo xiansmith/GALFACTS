@@ -400,10 +400,8 @@ void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int siz
 			float fileradius;
 			char line[80];
 
-			ret = fgets( line, 80, StrongSourceFile);
-
-			if( ! ret ) {
-				printf("in rfi.c, exception loading got a ret of %d\n", ret );
+			if( fgets( line, 80, StrongSourceFile) == NULL )  {
+				printf("in rfi.c, fgets read error");
 			}
 
 			num = sscanf( line, "%f %f %f", &RA, &DEC, &fileradius );

@@ -45,7 +45,7 @@ void compute_raw_cal(SpecRecord dataset[], int size, int lowchan, int highchan)
                  }
                  fprintf(outfile, "%05i %7.6f %7.6f %7.6f %7.6f\n",n,\
                  avgcal.xx/count, avgcal.yy/count, avgcal.xy/count, avgcal.yx/count);
-                 printf("%f %%\r", (n + 1)*100.0/size);
+                 //printf("%f %%\r", (n + 1)*100.0/size);
 	}
 
 	printf("\n");
@@ -353,7 +353,7 @@ void smooth_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int w
                 }
                 fprintf(outfile2, "%05i %7.6f %7.6f %7.6f %7.6f\n",n,\
                 avgcal.xx/count, avgcal.yy/count, avgcal.xy/count, avgcal.yx/count);
-                printf("%f %%\r", (n + 1)*100.0/size);
+                //printf("%f %%\r", (n + 1)*100.0/size);
         }
 
         fclose(outfile2);

@@ -295,6 +295,11 @@ void smooth_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int w
         diffusion_filter(Yxy, size, window);
         diffusion_filter(Yyx, size, window);
 
+	//apply the moving average filter to reduce noise
+	moving_average_filter(Yxx, size, window);
+	moving_average_filter(Yyy, size, window);
+	moving_average_filter(Yxy, size, window);
+	moving_average_filter(Yyx, size, window);
 /*	
 	fxx=fopen("scxx.dat", "w");
 	fyy=fopen("scyy.dat", "w");

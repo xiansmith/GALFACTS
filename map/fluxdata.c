@@ -906,18 +906,42 @@ int fluxwappdata_writechan_binary_single(FluxWappData * wappdata, int chan)
 		{
         int k;
         FILE *file;
+        FILE *configfile;
         int numRecords;
         char filename[64+1];
 		char tempstring[6];
-        FluxDayData * daydata = &wappdata->daydata[m];
-		//SSG
+        char configfilename[64+1];
+		FluxDayData * daydata = &wappdata->daydata[m];
+
+        //SSG
 		if(multibeam)
-			{
+		{
 			sprintf(tempstring,"beam%d",m%7);
 	        sprintf(filename, "%s/%s/balance.dat", daydata->mjd, tempstring);
-			}
+	        if(configfile == NULL)
+	        {
+	        	sprintf(configfilename, "%s/%s/balance.dat_cfg", daydata->mjd, tempstring);
+	        }
+		}
 		else
-	    sprintf(filename, "%s/%s/balance.dat", daydata->mjd, wappdata->wapp);
+		{
+			sprintf(filename, "%s/%s/balance.dat", daydata->mjd, wappdata->wapp);
+			if(configfile == NULL)
+			{
+				sprintf(configfilename, "%s/%s/balance.dat_cfg", daydata->mjd, tempstring);
+			}
+		}
+
+		configfile = fopen(configfilename, "wb");
+		if(configfile == NULL)
+		{
+			printf("ERROR: unable to open file %s\n", filename);
+		} else {
+			// write config file entry
+			fprintf(configfile, "%d\n", numRecords);
+		}
+		fclose( configfile );
+
 		//SSG
 		file = fopen(filename, "wb");
 		if(file == NULL)
@@ -927,7 +951,8 @@ int fluxwappdata_writechan_binary_single(FluxWappData * wappdata, int chan)
 			}
 		else //SSG
 		//fprintf(file, "#RA DEC AST I Q U V\n"); //SSG
-        numRecords = daydata->numRecords;
+
+		numRecords = daydata->numRecords;
         for (k=0; k<numRecords; k++)
 			{
 			fluxrecord_write_binary(&daydata->records[k], file);

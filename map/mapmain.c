@@ -165,7 +165,7 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 		
 			//printf("Writing basketweaved time series ...\n");
 			//fluxwappdata_writechan_binary(wappdata,chan);
-			//fluxwappdata_writechan_binary_single(wappdata,chan);
+			fluxwappdata_writechan_binary_single(wappdata,chan);
 
 			printf("Gridding ...\n"); 
 			grid_data(wappdata, md, dataI, dataQ, dataU, dataV, weight);

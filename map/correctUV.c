@@ -28,17 +28,17 @@ void correct_UV(FluxWappData * wappdata, int chan, MapMetaData *md)
 		}
 		else
 		{
-                        for(i = 0; i < MAX_CHANNELS; i++)
-                        {
-				//fscanf(epsphi,"%f %f",&epsilon[i],&phi[i]);
-				fscanf(epsphi,"%f %f",&Uleak[i],&Vleak[i]);
+			for(i = 0; i < MAX_CHANNELS; i++)
+			{
+			//fscanf(epsphi,"%f %f",&epsilon[i],&phi[i]);
+			fscanf(epsphi,"%f %f",&Uleak[i],&Vleak[i]);
 			}
 			fclose(epsphi);
 
 			if(md->avg)
 			{	
 				int j;
-				for(j = md->avg_lowchan;j < md->avg_highchan-md->avg;j+=md->avg)
+				for(j = md->avg_lowchan;j < md->avg_highchan;j+=md->avg)
 				{
 					int k;
 					//int chn = j;

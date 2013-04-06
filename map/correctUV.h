@@ -1,5 +1,6 @@
 #include "common.h"
 #include "fluxdata.h"
+#include "map.h"
 
 #ifndef _CORRECTUV_H
 #define _CORRECTUV_H

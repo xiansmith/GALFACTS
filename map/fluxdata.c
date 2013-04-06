@@ -918,21 +918,15 @@ int fluxwappdata_writechan_binary_single(FluxWappData * wappdata, int chan)
 		{
 			sprintf(tempstring,"beam%d",m%7);
 	        sprintf(filename, "%s/%s/balance.dat", daydata->mjd, tempstring);
-	        if(configfile == NULL)
-	        {
-	        	sprintf(configfilename, "%s/%s/balance.dat_cfg", daydata->mjd, tempstring);
-	        }
+	        sprintf(configfilename, "%s/%s/balance.dat_cfg", daydata->mjd, tempstring);
 		}
 		else
 		{
 			sprintf(filename, "%s/%s/balance.dat", daydata->mjd, wappdata->wapp);
-			if(configfile == NULL)
-			{
-				sprintf(configfilename, "%s/%s/balance.dat_cfg", daydata->mjd, tempstring);
-			}
+			sprintf(configfilename, "%s/%s/balance.dat_cfg", daydata->mjd, tempstring);
 		}
 
-		configfile = fopen(configfilename, "wb");
+		configfile = fopen(configfilename, "w");
 		if(configfile == NULL)
 		{
 			printf("ERROR: unable to open file %s\n", filename);

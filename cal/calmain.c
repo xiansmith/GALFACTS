@@ -259,7 +259,6 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 		printf("Compute smooth cal\n"); 
 		smooth_cal(dataset, numRecords, lowchan, highchan, window);
 		}
-	
 	read_clock(); start_clock();
 	printf("Calculating Stokes parameters\n");
 	calculate_stokes(dataset, numRecords, lowchan, highchan, RFIF, calskyfiles, Tcalx, Tcaly, uvDenoising, uvDenoisingTau, uvDenoisingLambda);

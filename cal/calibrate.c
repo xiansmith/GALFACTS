@@ -45,7 +45,8 @@ void compute_raw_cal(SpecRecord dataset[], int size, int lowchan, int highchan)
                  }
                  fprintf(outfile, "%05i %7.6f %7.6f %7.6f %7.6f\n",n,\
                  avgcal.xx/count, avgcal.yy/count, avgcal.xy/count, avgcal.yx/count);
-                 //printf("%f %%\r", (n + 1)*100.0/size);
+		
+                 printf("%f %%\r", (n + 1)*100.0/size);
 	}
 
 	printf("\n");
@@ -160,35 +161,43 @@ void smooth_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int w
 	Fxy = (float*) malloc(sizeof(float) * dchan);
 	Fyx = (float*) malloc(sizeof(float) * dchan);
 
-	w = (float*) malloc(sizeof(float) * (window+1));
+//	w = (float*) malloc(sizeof(float) * (window+1));
 	
-	for(n=0; n<=window; n++) {tmp = n*2.0/window; w[n] = exp(-0.5*tmp*tmp);}
-	tmp = w[0]; for(n=1; n<=window; n++) tmp += 2*w[n];
-	for(n=0; n<=window; n++) w[n] /= tmp;
+//	for(n=0; n<=window; n++) {tmp = n*2.0/window; w[n] = exp(-0.5*tmp*tmp);}
+//	tmp = w[0]; for(n=1; n<=window; n++) tmp += 2*w[n];
+//	for(n=0; n<=window; n++) w[n] /= tmp;
 
 	for(chan=lowchan; chan<highchan; chan++) 
-		{
+	{
 		mean[0] = mean[1] = mean[2] = mean[3] = 0;
 		int count = 0;
 		for(n=0; n<size; n++) 
+		{
+			if(dataset[n].flagBAD) continue;
+                        if(dataset[n].flagRFI[chan] == RFI_NONE)
 			{
-			mean[0] += dataset[n].cal.xx[chan];
-			mean[1] += dataset[n].cal.yy[chan];
-			mean[2] += dataset[n].cal.xy[chan];
-			mean[3] += dataset[n].cal.yx[chan];
-			count++;
+				mean[0] += dataset[n].cal.xx[chan];
+				mean[1] += dataset[n].cal.yy[chan];
+				mean[2] += dataset[n].cal.xy[chan];
+				mean[3] += dataset[n].cal.yx[chan];
+				count++;
 			}
+		}
 		//avoid divide by zero
 		if(count)
 		{
-			mean[0] /= size; 
-			mean[1] /= size; 
-			mean[2] /= size; 
-			mean[3] /= size;
+			mean[0] /= count; 
+			mean[1] /= count; 
+			mean[2] /= count; 
+			mean[3] /= count;
 		}
+
 		sigma[0] = sigma[1] = sigma[2] = sigma[3] = 0; 
 		count = 0;
 		for(n=0; n<size; n++) 
+		{
+			if(dataset[n].flagBAD) continue;
+                        if(dataset[n].flagRFI[chan] == RFI_NONE)
 			{
 			sigma[0] += (dataset[n].cal.xx[chan] - mean[0])*(dataset[n].cal.xx[chan] - mean[0]);
 			sigma[1] += (dataset[n].cal.yy[chan] - mean[1])*(dataset[n].cal.yy[chan] - mean[1]);
@@ -196,66 +205,92 @@ void smooth_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int w
 			sigma[3] += (dataset[n].cal.yx[chan] - mean[3])*(dataset[n].cal.yx[chan] - mean[3]);
 			count++;
 			}
-		if (count)
+		}
+		if(count)
 		{
-			sigma[0] = sqrt(sigma[0]/size); 
-			sigma[1] = sqrt(sigma[1]/size); 
-			sigma[2] = sqrt(sigma[2]/size); 
-			sigma[3] = sqrt(sigma[3]/size);
+			sigma[0] = sqrt(sigma[0]/count); 
+			sigma[1] = sqrt(sigma[1]/count); 
+			sigma[2] = sqrt(sigma[2]/count); 
+			sigma[3] = sqrt(sigma[3]/count);
 		}
 		
 		Fxx[chan - lowchan] = Fyy[chan - lowchan] = Fxy[chan - lowchan] = Fyx[chan - lowchan] = 0;
 		for(n=0; n<size; n++) 
+		{
+			if(dataset[n].flagBAD || dataset[n].flagRFI[chan] != RFI_NONE)
 			{
-			if(fabs(dataset[n].cal.xx[chan] - mean[0]) > 3.0*sigma[0]) dataset[n].cal.xx[chan] = mean[0];
-			if(fabs(dataset[n].cal.yy[chan] - mean[1]) > 3.0*sigma[1]) dataset[n].cal.yy[chan] = mean[1];
-			if(fabs(dataset[n].cal.xy[chan] - mean[2]) > 3.0*sigma[2]) dataset[n].cal.xy[chan] = mean[2];
-			if(fabs(dataset[n].cal.yx[chan] - mean[3]) > 3.0*sigma[3]) dataset[n].cal.yx[chan] = mean[3];
+				dataset[n].cal.xx[chan] = mean[0];
+				dataset[n].cal.yy[chan] = mean[1];
+				dataset[n].cal.xy[chan] = mean[2];
+				dataset[n].cal.yx[chan] = mean[3];
+			}
 			Fxx[chan - lowchan] += dataset[n].cal.xx[chan];
 			Fyy[chan - lowchan] += dataset[n].cal.yy[chan];
 			Fxy[chan - lowchan] += dataset[n].cal.xy[chan];
 			Fyx[chan - lowchan] += dataset[n].cal.yx[chan];
-			}
+		}
 		Fxx[chan - lowchan] /= size;
 		Fyy[chan - lowchan] /= size;
 		Fxy[chan - lowchan] /= size;
 		Fyx[chan - lowchan] /= size;
-		}
+	}
 
 	mean[0] = mean[1] = mean[2] = mean[3] = 0;
+	sigma[0] = sigma[1] = sigma[2] = sigma[3] = 0; 
 	for(n=0; n<size; n++) 
-		{
+	{
 		Yxx[n] = Yyy[n] = Yxy[n] = Yyx[n] = 0;
 		for(chan=lowchan; chan<highchan; chan++) 
-			{
+		{
 			Yxx[n] += dataset[n].cal.xx[chan];
 			Yyy[n] += dataset[n].cal.yy[chan];
 			Yxy[n] += dataset[n].cal.xy[chan];
 			Yyx[n] += dataset[n].cal.yx[chan];
-			}
+		}
+
 		Yxx[n] /= dchan; 
 		Yyy[n] /= dchan; 
 		Yxy[n] /= dchan; 
-
 		Yyx[n] /= dchan;
 		mean[0] += Yxx[n];
 		mean[1] += Yyy[n];
 		mean[2] += Yxy[n];
 		mean[3] += Yyx[n];
-		}
+	}
+
 	mean[0] /= size; 
 	mean[1] /= size; 
 	mean[2] /= size; 
 	mean[3] /= size;	
 	
 	for(n=0; n<size; n++) 
-		{
+	{
+		sigma[0] += (Yxx[n] - mean[0])*(Yxx[n] - mean[0]);
+		sigma[1] += (Yyy[n] - mean[1])*(Yyy[n] - mean[1]);
+		sigma[2] += (Yxy[n] - mean[2])*(Yxy[n] - mean[2]);
+		sigma[3] += (Yyx[n] - mean[3])*(Yyx[n] - mean[3]);
+	}
+
+	sigma[0] = sqrt(sigma[0]/size); 
+	sigma[1] = sqrt(sigma[1]/size); 
+	sigma[2] = sqrt(sigma[2]/size); 
+	sigma[3] = sqrt(sigma[3]/size); 
+
+	for(n=0; n<size; n++) 
+	{
+		if(fabs(Yxx[n] - mean[0]) > 3.0*sigma[0]) Yxx[n] = mean[0];
+		if(fabs(Yyy[n] - mean[1]) > 3.0*sigma[1]) Yyy[n] = mean[1];
+		if(fabs(Yxy[n] - mean[2]) > 3.0*sigma[2]) Yxy[n] = mean[2];
+		if(fabs(Yyx[n] - mean[3]) > 3.0*sigma[3]) Yyx[n] = mean[3];
+	}
+	
+	for(n=0; n<size; n++) 
+	{
 		Yxx[n] /= mean[0];
 		Yyy[n] /= mean[1];
 		Yxy[n] /= mean[2];
 		Yyx[n] /= mean[3];
-		}	
-
+	}
 /*
 	fxx=fopen("acxx.dat", "w");
 	fyy=fopen("acyy.dat", "w");
@@ -296,10 +331,37 @@ void smooth_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int w
         diffusion_filter(Yyx, size, window);
 
 	//apply the moving average filter to reduce noise
-	moving_average_filter(Yxx, size, window);
-	moving_average_filter(Yyy, size, window);
-	moving_average_filter(Yxy, size, window);
-	moving_average_filter(Yyx, size, window);
+	moving_average_filter(Yxx, size, 500);
+	moving_average_filter(Yyy, size, 500);
+	moving_average_filter(Yxy, size, 500);
+	moving_average_filter(Yyx, size, 500);
+
+	float Fxxm,Fyym,Fxym,Fyxm;
+	Fxxm = Fyym = Fxym = Fyxm = 0.0;
+        for(n=0; n<dchan; n++)
+        {
+		if(Fxx[n] == 0)
+		{
+			Fxx[n] = Fxx[n-1];
+			Fyy[n] = Fyy[n-1];
+			Fxy[n] = Fxy[n-1];
+			Fyx[n] = Fyx[n-1];
+		}
+		Fxxm += Fxx[n];
+		Fyym += Fyy[n];
+		Fxym += Fxy[n];
+		Fyxm += Fyx[n];
+	}
+
+	Fxxm /= dchan;
+	Fyym /= dchan;
+	Fxym /= dchan;
+	Fyxm /= dchan;
+	//reduce noise in band shape as well
+	moving_average_filter(Fxx, dchan, 25);
+	moving_average_filter(Fyy, dchan, 25);
+	moving_average_filter(Fxy, dchan, 25);
+	moving_average_filter(Fyx, dchan, 25);
 /*	
 	fxx=fopen("scxx.dat", "w");
 	fyy=fopen("scyy.dat", "w");
@@ -319,30 +381,42 @@ void smooth_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int w
 */	
 				
 	for(chan=lowchan; chan<highchan; chan++) 
-		{
+	{
 		for(n=0; n<size; n++) 
+		{
+			if(dataset[n].flagRFI[chan] == RFI_NONE)
 			{
 			dataset[n].cal.xx[chan] = Yxx[n]*Fxx[chan-lowchan];
 			dataset[n].cal.yy[chan] = Yyy[n]*Fyy[chan-lowchan];
 			dataset[n].cal.xy[chan] = Yxy[n]*Fxy[chan-lowchan];
 			dataset[n].cal.yx[chan] = Yyx[n]*Fyx[chan-lowchan];
 			}
-		//printf("%f %%\r", (chan - lowchan + 1)*100.0/(highchan - lowchan));
 		}
+	}
 	printf("\n");
 
-//For making plots of the fits
+
+	//For making plots of the fits
         FILE * outfile2 = fopen("smoothcal.dat","w");
         if(outfile2 == NULL)
         {
                 printf("Can't open smoothcal.dat\n");
                 exit(1);
         }
-        PolAvg avgcal;
-        int i;
         for(n=0; n<size; n++)
         {
-                int count = 1;
+                if(dataset[n].flagBAD) continue;
+                fprintf(outfile2, "%05i %7.6f %7.6f %7.6f %7.6f\n",n,Yxx[n]*Fxxm,Yyy[n]*Fyym,Yxy[n]*Fxym,Yyx[n]*Fyxm);
+                printf("%f %%\r", (n + 1)*100.0/size);
+	}
+	fclose(outfile2);
+
+/*        PolAvg avgcal;
+        int i;
+	outfile2 = fopen("smoothcal.dat","w");
+        for(n=0; n<size; n++)
+        {
+                int count = 0;
                 memset(&avgcal, 0, sizeof(PolAvg));
                 if(dataset[n].flagBAD) continue;
                 for(i=lowchan; i<highchan; i++)
@@ -358,11 +432,13 @@ void smooth_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int w
                 }
                 fprintf(outfile2, "%05i %7.6f %7.6f %7.6f %7.6f\n",n,\
                 avgcal.xx/count, avgcal.yy/count, avgcal.xy/count, avgcal.yx/count);
-                //printf("%f %%\r", (n + 1)*100.0/size);
+                //if(dataset[n].flagBAD) continue;
+                //fprintf(outfile2, "%05i %7.6f %7.6f %7.6f %7.6f\n",n,Yxx[n],Yyy[n],Yxy[n],Yyx[n]);
+                printf("%f %%\r", (n + 1)*100.0/size);
         }
 
         fclose(outfile2);
-
+*/
 	free(Yxx);
 	free(Yyy);
 	free(Yxy);

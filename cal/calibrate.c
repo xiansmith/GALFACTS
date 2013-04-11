@@ -447,6 +447,6 @@ void smooth_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int w
 	free(Fyy);
 	free(Fxy);
 	free(Fyx);
-	free(w);
+	//free(w);
 }
 //----------------------------------------------------------------------------------------------------------

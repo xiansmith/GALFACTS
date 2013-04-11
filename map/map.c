@@ -100,7 +100,7 @@ static void create_header_param_list(header_param_list * hpar_ptr, MapMetaData *
 		int chan1, chan2;
 		int chanCount = 0.0;
 		float freqsum = 0.0;
-		float fstart = md->fstart;
+		float fstart = md->fcen * 1000000 - (md->df * 2048);
 		float avgfreq = 0.0;
 		int goodLowChan = 0;
 		int goodHighChan = 0;
@@ -156,10 +156,10 @@ static void create_header_param_list(header_param_list * hpar_ptr, MapMetaData *
 
 		avgfreq = freqsum / chanCount;
 
-		hpar_ptr->crval[2] = avgfreq;
+		hpar_ptr->crval[2] = md->fstart;
 		hpar_ptr->cdelt[2] = md->df * (md->avg_highchan - md->avg_lowchan);  // for avg md->df * md->n3
 
-		//printf("XXX For average channel got chanCount=%d fstart=%f freqsum=%f avgfreq=%f goodLowChan=%d goodHighChan=%d\n", chanCount, fstart, freqsum, avgfreq, goodLowChan, goodHighChan );
+		//printf("For average channel got chanCount=%d fstart=%f freqsum=%f avgfreq=%f goodLowChan=%d goodHighChan=%d\n", chanCount, fstart, freqsum, avgfreq, goodLowChan, goodHighChan );
 
 	}
 

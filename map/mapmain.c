@@ -146,12 +146,12 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 
 			fluxwappdata_readchan_binary(md->field, md->band, wappdata, chan, BASKETWEAVE, md->avg, md->decmin, md->decmax);
 
+			printf("Apply the feed coupling mueller matrix correction...\n");
+			correct_UV(wappdata,chan,md);
+			
 			printf("Removing DEC dependence...\n"); 
 			calculate_dec_dependence(wappdata, md->dec_order, chan, cIc, cQc, cUc, cVc, md->avg);
 			
-			printf("Apply the feed coupling mueller matrix correction...\n");
-			correct_UV(wappdata,chan,md);
-
 			printf("Beam gain calibration...\n"); 		
 			if(cal_flag) beam_gain_calibration_table(wappdata, cal_low, cal_high, cal_table, chan); 
 		
@@ -164,8 +164,8 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 			balance_data(wappdata, md->day_iter, md->scan_iter, md->balgain, md->balepsilon, md->bw_order);
 		
 			//printf("Writing basketweaved time series ...\n");
-			//fluxwappdata_writechan_binary(wappdata,chan);
-			fluxwappdata_writechan_binary_single(wappdata,chan);
+			fluxwappdata_writechan_binary(wappdata,chan);
+			//fluxwappdata_writechan_binary_single(wappdata,chan);
 
 			printf("Gridding ...\n"); 
 			grid_data(wappdata, md, dataI, dataQ, dataU, dataV, weight);
@@ -257,6 +257,8 @@ if(md.avg == 0)
 	{
 	md.n3 = md.highchan - md.lowchan; 
 	md.fstart = 0.5*(md.fcen - (md.avg_lowchan-(MAX_CHANNELS/2-1))*0.042 + md.fcen - (md.avg_highchan-(MAX_CHANNELS/2-1))*0.042)*1000000;
+	//md.fstart = 0.5*(md.fcen + (md.avg_lowchan-(MAX_CHANNELS/2-1))*0.042 + md.fcen - (md.avg_highchan-(MAX_CHANNELS/2-1))*0.042)*1000000; // old calc
+	//md.fstart = (md.fcen - (((MAX_CHANNELS/2-1) - 0.5 * (md.avg_highchan + md.avg_lowchan)) *0.042) * 1000000);   // average channel centre freq in Hz
 	md.df = (md.avg_highchan - md.avg_lowchan)*42000; 
 	}
 else

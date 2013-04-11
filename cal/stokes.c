@@ -564,8 +564,6 @@ void write_binary_channel_data_single_file(SpecRecord dataset[], int numRecords,
 	int chan;
 	int startRecord;
 
-
-
 	snprintf(filename, 32, "fluxtime.dat");
 	fluxfile = fopen(filename, "wb");
 	if(fluxfile == NULL)
@@ -596,6 +594,7 @@ void write_binary_channel_data_single_file(SpecRecord dataset[], int numRecords,
 			fRA = dataset[n].RA;
 			fDEC = dataset[n].DEC;
 			fAST = dataset[n].AST;
+
 			if(dataset[n].flagBAD || dataset[n].flagRFI[chan] != RFI_NONE)
 			{
 				I = NAN;
@@ -629,7 +628,7 @@ void write_binary_channel_data_single_file(SpecRecord dataset[], int numRecords,
 void write_rfi_data( SpecRecord dataset[], int numRecords, int lowchan, int highchan )
 {
 	FILE *freqRFI = fopen( "rfifrq.dat", "w");
-	FILE *timeRFI = fopen( "rfitime.dat", "w");
+	FILE *timeRFI = fopen( "rfitime.ann", "w");
 
 	if (freqRFI == NULL || timeRFI == NULL ) {
 		printf("ERROR: unable to open rfi files\n");
@@ -637,8 +636,9 @@ void write_rfi_data( SpecRecord dataset[], int numRecords, int lowchan, int high
 	}
 
 	int chan, n, i, freqCount=0, timeCount=0;
-	float fRA, fDEC, fAST;
+	float fRA, fDEC;
 
+	fprintf( timeRFI, "COLOUR GREEN\n");
 
 	for(n=0; n<numRecords; n++)
 	{
@@ -646,12 +646,11 @@ void write_rfi_data( SpecRecord dataset[], int numRecords, int lowchan, int high
 		{
 			fRA = dataset[n].RA;
 			fDEC = dataset[n].DEC;
-			fAST = dataset[n].AST;
 
 			if( dataset[n].flagRFI[lowchan] == RFI_OUTOFBAND )
 			{
 				timeCount++;
-				fprintf( timeRFI, "%f %f %f\n,", fRA, fDEC, fAST );
+				fprintf( timeRFI, "CROSS %f %f 0.2 0.2\n", fRA, fDEC );
 			}
 
 		}
@@ -663,7 +662,7 @@ void write_rfi_data( SpecRecord dataset[], int numRecords, int lowchan, int high
 					dataset[n].flagRFI[chan] ==  RFI_CALOFF_YX  ||
 					dataset[n].flagRFI[chan] ==  RFI_CALOFF_YY )
 			{
-				fprintf( freqRFI, "%d %d\n", n, chan );
+				fprintf( freqRFI, "%d %d %f %f\n", n, chan, dataset[n].RA, dataset[n].DEC );
 				freqCount++;
 			}
 		}

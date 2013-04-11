@@ -150,7 +150,7 @@ typedef struct {
 	PolSet caloff;
 	PolSet cal;
 	enum RFIFlags flagRFI[MAX_CHANNELS];
-	char  flagBAD;
+	int  flagBAD;
 	StokesSet stokes;
 } SpecRecord;
 

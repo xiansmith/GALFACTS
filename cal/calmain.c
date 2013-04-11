@@ -16,6 +16,7 @@
 #include "markdata.h"
 #include "jsd_futil.h"
 #include "chebyshev.h"
+#include "tcal_on_fly.h"
 //--------------------------------------------------------------------------------------------------------
 int multibeam;
 
@@ -128,7 +129,7 @@ static void create_annotations(SpecRecord dataset[], int size)
 //--------------------------------------------------------------------------------------------------------
 static void process_dataset(const char *field, const char *datadirname, const char *datedir, const char *subdir, int beam, int band, int lowchan, int highchan, \
 int RFIF, int RFIT, float numSigmaF, float numSigmaT, int freqSmoothing, \
-int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfreq, float hidrogenband, int calskyfiles, int annfiles, int fit_smooth, int window, float Tcalx[], float Tcaly[], int *badchannels, float RAmin,float RAmax,float DECmin,float DECmax)
+int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfreq, float hidrogenband, int calskyfiles, int annfiles, int fit_smooth, int window, int *badchannels, float RAmin,float RAmax,float DECmin,float DECmax)
 {
 	FILE * datafile, *cfgfile;
 	glob_t globbuf;
@@ -250,6 +251,16 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 	compute_raw_cal(dataset, numRecords, lowchan, highchan);
 	read_clock(); start_clock();
 	
+    float Tcalx[MAX_CHANNELS];
+    float Tcaly[MAX_CHANNELS];
+  //  char tcalfile[32];
+  //  sprintf(tcalfile,"../Tcal%d.dat",beamcounter);
+    compute_tcal(dataset, numRecords,  lowchan, highchan, hidrogenfreq, hidrogenband,freq, badchannels, Tcalx, Tcaly);
+    int t;
+    for(t=0;t<MAX_CHANNELS;t++)
+    		printf("%f %f\n",Tcalx[t],Tcaly[t]);
+
+    exit(0);
 	if(fit_smooth)
 		{	
 		printf("Compute linear cal\n"); 
@@ -413,11 +424,11 @@ int main(int argc, char *argv[])
 			{
 
 	                        // Read the Tcal correction file for the right beam
-        	                float Tcalx[MAX_CHANNELS];
-                	        float Tcaly[MAX_CHANNELS];
-	                        char tcalfile[32];
-        	                sprintf(tcalfile,"../Tcal%d.dat",beamcounter);
-                	        read_tcal(tcalfile, Tcalx, Tcaly);
+//        	                float Tcalx[MAX_CHANNELS];
+//                	        float Tcaly[MAX_CHANNELS];
+//	                        char tcalfile[32];
+//        	                sprintf(tcalfile,"../Tcal%d.dat",beamcounter);
+//                	        read_tcal(tcalfile, Tcalx, Tcaly);
 
 				sprintf(subdirname,"beam%d", beamcounter);
 				subdir = subdirname;
@@ -463,7 +474,7 @@ int main(int argc, char *argv[])
 					process_dataset(field, datadirname, datedir, subdir, beamcounter, band, lowchan, highchan, \
 									RFIF, RFIT, numSigmaF, numSigmaT, freqSmoothing, \
 									uvDenoising, uvDenoisingTau, uvDenoisingLambda, \
-									hidrogenfreq, hidrogenband, calskyfiles, annfiles, fit_smooth, window, Tcalx, Tcaly, badchannels, RAmin,RAmax,DECmin,DECmax);
+									hidrogenfreq, hidrogenband, calskyfiles, annfiles, fit_smooth, window, badchannels, RAmin,RAmax,DECmin,DECmax);
 				}
 
 				printf("---------------------------------------------------\n");

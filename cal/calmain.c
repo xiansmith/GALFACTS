@@ -210,7 +210,7 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 		rfi_detection_frequency_domain(dataset, numRecords, lowchan, highchan, numSigmaF, hidrogenfreq, hidrogenband, freq);
 		}
 	
-	read_clock();
+	read_clock();start_clock();
 	
 	switch( RFIT )
 		{
@@ -229,6 +229,7 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 		default  : 	printf( "No RFI detection in time domain!\n" );
 					break;
 		}		
+
 	read_clock(); start_clock();
 	mark_bad_channels(dataset, numRecords, lowchan, highchan, numSigmaT, hidrogenfreq, hidrogenband, freq, badchannels);
 	read_clock(); start_clock();

@@ -35,6 +35,157 @@ for(k = lowchan; k < highchan; k++)
 void rfi_detection_frequency_domain(SpecRecord dataset[], int size, int lowchan, int highchan, float numSigma, float hidrogenfreq, float hidrogenband, float freq[])
 {
 	int i, j, k, N;
+	float sum[4], mean[8], sigma[8], diffs[size], diff, delta, minf=hidrogenfreq-hidrogenband, maxf=hidrogenfreq+hidrogenband;
+	char outlierFound;
+
+	for(i = 0; i < size; i++)
+		{
+		if(!dataset[i].flagBAD)
+			{
+			for(k = lowchan; k < highchan; k++) dataset[i].flagRFI[k] = RFI_NONE;
+
+			float diffxxon[MAX_CHANNELS],diffyyon[MAX_CHANNELS],diffxyon[MAX_CHANNELS],diffyxon[MAX_CHANNELS];
+			float diffxxoff[MAX_CHANNELS],diffyyoff[MAX_CHANNELS],diffxyoff[MAX_CHANNELS],diffyxoff[MAX_CHANNELS];
+
+			for(k = lowchan; k < highchan - 1; k++) {
+				if(dataset[i].flagRFI[k] == RFI_NONE && dataset[i].flagRFI[k+1] == RFI_NONE)
+				{
+					diffxxoff[k] = dataset[i].caloff.xx[k+1] - dataset[i].caloff.xx[k];
+					diffyyoff[k] = dataset[i].caloff.yy[k+1] - dataset[i].caloff.yy[k];
+					diffxyoff[k] = dataset[i].caloff.xy[k+1] - dataset[i].caloff.xy[k];
+					diffyxoff[k] = dataset[i].caloff.yx[k+1] - dataset[i].caloff.yx[k];
+					diffxxon[k] = dataset[i].calon.xx[k+1] - dataset[i].calon.xx[k];
+					diffyyon[k] = dataset[i].calon.yy[k+1] - dataset[i].calon.yy[k];
+					diffxyon[k] = dataset[i].calon.xy[k+1] - dataset[i].calon.xy[k];
+					diffyxon[k] = dataset[i].calon.yx[k+1] - dataset[i].calon.yx[k];
+				}
+			}
+
+			do
+				{
+				N=0;
+				for(j=0; j<8; j++){mean[j] = 0; sigma[j] = 0;}
+
+				for(k = lowchan; k < highchan - 1; k++)
+				{
+					if(dataset[i].flagRFI[k] == RFI_NONE && dataset[i].flagRFI[k+1] == RFI_NONE)
+					{
+						mean[0] += diffxxoff[k];
+						mean[1] += diffyyoff[k];
+						mean[2] += diffxyoff[k];
+						mean[3] += diffyxoff[k];
+						mean[4] += diffxxon[k];
+						mean[5] += diffyyon[k];
+						mean[6] += diffxyon[k];
+						mean[7] += diffyxon[k];
+						N++;
+					}
+				}
+
+				mean[0] /= N;
+				mean[1] /= N;
+				mean[2] /= N;
+				mean[3] /= N;
+				mean[4] /= N;
+				mean[5] /= N;
+				mean[6] /= N;
+				mean[7] /= N;
+
+				for(k = lowchan; k < highchan - 1; k++)
+				{
+					if(dataset[i].flagRFI[k] == RFI_NONE && dataset[i].flagRFI[k+1] == RFI_NONE)
+					{
+						sigma[0] += (diffxxoff[k] - mean[0]) * (diffxxoff[k] - mean[0]);
+						sigma[1] += (diffyyoff[k] - mean[1]) * (diffyyoff[k] - mean[1]);
+						sigma[2] += (diffxyoff[k] - mean[2]) * (diffxyoff[k] - mean[2]);
+						sigma[3] += (diffyxoff[k] - mean[3]) * (diffyxoff[k] - mean[3]);
+						sigma[4] += (diffxxon[k] - mean[4]) * (diffxxon[k] - mean[4]);
+						sigma[5] += (diffyyon[k] - mean[5]) * (diffyyon[k] - mean[5]);
+						sigma[6] += (diffxyon[k] - mean[6]) * (diffxyon[k] - mean[6]);
+						sigma[7] += (diffyxon[k] - mean[7]) * (diffyxon[k] - mean[7]);
+					}
+				}
+
+
+				for(j=0; j<8; j++) {if(N > 1) sigma[j] = sqrt(sigma[j]/(N-1)); else sigma[j] = sqrt(sigma[j]);}
+				outlierFound = 0;
+				for(k = lowchan; k < highchan - 1; k++)
+					{
+					if(freq[k] < minf || freq[k] > maxf)
+						{
+						if(dataset[i].flagRFI[k] == RFI_NONE && dataset[i].flagRFI[k+1] == RFI_NONE)
+							{
+							if(fabs(dataset[i].caloff.xx[k+1] - dataset[i].caloff.xx[k] - mean[0]) > numSigma*sigma[0])
+								{
+								dataset[i].flagRFI[k] |= RFI_CALOFF_XX;
+								dataset[i].flagRFI[k+1] |= RFI_CALOFF_XX;
+								outlierFound = 1;
+								}
+							if(fabs(dataset[i].caloff.yy[k+1] - dataset[i].caloff.yy[k] - mean[1]) > numSigma*sigma[1])
+								{
+								dataset[i].flagRFI[k] |= RFI_CALOFF_YY;
+								dataset[i].flagRFI[k+1] |= RFI_CALOFF_YY;
+								outlierFound = 1;
+								}
+							if(fabs(dataset[i].calon.xx[k+1] - dataset[i].calon.xx[k] - mean[2]) > numSigma*sigma[2])
+								{
+								dataset[i].flagRFI[k] |= RFI_CALON_XX;
+								dataset[i].flagRFI[k+1] |= RFI_CALON_XX;
+								outlierFound = 1;
+								}
+							if(fabs(dataset[i].calon.yy[k+1] - dataset[i].calon.yy[k] - mean[3]) > numSigma*sigma[3])
+								{
+								dataset[i].flagRFI[k] |= RFI_CALON_YY;
+								dataset[i].flagRFI[k+1] |= RFI_CALON_YY;
+								outlierFound = 1;
+								}
+							if(fabs(dataset[i].caloff.xy[k+1] - dataset[i].caloff.xy[k] - mean[4]) > numSigma*sigma[4])
+								{
+								dataset[i].flagRFI[k] |= RFI_CALOFF_XY;
+								dataset[i].flagRFI[k+1] |= RFI_CALOFF_XY;
+								outlierFound = 1;
+								}
+							if(fabs(dataset[i].caloff.yx[k+1] - dataset[i].caloff.yx[k] - mean[5]) > numSigma*sigma[5])
+								{
+								dataset[i].flagRFI[k] |= RFI_CALOFF_YX;
+								dataset[i].flagRFI[k+1] |= RFI_CALOFF_YX;
+								outlierFound = 1;
+								}
+							if(fabs(dataset[i].calon.xy[k+1] - dataset[i].calon.xy[k] - mean[6]) > numSigma*sigma[6])
+								{
+								dataset[i].flagRFI[k] |= RFI_CALON_XY;
+								dataset[i].flagRFI[k+1] |= RFI_CALON_XY;
+								outlierFound = 1;
+								}
+							if(fabs(dataset[i].calon.yx[k+1] - dataset[i].calon.yx[k] - mean[7]) > numSigma*sigma[7])
+								{
+								dataset[i].flagRFI[k] |= RFI_CALON_YX;
+								dataset[i].flagRFI[k+1] |= RFI_CALON_YX;
+								outlierFound = 1;
+								}
+							}
+
+
+						}
+					}
+				}
+			while(outlierFound);
+		}
+	}
+
+
+}
+
+// RFI detection in frequency domain
+// first order differences
+// dataset - the channel data for a particular time step
+// lowchan - the lowest channel number to do computations for
+// highchan - the highest channel number to do computations for
+// numSigma - the number of sigma away from the mean the difference should be rejected
+// ignore hidrogenfeq(+-)hidrogenband
+void rfi_detection_frequency_domain_old(SpecRecord dataset[], int size, int lowchan, int highchan, float numSigma, float hidrogenfreq, float hidrogenband, float freq[])
+{
+	int i, j, k, N;
 	float mean[8], sigma[8], diff, delta, minf=hidrogenfreq-hidrogenband, maxf=hidrogenfreq+hidrogenband;
 	char outlierFound;
 
@@ -259,114 +410,6 @@ void rfi_detection_time_domain1(const char *field, SpecRecord dataset[], int siz
 	printf("!!! Found %d RFI\n", rfi_count);
 }
 
-void strongsource_rfi_exclusions( SpecRecord dataset[], int numRecords, int lowchan, int highchan ) {
-
-	int i = 0, j = 0, k = 0;
-	float RA, DEC, radius = 0.06666;
-	float ** s;
-	int sourcecount;
-	int hitcount = 0;
-	int badcount = 0;
-
-	FILE *StrongSourceFile = fopen("../../rfi.list", "r");
-	FILE *AnnotationFile = fopen("rfiexception.ann", "w");
-	fprintf(AnnotationFile, "COLOUR YELLOW\n");
-
-	if(StrongSourceFile != NULL) {
-		sourcecount = jsd_line_count(StrongSourceFile);
-
-		s = (float**)malloc(sourcecount * sizeof(float*));
-		for (i = 0; i < sourcecount; i++) {
-		  s[i] = (float*)malloc(3 * sizeof(float));
-		}
-	}
-
-	int count = 0;
-
-	if(StrongSourceFile != NULL)
-	{
-	do
-		{
-			int num;
-			float fileradius;
-
-			// if only RA DEC exist this is ok, but
-			//num = fscanf(StrongSourceFile, "%f %f\n", &RA, &DEC, &fileradius);
-
-			char line[256];
-			fgets( line, 256, StrongSourceFile);
-
-			num = sscanf( line, "%f %f %f", &RA, &DEC, &fileradius );
-
-
-			if ( num == 2 ) {
-				count++;
-				s[j][0] = RA;
-				s[j][1] = DEC;
-				s[j][2] = radius;
-			} else if (num == 3 ) {
-				count++;
-				s[j][0] = RA;
-				s[j][1] = DEC;
-				s[j][2] = fileradius;
-			} else {
-				printf( "num was something strange = %d", num );
-			}
-			printf("Found RA = %f DEC = %f\n", RA, DEC );
-		}
-
-		while(!feof(StrongSourceFile));
-		fclose(StrongSourceFile);
-	} else {
-		printf("No rfi source list file found\n");
-		return;
-	}
-
-	//printf("Counted %d RFI exceptions\n", count);
-
-	//for ( i = 0; i < sourcecount; i++ ) {
-	//	printf( "RA = %f\n", s[i][1] );
-	//}
-
-	for(i = 0; i < numRecords; i++)
-	{
-		if(dataset[i].flagBAD )
-		{
-			badcount++;
-			for( k = 0; k < sourcecount; k++ )
-			{
-				if( sqrt( powf(dataset[i].RA - s[k][0],2) + powf(dataset[i].DEC - s[k][1],2) ) < s[k][2]  )
-				{
-					// GOT A HIT, remove the RFI flag
-					//printf("Source at %f %f in dataset at %f %f\n",  s[k][0], s[k][1], dataset[i].RA, dataset[i].DEC  );
-
-					fprintf(AnnotationFile, "CROSS %f %f 0.2 0.2\n", dataset[i].RA, dataset[i].DEC);
-
-					for(j = lowchan; j < highchan - 1; j++)
-					{
-						if( dataset[i].flagRFI[j] == RFI_OUTOFBAND)
-						{
-							dataset[i].flagRFI[j] &= ~RFI_OUTOFBAND;
-							hitcount++;
-							dataset[i].flagBAD = 0;
-						}
-					}
-
-				}
-			}
-
-		}
-	}
-	//printf("Visited %d records, found bad %d ,  lowchan = %d highchan = %d", numRecords, badcount, lowchan, highchan );
-	printf("final rfi removal hitcount = %d\n", hitcount );
-
-	for (i = 0; i < sourcecount; i++) {
-	  free(s[i]);
-	}
-	free(s);
-
-
-}
 
 void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int size, int lowchan, int highchan, float numSigma, float hidrogenfreq, float hidrogenband, float freq[])
 {
@@ -375,6 +418,7 @@ void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int siz
 	float mean[8], sigma[8], diff, delta, minf=hidrogenfreq-hidrogenband, maxf=hidrogenfreq+hidrogenband, nSigma = numSigma;
 	char outlierFound;
 	float signal[size][8];
+	float diffs[size][8];
 	int rfi_count = 0;
 	int rfi_chancount = 0;
 	int outliercount = 0;
@@ -386,9 +430,11 @@ void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int siz
 	int badcount = 0;
 
 	FILE *StrongSourceFile = fopen("../../rfi.list", "r");
+	FILE *RFIin = fopen("../../rfitimein.ann", "w");
 	FILE *AnnotationFile = fopen("rfiexception.ann", "w");
 	fprintf(AnnotationFile, "COLOUR YELLOW\n");
 
+	fprintf( RFIin, "COLOUR RED\n" );
 
 	if(StrongSourceFile != NULL) {
 		sourcecount = jsd_line_count(StrongSourceFile);
@@ -417,22 +463,24 @@ void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int siz
 
 			cur++;
 		}
-
 	}
 	else
 	{
 		printf("No time domain RFI exception list file found\n");
 	}
 	
+	int M = 0;
+
+
 	for(i = 0; i < size; i++)
-		{
+	{
 		if(!dataset[i].flagBAD)
-			{
+		{
 			for(j=0; j<8; j++) signal[i][j] = 0;
 			N = 0; 
+			M++;
 			for(k = lowchan; k < highchan; k++)
-				{
-				N++;
+			{
 				signal[i][0] += dataset[i].caloff.xx[k];
 				signal[i][1] += dataset[i].caloff.yy[k];
 				signal[i][2] += dataset[i].calon.xx[k];
@@ -441,28 +489,52 @@ void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int siz
 				signal[i][5] += dataset[i].caloff.yx[k];
 				signal[i][6] += dataset[i].calon.xy[k];
 				signal[i][7] += dataset[i].calon.yx[k];
-				}
-			for(j=0; j<8; j++) signal[i][j] = signal[i][j]/N;
+				N++;
+			}
+
+			for(j=0; j<8; j++)
+			{
+				signal[i][j] = signal[i][j]/N;
 			}
 		}
-		
+	}
+
 	do
 		{
 		N = 0; 
-		for(j=0; j<8; j++){mean[j] = 0; sigma[j] = 0;}
+		M = 0;
+		for(j=0; j<8; j++){ mean[j] = 0; sigma[j] = 0;}
+
 		for(i = 1; i < size - 1; i++)
-			{
+		{
 			if(dataset[i].flagBAD && dataset[i-1].flagBAD && dataset[i+1].flagBAD) continue;
-			N++;
+
 			for(j=0; j<8; j++)
-				{
-				diff = signal[i+1][j] - 2*signal[i][j] + signal[i-1][j];
-				delta = diff - mean[j];
-				mean[j] += delta/N;
-				sigma[j] += delta*(diff - mean[j]);
-				}
+			{
+				diffs[i][j] = signal[i+1][j] - 2*signal[i][j] + signal[i-1][j];
+				mean[j] += diffs[i][j];
 			}
+			M++;
+		}
+
+		for(j=0; j<8; j++)
+		{
+			mean[j] /= M;
+		}
+
+		for(i = 1; i < size - 1; i++)
+		{
+			if(dataset[i].flagBAD && dataset[i-1].flagBAD && dataset[i+1].flagBAD) continue;
+
+			for(j=0; j<8; j++)
+			{
+				sigma[j] += (diffs[i][j] - mean[j]) * (diffs[i][j] - mean[j]);
+			}
+			N++;
+		}
+
 		for(j=0; j<8; j++){if(N>1) sigma[j] = sqrt(sigma[j]/(N-1)); else sigma[j] = sqrt(sigma[j]);}
+
 		outlierFound = 0;
 		for(i = 1; i < size - 1; i++)
 			{
@@ -478,6 +550,8 @@ void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int siz
 				fabs(signal[i+1][7] - 2*signal[i][7] + signal[i-1][7] - mean[7]) > numSigma*sigma[7])
 				{
 
+				fprintf( RFIin, "CROSS %f %f 0.2 0.2\n", dataset[i].RA, dataset[i].DEC );
+
 				int exception = 0;
 
 				if ( StrongSourceFile != NULL )
@@ -487,7 +561,8 @@ void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int siz
 					{
 						// radius must be greater than 0
 						if( s[k][2] > 0.00) {
-							if( sqrt( powf(dataset[i].RA - s[k][0],2) + powf(dataset[i].DEC - s[k][1],2) ) < s[k][2]  )
+							//if( sqrt( powf(dataset[i].RA - s[k][0],2) + powf(dataset[i].DEC - s[k][1],2) ) < s[k][2]  )
+                            if( (fabs( dataset[i].RA - s[k][0]) < s[k][2]) && (fabs( dataset[i].DEC - s[k][1]) < s[k][2]))
 							{
 								// GOT A HIT, remove the RFI flag
 								//printf("Exception hit at %f %f in dataset at %f %f\n",  s[k][0], s[k][1], dataset[i].RA, dataset[i].DEC  );
@@ -512,7 +587,6 @@ void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int siz
 						dataset[i-1].flagRFI[k] |= RFI_OUTOFBAND;
 						dataset[i].flagRFI[k] |= RFI_OUTOFBAND;
 						dataset[i+1].flagRFI[k] |= RFI_OUTOFBAND;
-						rfi_count += 3;
 						}
 					}
 					outlierFound = 1;
@@ -524,6 +598,7 @@ void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int siz
 	while(outlierFound);
 
 	fclose( AnnotationFile );
+	fclose( RFIin );
 
 	printf("Time domain. Found %d outliers and %d exceptions\n", outliercount, exceptionCount);
 	//printf("!!! Found %d RFI points in %d channels and %d outliers\n", rfi_count, rfi_chancount, outliercount);

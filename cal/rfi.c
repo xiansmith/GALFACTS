@@ -430,7 +430,7 @@ void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int siz
 	int badcount = 0;
 
 	FILE *StrongSourceFile = fopen("../../rfi.list", "r");
-	FILE *RFIin = fopen("../../rfitimein.ann", "w");
+	FILE *RFIin = fopen("rfitimein.ann", "w");
 	FILE *AnnotationFile = fopen("rfiexception.ann", "w");
 	fprintf(AnnotationFile, "COLOUR YELLOW\n");
 

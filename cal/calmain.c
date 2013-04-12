@@ -257,10 +257,7 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
   //  sprintf(tcalfile,"../Tcal%d.dat",beamcounter);
     compute_tcal(dataset, numRecords,  lowchan, highchan, hidrogenfreq, hidrogenband,freq, badchannels, Tcalx, Tcaly);
     int t;
-    for(t=0;t<MAX_CHANNELS;t++)
-    		printf("%f %f\n",Tcalx[t],Tcaly[t]);
 
-    exit(0);
 	if(fit_smooth)
 		{	
 		printf("Compute linear cal\n"); 

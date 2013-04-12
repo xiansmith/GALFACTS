@@ -143,7 +143,7 @@ void compute_tcal(SpecRecord dataset[], int size, int lowchan, int highchan, flo
 						count++;	
                               }
                         }
-                        printf("%f %%\r", (n + 1)*100.0/size);
+                        //printf("%f %%\r", (n + 1)*100.0/size);
                 }
 
 	PolAvg avgavgcal, avgavgdata;

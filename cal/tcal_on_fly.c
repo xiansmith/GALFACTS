@@ -49,71 +49,11 @@ void compute_tcal(SpecRecord dataset[], int size, int lowchan, int highchan, flo
         memset(&avgdata, 0, MAX_CHANNELS*sizeof(PolAvg));
         //memset(&tcalxx, 1.0, MAX_CHANNELS*sizeof(float));
         //memset(&tcalyy, 1.0, MAX_CHANNELS*sizeof(float));
-	float minf=hif - hiband, maxf=hif + hiband;
-
-
-        for(n=0; n<size; n++)
-        {
-		dataset[n].flagBAD = 0;
-	}
+		float minf=hif - hiband, maxf=hif + hiband;
 
         float mean[4], sigma[4];
-	int chan;
-        for(chan=lowchan; chan<highchan; chan++)
-                {
-		if(badchannels[chan])
-			continue;
-
-                mean[0] = mean[1] = mean[2] = mean[3] = 0;
-                for(n=0; n<size; n++)
-                        {
-                        //mean[0] += dataset[n].cal.xx[chan];
-                        mean[1] += dataset[n].cal.yy[chan];
-                        //mean[2] += dataset[n].cal.xy[chan];
-                        //mean[3] += dataset[n].cal.yx[chan];
-                        mean[0] += dataset[n].caloff.xx[chan];
-                        //mean[1] += dataset[n].caloff.yy[chan];
-                        //mean[2] += dataset[n].caloff.xy[chan];
-                        //mean[3] += dataset[n].caloff.yx[chan];i
-			//printf("%f %f %f %f\n",dataset[n].cal.xx[chan],dataset[n].cal.yy[chan], dataset[n].caloff.xx[chan], dataset[n].caloff.yy[chan]);
-                        }
-                mean[0] /= size;
-                mean[1] /= size;
-                //mean[2] /= size;
-                //mean[3] /= size;
-
-                sigma[0] = sigma[1] = sigma[2] = sigma[3] = 0;
-                for(n=0; n<size; n++)
-                        {
-                        //sigma[0] += (dataset[n].cal.xx[chan] - mean[0])*(dataset[n].cal.xx[chan] - mean[0]);
-                        sigma[1] += (dataset[n].cal.yy[chan] - mean[1])*(dataset[n].cal.yy[chan] - mean[1]);
-                        //sigma[2] += (dataset[n].cal.xy[chan] - mean[2])*(dataset[n].cal.xy[chan] - mean[2]);
-                        //sigma[3] += (dataset[n].cal.yx[chan] - mean[3])*(dataset[n].cal.yx[chan] - mean[3]);
-                        sigma[0] += (dataset[n].caloff.xx[chan] - mean[0])*(dataset[n].caloff.xx[chan] - mean[0]);
-                        //sigma[1] += (dataset[n].caloff.yy[chan] - mean[1])*(dataset[n].caloff.yy[chan] - mean[1]);
-                        //sigma[2] += (dataset[n].caloff.xy[chan] - mean[2])*(dataset[n].caloff.xy[chan] - mean[2]);
-                        //sigma[3] += (dataset[n].caloff.yx[chan] - mean[3])*(dataset[n].caloff.yx[chan] - mean[3]);
-                        }
-                sigma[0] = sqrt(sigma[0]/size);
-                sigma[1] = sqrt(sigma[1]/size);
-                //sigma[2] = sqrt(sigma[2]/size);
-                //sigma[3] = sqrt(sigma[3]/size);
-		//printf("%d %f %f %f %f\n",chan,mean[0],mean[1],sigma[0],sigma[1]);
-
-                for(n=0; n<size; n++)
-                        {
-                        //if(fabs(dataset[n].cal.xx[chan] - mean[0]) > 1.0*sigma[0]) dataset[n].flagBAD = 1;
-                        if(fabs(dataset[n].cal.yy[chan] - mean[1]) > 4.0*sigma[1])  dataset[n].flagBAD = 1;
-                        //if(fabs(dataset[n].cal.xy[chan] - mean[2]) > 1.0*sigma[2]) dataset[n].flagBAD = 1;
-                        //if(fabs(dataset[n].cal.yx[chan] - mean[3]) > 1.0*sigma[3]) dataset[n].flagBAD = 1;
-                        if(fabs(dataset[n].caloff.xx[chan] - mean[0]) > 2.5*sigma[0]) dataset[n].flagBAD = 1;
-                        //if(fabs(dataset[n].caloff.yy[chan] - mean[1]) > 2.0*sigma[1]) dataset[n].flagBAD = 1;
-                        //if(fabs(dataset[n].caloff.xy[chan] - mean[2]) > 2.0*sigma[2]) dataset[n].flagBAD = 1;
-                        //if(fabs(dataset[n].caloff.yx[chan] - mean[3]) > 2.0*sigma[3]) dataset[n].flagBAD = 1;
-                        }
-                      //printf("%f %%\r", (chan - lowchan + 1)*100.0/(highchan-lowchan));
-		}
-
+		int chan;
+        
 
         for(n=0; n<size; n++)
                 {

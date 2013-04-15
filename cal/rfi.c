@@ -127,28 +127,28 @@ void rfi_detection_frequency_domain(SpecRecord dataset[], int size, int lowchan,
 								dataset[i].flagRFI[k+1] |= RFI_CALOFF_YY;
 								outlierFound = 1;
 								}
-							if(fabs(dataset[i].calon.xx[k+1] - dataset[i].calon.xx[k] - mean[2]) > numSigma*sigma[2])
-								{
-								dataset[i].flagRFI[k] |= RFI_CALON_XX;
-								dataset[i].flagRFI[k+1] |= RFI_CALON_XX;
-								outlierFound = 1;
-								}
-							if(fabs(dataset[i].calon.yy[k+1] - dataset[i].calon.yy[k] - mean[3]) > numSigma*sigma[3])
-								{
-								dataset[i].flagRFI[k] |= RFI_CALON_YY;
-								dataset[i].flagRFI[k+1] |= RFI_CALON_YY;
-								outlierFound = 1;
-								}
-							if(fabs(dataset[i].caloff.xy[k+1] - dataset[i].caloff.xy[k] - mean[4]) > numSigma*sigma[4])
+							if(fabs(dataset[i].caloff.xy[k+1] - dataset[i].caloff.xy[k] - mean[2]) > numSigma*sigma[2])
 								{
 								dataset[i].flagRFI[k] |= RFI_CALOFF_XY;
 								dataset[i].flagRFI[k+1] |= RFI_CALOFF_XY;
 								outlierFound = 1;
 								}
-							if(fabs(dataset[i].caloff.yx[k+1] - dataset[i].caloff.yx[k] - mean[5]) > numSigma*sigma[5])
+							if(fabs(dataset[i].caloff.yx[k+1] - dataset[i].caloff.yx[k] - mean[3]) > numSigma*sigma[3])
 								{
 								dataset[i].flagRFI[k] |= RFI_CALOFF_YX;
 								dataset[i].flagRFI[k+1] |= RFI_CALOFF_YX;
+								outlierFound = 1;
+								}
+							if(fabs(dataset[i].calon.xx[k+1] - dataset[i].calon.xx[k] - mean[4]) > numSigma*sigma[4])
+								{
+								dataset[i].flagRFI[k] |= RFI_CALON_XX;
+								dataset[i].flagRFI[k+1] |= RFI_CALON_XX;
+								outlierFound = 1;
+								}
+							if(fabs(dataset[i].calon.yy[k+1] - dataset[i].calon.yy[k] - mean[5]) > numSigma*sigma[5])
+								{
+								dataset[i].flagRFI[k] |= RFI_CALON_YY;
+								dataset[i].flagRFI[k+1] |= RFI_CALON_YY;
 								outlierFound = 1;
 								}
 							if(fabs(dataset[i].calon.xy[k+1] - dataset[i].calon.xy[k] - mean[6]) > numSigma*sigma[6])

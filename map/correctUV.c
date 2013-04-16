@@ -55,6 +55,17 @@ void correct_UV(FluxWappData * wappdata, int chan, MapMetaData *md)
 				fprintf(epsphi,"%d %f %f\n",j,Uleak[j],Vleak[j]);
 				fclose(epsphi);
 			}
+			if( chan == 0 ) {
+				int k = 0;
+				for(k = md->avg_lowchan;k< md->avg_highchan;k++)
+				{
+					Uleak[0]+=Uleak[k];
+					Vleak[0]+=Vleak[k];
+				}
+				Uleak[0]/=(md->avg_highchan - md->avg_lowchan);
+				Vleak[0]/=(md->avg_highchan - md->avg_lowchan);
+
+			}
 
 			printf("INFO: read file %s\n", filename);
 		}

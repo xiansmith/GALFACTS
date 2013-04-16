@@ -118,7 +118,6 @@ if(baddatafile != NULL)
 			//for implementation read code at line no 361
 			}
 		}
-	fclose(baddatafile);
 	}
 
 
@@ -195,15 +194,38 @@ if(field[0] == 'N' && field[1] == '1')
 			}
 	}
 // ---------------------- N1 ends
+		if(bad && daydata->records[k].RA > highRA )
+    {
+            if(!feof(baddatafile))
+            {
+                    // read out a line of bad data file
+                    fscanf(baddatafile,"%d %s %d %d %f %f", &badmjd, badbeam, &badlowchan, &badhighchan, &lowRA, &highRA);
+                    // check to see if mjd beam and channel match the current ones, if so stop reading further
+                    // we now have the RA range for the bad data for this day
+                    if((badmjd == day) && (badbeam[beam] == '1') && (chan >= badlowchan) && (chan <= badhighchan) )
+                    {
+                            bad = 1;
+                    } else {
+                            bad = 0;
+                            fclose( baddatafile );
+                    }
 
-		if(bad && daydata->records[k].RA>=lowRA && daydata->records[k].RA<=highRA)
-			{
-			daydata->records[k].stokes.I = NAN;
-			daydata->records[k].stokes.Q = NAN;
-			daydata->records[k].stokes.U = NAN;
-			daydata->records[k].stokes.V = NAN;
-			}
-		
+            } else
+            {
+                    bad = 0;
+                    fclose (baddatafile );
+            }
+    }
+
+        if(bad && daydata->records[k].RA>=lowRA && daydata->records[k].RA<=highRA)
+            {
+            if( daydata->records[k].RA > 117 ) printf("bad data at RA %f\n", daydata->records[k].RA );
+            daydata->records[k].stokes.I = NAN;
+            daydata->records[k].stokes.Q = NAN;
+            daydata->records[k].stokes.U = NAN;
+            daydata->records[k].stokes.V = NAN;
+            }
+
 		k++;
 		}
 	else if(num <= 0) break;
@@ -311,7 +333,6 @@ if(baddatafile != NULL)
 			//for implementation read code at line no 361
 			}
 		}
-	fclose(baddatafile);
 	}
 
 
@@ -400,13 +421,37 @@ if(field[0] == 'N' && field[1] == '1')
 	}
 // ---------------------- N1 ends
 
-		if(bad && daydata->records[k].RA>=lowRA && daydata->records[k].RA<=highRA)
-			{
-			daydata->records[k].stokes.I = NAN;
-			daydata->records[k].stokes.Q = NAN;
-			daydata->records[k].stokes.U = NAN;
-			daydata->records[k].stokes.V = NAN;
-			}
+		if(bad && daydata->records[k].RA > highRA )
+    {
+            if(!feof(baddatafile))
+            {
+                    // read out a line of bad data file
+                    fscanf(baddatafile,"%d %s %d %d %f %f", &badmjd, badbeam, &badlowchan, &badhighchan, &lowRA, &highRA);
+                    // check to see if mjd beam and channel match the current ones, if so stop reading further
+                    // we now have the RA range for the bad data for this day
+                    if((badmjd == day) && (badbeam[beam] == '1') && (chan >= badlowchan) && (chan <= badhighchan) )
+                    {
+                            bad = 1;
+                    } else {
+                            bad = 0;
+                            fclose( baddatafile );
+                    }
+
+            } else
+            {
+                    bad = 0;
+                    fclose (baddatafile );
+            }
+    }
+
+        if(bad && daydata->records[k].RA>=lowRA && daydata->records[k].RA<=highRA)
+            {
+            if( daydata->records[k].RA > 117 ) printf("bad data at RA %f\n", daydata->records[k].RA );
+            daydata->records[k].stokes.I = NAN;
+            daydata->records[k].stokes.Q = NAN;
+            daydata->records[k].stokes.U = NAN;
+            daydata->records[k].stokes.V = NAN;
+            }
 
 		k++;
 		}

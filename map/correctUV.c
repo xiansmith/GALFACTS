@@ -38,8 +38,8 @@ void correct_UV(FluxWappData * wappdata, int chan, MapMetaData *md)
 			if(md->avg)
 			{	
 				int j;
-				sprintf(filename,"UVleakage%d_avg%04i.dat",d%7,chan);
-				epsphi = fopen(filename,"w");
+				//sprintf(filename,"UVleakage%d_avg%04i.dat",d%7,chan);
+				//epsphi = fopen(filename,"w");
 				for(j = md->avg_lowchan;j < md->avg_highchan;j+=md->avg)
 				{
 					int k;
@@ -52,8 +52,8 @@ void correct_UV(FluxWappData * wappdata, int chan, MapMetaData *md)
 					Uleak[j]/=md->avg;
 					Vleak[j]/=md->avg;
 				}
-				fprintf(epsphi,"%d %f %f\n",j,Uleak[j],Vleak[j]);
-				fclose(epsphi);
+				//fprintf(epsphi,"%d %f %f\n",j,Uleak[j],Vleak[j]);
+				//fclose(epsphi);
 			}
 			if( chan == 0 ) {
 				int k = 0;
@@ -64,10 +64,10 @@ void correct_UV(FluxWappData * wappdata, int chan, MapMetaData *md)
 				}
 				Uleak[0]/=(md->avg_highchan - md->avg_lowchan);
 				Vleak[0]/=(md->avg_highchan - md->avg_lowchan);
-
+				//printf("averaged Uleak is %f Vleak is %f\n", Uleak[0], Vleak[0] );
 			}
 
-			printf("INFO: read file %s\n", filename);
+			//printf("INFO: read file %s\n", filename);
 		}
 
 		//apply the corrections

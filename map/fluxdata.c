@@ -4,6 +4,7 @@
 #include <string.h>
 #include <values.h>
 #include <math.h>
+#include <fcntl.h>
 
 extern int multibeam;
 /**********************************************************************/
@@ -195,7 +196,9 @@ if(field[0] == 'N' && field[1] == '1')
 	}
 // ---------------------- N1 ends
 		if(bad && daydata->records[k].RA > highRA )
-    {
+    		{
+		if( baddatafile == NULL ) break;
+
             if(!feof(baddatafile))
             {
                     // read out a line of bad data file
@@ -219,7 +222,7 @@ if(field[0] == 'N' && field[1] == '1')
 
         if(bad && daydata->records[k].RA>=lowRA && daydata->records[k].RA<=highRA)
             {
-            if( daydata->records[k].RA > 117 ) printf("bad data at RA %f\n", daydata->records[k].RA );
+            //if( daydata->records[k].RA > 117 ) printf("bad data at RA %f\n", daydata->records[k].RA );
             daydata->records[k].stokes.I = NAN;
             daydata->records[k].stokes.Q = NAN;
             daydata->records[k].stokes.U = NAN;
@@ -274,10 +277,10 @@ int fluxdaydata_read_binary_single_file(const char *field, FluxDayData *daydata,
 			}
 		}
 		while(!feof(configfile) && (cfgChan < chan ));
-		fclose(configfile);
 
 		if( cfgChan != chan ) {
 			printf("Could not find the channel data in the fluxdata file. Can not recover\n");
+			printf("Looking for chan = %d, cfgChan %d\n", chan, cfgChan);
 			exit(1);
 		}
 
@@ -285,6 +288,7 @@ int fluxdaydata_read_binary_single_file(const char *field, FluxDayData *daydata,
 		// average image is old method, so don't exit
 		if( chan != 0 ) {
 			printf("No fluxtime config found. Can not recover, exiting\n");
+			printf("couldn't find config file for %d %d %d \n", day, beam, chan);
 			exit(1);
 		}
 		//exit(1);
@@ -294,6 +298,7 @@ int fluxdaydata_read_binary_single_file(const char *field, FluxDayData *daydata,
 
 	// we could assume numRecords never changes, but just in case
 	numRecords = cfgNumRecords;
+	printf("numRecords after is %d\n", numRecords );
 
 	if(daydata->records != NULL) free(daydata->records);
 	daydata->records = (FluxRecord*) malloc(numRecords * sizeof(FluxRecord));
@@ -421,37 +426,40 @@ if(field[0] == 'N' && field[1] == '1')
 	}
 // ---------------------- N1 ends
 
-		if(bad && daydata->records[k].RA > highRA )
-    {
-            if(!feof(baddatafile))
-            {
-                    // read out a line of bad data file
-                    fscanf(baddatafile,"%d %s %d %d %f %f", &badmjd, badbeam, &badlowchan, &badhighchan, &lowRA, &highRA);
-                    // check to see if mjd beam and channel match the current ones, if so stop reading further
-                    // we now have the RA range for the bad data for this day
-                    if((badmjd == day) && (badbeam[beam] == '1') && (chan >= badlowchan) && (chan <= badhighchan) )
-                    {
-                            bad = 1;
-                    } else {
-                            bad = 0;
-                            fclose( baddatafile );
-                    }
+	if(bad && daydata->records[k].RA > highRA )
+	{
+		if(!feof(baddatafile))
+		{
+			// read out a line of bad data file
+			fscanf(baddatafile,"%d %s %d %d %f %f", &badmjd, badbeam, &badlowchan, &badhighchan, &lowRA, &highRA);
+			//printf("AFTER bad beam pattern: %s %d %d %f %f\n", badbeam, badlowchan, badhighchan, lowRA, highRA);
+			// check to see if mjd beam and channel match the current ones, if so stop reading further
+			// we now have the RA range for the bad data for this day
+			if((badmjd == day) && (badbeam[beam] == '1') && (chan >= badlowchan) && (chan <= badhighchan) )
+			{
+				bad = 1;
+			} else {
+				bad = 0;
+				fclose( baddatafile );
+			}
 
-            } else
-            {
-                    bad = 0;
-                    fclose (baddatafile );
-            }
-    }
-
+		} else
+		{
+			bad = 0;
+			fclose (baddatafile );
+		}
+	}
+	
         if(bad && daydata->records[k].RA>=lowRA && daydata->records[k].RA<=highRA)
             {
-            if( daydata->records[k].RA > 117 ) printf("bad data at RA %f\n", daydata->records[k].RA );
+            //if( daydata->records[k].RA > 117 ) printf("bad data at RA %f\n", daydata->records[k].RA );
             daydata->records[k].stokes.I = NAN;
             daydata->records[k].stokes.Q = NAN;
             daydata->records[k].stokes.U = NAN;
             daydata->records[k].stokes.V = NAN;
             }
+	
+	
 
 		k++;
 		}
@@ -465,7 +473,13 @@ if(field[0] == 'N' && field[1] == '1')
 	daydata->numRecords = k;
     daydata->RAmin = RAmin;
     daydata->RAmax = RAmax;
-    return k;
+  
+	// check if not closed to avoid leaking 
+	if ( fcntl(fileno(baddatafile), F_GETFD) != -1 )  {
+		fclose(baddatafile);
+	}
+	
+	return k;
 }
 /**********************************************************************/
 
@@ -534,6 +548,7 @@ for(m=0; m<wappdata->numDays; m++)
 		}
 		infile = fopen(filename, "rb");
 		configfile = fopen(configfilename, "r");
+		if( configfile == NULL ) printf("ERROR: configfile is NULL\n");
 		if(infile != NULL) 
 			{
 			// we are looking for average image, read average.dat instead
@@ -558,9 +573,10 @@ for(m=0; m<wappdata->numDays; m++)
 				//numread = fluxdaydata_read_binary(field, tempdata, infile, j, chan+n, atoi(daydata->mjd));
 				numread = fluxdaydata_read_binary_single_file(field, tempdata, infile, configfile, j, chan+n, atoi(daydata->mjd));
 			}
-			printf("Opened file %s\n",filename);
-			printf("read %d records.\n",tempdata->numRecords );
+			//printf("Opened file %s\n",filename);
+			//printf("read %d records.\n",tempdata->numRecords );
 			fclose(infile);
+			fclose(configfile);
 			if(n==0)
 				{			
 				if(tempdata_avg->records != NULL) free(tempdata_avg->records);	

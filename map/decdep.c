@@ -1,82 +1,232 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 #include "decdep.h"
 #include "chebyshev.h"
 //----------------------------------------------------------------------------------------------------------------------------------------
 static void day_dec_dependence(FluxWappData * wappdata, int day, int order, int chan, float *cIc, float *cQc, float *cUc, float *cVc, int avg)
 {
-int Hchan = 2752; // hard wired!!!
-int r, N, R, n, navg;
-if(avg == 0) navg = 1; else navg = avg;
-float Hfreq = 1420.4057, Cfreq = 1450, df = 0.042, freq = Cfreq - ((float)(chan + 1 + navg - MAX_CHANNELS/2.0)) * df;
-float min, max, DEC, nsigma = 2.5; 
-float cI[order+1], cQ[order+1], cU[order+1], cV[order+1];
+	int Hchan = 2752; // hard wired!!!
+	int r, N, R, n, navg;
+	if (avg == 0)
+		navg = 1;
+	else navg = avg;
+	float Hfreq = 1420.4057, Cfreq = 1450, df = 0.042, freq = Cfreq - ((float) (chan + 1 + navg - MAX_CHANNELS / 2.0)) * df;
+	float min, max, DEC, nsigma = 2.5;
+	float cI[order + 1], cQ[order + 1], cU[order + 1], cV[order + 1];
+	char decrmfilename[50];
+	sprintf(decrmfilename, "decrm/decremoval%d.dat", day);
 
-FluxDayData * daydata = &wappdata->daydata[day];
-R = daydata->numRecords;
+	FluxDayData * daydata = &wappdata->daydata[day];
+	R = daydata->numRecords;
 
-float *x = (float*)malloc(R * sizeof(float));
-float *yI = (float*)malloc(R * sizeof(float));
-float *yQ = (float*)malloc(R * sizeof(float));
-float *yU = (float*)malloc(R * sizeof(float));
-float *yV = (float*)malloc(R * sizeof(float));
+	float *x = (float*) malloc(R * sizeof(float));
+	float *yI = (float*) malloc(R * sizeof(float));
+	float *yQ = (float*) malloc(R * sizeof(float));
+	float *yU = (float*) malloc(R * sizeof(float));
+	float *yV = (float*) malloc(R * sizeof(float));
 
-N = 0; 
-for(r=0; r<R; r++)
-	{
-	if(isfinite(daydata->records[r].stokes.I) && isfinite(daydata->records[r].stokes.Q) && isfinite(daydata->records[r].stokes.U) && isfinite(daydata->records[r].stokes.V))
-		{
-		x[N] = daydata->records[r].DEC;
-		yI[N] = daydata->records[r].stokes.I;
-		yQ[N] = daydata->records[r].stokes.Q;
-		yU[N] = daydata->records[r].stokes.U;
-		yV[N] = daydata->records[r].stokes.V;
-		N++;
+// not doing average image, read coefficients from a file
+// and apply them
+	if (avg) {
+		FILE *decfile = fopen(decrmfilename, "r");
+		char line[500];
+		int i = 0, num = 0;
+		char *result;
+
+		//printf("About to read coefficients from file %s\n", decrmfilename);
+		//printf("Order is %d", order);
+
+		if (decfile != NULL) {
+
+			// get coefficients for I from file
+			if (fgets(line, 500, decfile) == NULL) {
+				printf("in decdep.c, fgets read error\n");
+				exit(1);
+			}
+
+			i = 0;
+			result = strtok(line, " ");
+			while (result != NULL) {
+				sscanf(result, "%f", &cI[i]);
+				result = strtok(NULL, " ");
+				i++;
+			}
+
+			if (i != (order + 1)) {
+				printf("ERROR: read %d dec removal coeffs when expected %d\n", i, (order + 1));
+			}
+
+			// now Q
+			if (fgets(line, 500, decfile) == NULL) {
+				printf("in decdep.c, fgets read error");
+				exit(1);
+			}
+
+			i = 0;
+			result = strtok(line, " ");
+			while (result != NULL) {
+				sscanf(result, "%f", &cQ[i]);
+				result = strtok(NULL, " ");
+				i++;
+			}
+
+			if (i != (order + 1)) {
+				printf("ERROR: read %d dec removal coeffs when expected %d\n", i, (order + 1));
+			}
+
+			// U
+			if (fgets(line, 500, decfile) == NULL) {
+				printf("in decdep.c, fgets read error");
+				exit(1);
+			}
+
+			i = 0;
+			result = strtok(line, " ");
+			while (result != NULL) {
+				sscanf(result, "%f", &cU[i]);
+				result = strtok(NULL, " ");
+				i++;
+			}
+
+			if (i != (order + 1)) {
+				printf("ERROR: read %d dec removal coeffs when expected %d\n", i, (order + 1));
+			}
+
+			// V
+			if (fgets(line, 500, decfile) == NULL) {
+				printf("in decdep.c, fgets read error");
+				exit(1);
+			}
+
+			i = 0;
+			result = strtok(line, " ");
+			while (result != NULL) {
+				sscanf(result, "%f", &cV[i]);
+				result = strtok(NULL, " ");
+				i++;
+			}
+
+			if (i != (order + 1)) {
+				printf("ERROR: read %d dec removal coeffs when expected %d\n", i, (order + 1));
+			}
+
+			fclose(decfile);
 		}
-	}
-
-chebyshev_minmax(x, N, &min, &max); 
-chebyshev_normalize(x, N, min, max);
-
-if(freq > Hfreq - 0.5 && freq < Hfreq +0.5)
-	{
-	for(n=0; n<order+1; n++)
-		{
-		cI[n] = cIc[n + day*(order+1)];
-		cQ[n] = cQc[n + day*(order+1)];
-		cU[n] = cUc[n + day*(order+1)];
-		cV[n] = cVc[n + day*(order+1)];
-		}	
-	}
-else
-	{
-	chebyshev_fit_dec(x, yI, N, nsigma, cI, order);
-	chebyshev_fit_dec(x, yQ, N, nsigma, cQ, order);
-	chebyshev_fit_dec(x, yU, N, nsigma, cU, order);
-	chebyshev_fit_dec(x, yV, N, nsigma, cV, order);
-	for(n=0; n<order+1; n++)
-		{
-		cIc[n + day*(order+1)] = cI[n];
-		cQc[n + day*(order+1)] = cQ[n];
-		cUc[n + day*(order+1)] = cU[n];
-		cVc[n + day*(order+1)] = cV[n];
+		else {
+			printf("ERROR: got null in decdep trying to get the coefficients from %s\n", decrmfilename);
 		}
-	}
 
-for(r=0; r<R; r++)
-	{
-	if(isfinite(daydata->records[r].stokes.I) && isfinite(daydata->records[r].stokes.Q) && isfinite(daydata->records[r].stokes.U) && isfinite(daydata->records[r].stokes.V))
-		{
-		DEC = CNORMALIZE(daydata->records[r].DEC, min, max);
-		daydata->records[r].stokes.I -= chebyshev_eval(DEC, cI, order);
-		daydata->records[r].stokes.Q -= chebyshev_eval(DEC, cQ, order);
-		daydata->records[r].stokes.U -= chebyshev_eval(DEC, cU, order);
-		daydata->records[r].stokes.V -= chebyshev_eval(DEC, cV, order);
+		// now apply it
+		for (r = 0; r < R; r++) {
+			if (isfinite(daydata->records[r].stokes.I) && isfinite(daydata->records[r].stokes.Q) && isfinite(daydata->records[r].stokes.U)
+					&& isfinite(daydata->records[r].stokes.V)) {
+				DEC = CNORMALIZE(daydata->records[r].DEC, min, max);
+				daydata->records[r].stokes.I -= chebyshev_eval(DEC, cI, order);
+				daydata->records[r].stokes.Q -= chebyshev_eval(DEC, cQ, order);
+				daydata->records[r].stokes.U -= chebyshev_eval(DEC, cU, order);
+				daydata->records[r].stokes.V -= chebyshev_eval(DEC, cV, order);
+			}
 		}
-	}
 
-free(x); free(yI); free(yQ); free(yU); free(yV);
+	}
+	else {
+// we are processing average image, create coefficients and write to file
+		N = 0;
+		for (r = 0; r < R; r++) {
+			if (isfinite(daydata->records[r].stokes.I) && isfinite(daydata->records[r].stokes.Q) && isfinite(daydata->records[r].stokes.U)
+					&& isfinite(daydata->records[r].stokes.V)) {
+				x[N] = daydata->records[r].DEC;
+				yI[N] = daydata->records[r].stokes.I;
+				yQ[N] = daydata->records[r].stokes.Q;
+				yU[N] = daydata->records[r].stokes.U;
+				yV[N] = daydata->records[r].stokes.V;
+				N++;
+			}
+		}
+
+		chebyshev_minmax(x, N, &min, &max);
+		chebyshev_normalize(x, N, min, max);
+
+		if (freq > Hfreq - 0.5 && freq < Hfreq + 0.5) {
+			for (n = 0; n < order + 1; n++) {
+				cI[n] = cIc[n + day * (order + 1)];
+				cQ[n] = cQc[n + day * (order + 1)];
+				cU[n] = cUc[n + day * (order + 1)];
+				cV[n] = cVc[n + day * (order + 1)];
+			}
+		}
+		else {
+			chebyshev_fit_dec(x, yI, N, nsigma, cI, order);
+			chebyshev_fit_dec(x, yQ, N, nsigma, cQ, order);
+			chebyshev_fit_dec(x, yU, N, nsigma, cU, order);
+			chebyshev_fit_dec(x, yV, N, nsigma, cV, order);
+			for (n = 0; n < order + 1; n++) {
+				cIc[n + day * (order + 1)] = cI[n];
+				cQc[n + day * (order + 1)] = cQ[n];
+				cUc[n + day * (order + 1)] = cU[n];
+				cVc[n + day * (order + 1)] = cV[n];
+			}
+		}
+
+		for (r = 0; r < R; r++) {
+			if (isfinite(daydata->records[r].stokes.I) && isfinite(daydata->records[r].stokes.Q) && isfinite(daydata->records[r].stokes.U)
+					&& isfinite(daydata->records[r].stokes.V)) {
+				DEC = CNORMALIZE(daydata->records[r].DEC, min, max);
+				daydata->records[r].stokes.I -= chebyshev_eval(DEC, cI, order);
+				daydata->records[r].stokes.Q -= chebyshev_eval(DEC, cQ, order);
+				daydata->records[r].stokes.U -= chebyshev_eval(DEC, cU, order);
+				daydata->records[r].stokes.V -= chebyshev_eval(DEC, cV, order);
+			}
+		}
+
+		// finished applying correction, write the coefficients to file
+		mkdir("decrm", 0777);
+		FILE *decfile = fopen(decrmfilename, "w"); // write files to decrm/decremovalN.dat
+		if (decfile != NULL) {
+			int i = 0;
+
+			for (i = 0; i < order + 1; i++) {
+				fprintf(decfile, "%f", cI[i]);
+				if (i != order) fprintf(decfile, " ");
+			}
+			fprintf(decfile, "\n");
+
+			for (i = 0; i < order + 1; i++) {
+				fprintf(decfile, "%f", cQ[i]);
+				if (i != order) fprintf(decfile, " ");
+			}
+			fprintf(decfile, "\n");
+
+			for (i = 0; i < order + 1; i++) {
+				fprintf(decfile, "%f", cU[i]);
+				if (i != order) fprintf(decfile, " ");
+			}
+			fprintf(decfile, "\n");
+
+			for (i = 0; i < order + 1; i++) {
+				fprintf(decfile, "%f", cV[i]);
+				if (i != order) fprintf(decfile, " ");
+			}
+			fprintf(decfile, "\n");
+
+			fclose(decfile);
+
+		}
+		else {
+			// can not recover
+			printf("couldn't write decremoval.dat file\n");
+			exit(1);
+		}
+
+	} // end if (avg == 0)
+
+	free(x);
+	free(yI);
+	free(yQ);
+	free(yU);
+	free(yV);
 }
 //-------------------------------------------------------------------------------
 void beam_gain_calibration(FluxWappData * wappdata)

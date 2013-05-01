@@ -35,9 +35,6 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int order, int 
 		int i = 0, num = 0;
 		char *result;
 
-		//printf("About to read coefficients from file %s\n", decrmfilename);
-		//printf("Order is %d", order);
-
 		if (decfile != NULL) {
 
 			// get coefficients for I from file
@@ -116,6 +113,43 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int order, int 
 		}
 		else {
 			printf("ERROR: got null in decdep trying to get the coefficients from %s\n", decrmfilename);
+		}
+
+		N = 0;
+		for (r = 0; r < R; r++) {
+			if (isfinite(daydata->records[r].stokes.I) && isfinite(daydata->records[r].stokes.Q) && isfinite(daydata->records[r].stokes.U)
+					&& isfinite(daydata->records[r].stokes.V)) {
+				x[N] = daydata->records[r].DEC;
+				yI[N] = daydata->records[r].stokes.I;
+				yQ[N] = daydata->records[r].stokes.Q;
+				yU[N] = daydata->records[r].stokes.U;
+				yV[N] = daydata->records[r].stokes.V;
+				N++;
+			}
+		}
+
+		chebyshev_minmax(x, N, &min, &max);
+		chebyshev_normalize(x, N, min, max);
+
+		if (freq > Hfreq - 0.5 && freq < Hfreq + 0.5) {
+			for (n = 0; n < order + 1; n++) {
+				cI[n] = cIc[n + day * (order + 1)];
+				cQ[n] = cQc[n + day * (order + 1)];
+				cU[n] = cUc[n + day * (order + 1)];
+				cV[n] = cVc[n + day * (order + 1)];
+			}
+		}
+		else {
+			chebyshev_fit_dec(x, yI, N, nsigma, cI, order);
+			chebyshev_fit_dec(x, yQ, N, nsigma, cQ, order);
+			chebyshev_fit_dec(x, yU, N, nsigma, cU, order);
+			chebyshev_fit_dec(x, yV, N, nsigma, cV, order);
+			for (n = 0; n < order + 1; n++) {
+				cIc[n + day * (order + 1)] = cI[n];
+				cQc[n + day * (order + 1)] = cQ[n];
+				cUc[n + day * (order + 1)] = cU[n];
+				cVc[n + day * (order + 1)] = cV[n];
+			}
 		}
 
 		// now apply it

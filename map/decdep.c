@@ -54,7 +54,10 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int order, int 
 			if (i != (order + 1)) {
 				printf("ERROR: read %d dec removal coeffs when expected %d\n", i, (order + 1));
 			}
-
+			if (fgets(line, 500, decfile) == NULL) {
+							printf("in decdep.c, fgets read error\n");
+							exit(1);
+						}
 			// now Q
 			if (fgets(line, 500, decfile) == NULL) {
 				printf("in decdep.c, fgets read error");
@@ -72,7 +75,10 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int order, int 
 			if (i != (order + 1)) {
 				printf("ERROR: read %d dec removal coeffs when expected %d\n", i, (order + 1));
 			}
-
+			if (fgets(line, 500, decfile) == NULL) {
+							printf("in decdep.c, fgets read error\n");
+							exit(1);
+						}
 			// U
 			if (fgets(line, 500, decfile) == NULL) {
 				printf("in decdep.c, fgets read error");
@@ -90,7 +96,10 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int order, int 
 			if (i != (order + 1)) {
 				printf("ERROR: read %d dec removal coeffs when expected %d\n", i, (order + 1));
 			}
-
+			if (fgets(line, 500, decfile) == NULL) {
+							printf("in decdep.c, fgets read error\n");
+							exit(1);
+						}
 			// V
 			if (fgets(line, 500, decfile) == NULL) {
 				printf("in decdep.c, fgets read error");

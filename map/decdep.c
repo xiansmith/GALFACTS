@@ -29,7 +29,8 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int order, int 
 
 // not doing average image, read coefficients from a file
 // and apply them
-	if (avg) {
+	if (chan) {
+		printf(" from file\n");
 		FILE *decfile = fopen(decrmfilename, "r");
 		char line[500];
 		int i = 0, num = 0;
@@ -39,7 +40,7 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int order, int 
 
 			// get coefficients for I from file
 			if (fgets(line, 500, decfile) == NULL) {
-				printf("in decdep.c, fgets read error\n");
+				printf("in decdep.c, fgets read error line is %s\n", line);
 				exit(1);
 			}
 
@@ -54,10 +55,8 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int order, int 
 			if (i != (order + 1)) {
 				printf("ERROR: read %d dec removal coeffs when expected %d\n", i, (order + 1));
 			}
-			if (fgets(line, 500, decfile) == NULL) {
-							printf("in decdep.c, fgets read error\n");
-							exit(1);
-						}
+
+
 			// now Q
 			if (fgets(line, 500, decfile) == NULL) {
 				printf("in decdep.c, fgets read error");
@@ -75,13 +74,10 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int order, int 
 			if (i != (order + 1)) {
 				printf("ERROR: read %d dec removal coeffs when expected %d\n", i, (order + 1));
 			}
-			if (fgets(line, 500, decfile) == NULL) {
-							printf("in decdep.c, fgets read error\n");
-							exit(1);
-						}
+
 			// U
 			if (fgets(line, 500, decfile) == NULL) {
-				printf("in decdep.c, fgets read error");
+				printf("in decdep.c, fgets read error line is %s\n", line);
 				exit(1);
 			}
 
@@ -96,14 +92,10 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int order, int 
 			if (i != (order + 1)) {
 				printf("ERROR: read %d dec removal coeffs when expected %d\n", i, (order + 1));
 			}
-			if (fgets(line, 500, decfile) == NULL) {
-							printf("in decdep.c, fgets read error\n");
-							exit(1);
-						}
+
 			// V
 			if (fgets(line, 500, decfile) == NULL) {
-				printf("in decdep.c, fgets read error");
-				exit(1);
+				printf("in decdep.c, fgets read error line is %s\n", line);
 			}
 
 			i = 0;
@@ -166,7 +158,9 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int order, int 
 			if (isfinite(daydata->records[r].stokes.I) && isfinite(daydata->records[r].stokes.Q) && isfinite(daydata->records[r].stokes.U)
 					&& isfinite(daydata->records[r].stokes.V)) {
 				DEC = CNORMALIZE(daydata->records[r].DEC, min, max);
-				daydata->records[r].stokes.I -= chebyshev_eval(DEC, cI, order);
+	            // XXX temporary magic number    
+				daydata->records[r].stokes.I = daydata->records[r].stokes.I  - chebyshev_eval(DEC, cI, order) + 0.75;
+				//daydata->records[r].stokes.I -= chebyshev_eval(DEC, cI, order);
 				daydata->records[r].stokes.Q -= chebyshev_eval(DEC, cQ, order);
 				daydata->records[r].stokes.U -= chebyshev_eval(DEC, cU, order);
 				daydata->records[r].stokes.V -= chebyshev_eval(DEC, cV, order);
@@ -175,7 +169,9 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int order, int 
 
 	}
 	else {
-// we are processing average image, create coefficients and write to file
+		// we are processing average image, create coefficients and write to file
+		printf(" and write to file\n");
+
 		N = 0;
 		for (r = 0; r < R; r++) {
 			if (isfinite(daydata->records[r].stokes.I) && isfinite(daydata->records[r].stokes.Q) && isfinite(daydata->records[r].stokes.U)
@@ -217,7 +213,9 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int order, int 
 			if (isfinite(daydata->records[r].stokes.I) && isfinite(daydata->records[r].stokes.Q) && isfinite(daydata->records[r].stokes.U)
 					&& isfinite(daydata->records[r].stokes.V)) {
 				DEC = CNORMALIZE(daydata->records[r].DEC, min, max);
-				daydata->records[r].stokes.I -= chebyshev_eval(DEC, cI, order);
+                // XXX temporary magic number 
+				daydata->records[r].stokes.I = daydata->records[r].stokes.I  - chebyshev_eval(DEC, cI, order) + 0.75;
+				//daydata->records[r].stokes.I -= chebyshev_eval(DEC, cI, order);
 				daydata->records[r].stokes.Q -= chebyshev_eval(DEC, cQ, order);
 				daydata->records[r].stokes.U -= chebyshev_eval(DEC, cU, order);
 				daydata->records[r].stokes.V -= chebyshev_eval(DEC, cV, order);
@@ -231,25 +229,25 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int order, int 
 			int i = 0;
 
 			for (i = 0; i < order + 1; i++) {
-				fprintf(decfile, "%f", cI[i]);
+				fprintf(decfile, "%.8f", cI[i]);
 				if (i != order) fprintf(decfile, " ");
 			}
 			fprintf(decfile, "\n");
 
 			for (i = 0; i < order + 1; i++) {
-				fprintf(decfile, "%f", cQ[i]);
+				fprintf(decfile, "%.8f", cQ[i]);
 				if (i != order) fprintf(decfile, " ");
 			}
 			fprintf(decfile, "\n");
 
 			for (i = 0; i < order + 1; i++) {
-				fprintf(decfile, "%f", cU[i]);
+				fprintf(decfile, "%.8f", cU[i]);
 				if (i != order) fprintf(decfile, " ");
 			}
 			fprintf(decfile, "\n");
 
 			for (i = 0; i < order + 1; i++) {
-				fprintf(decfile, "%f", cV[i]);
+				fprintf(decfile, "%.8f", cV[i]);
 				if (i != order) fprintf(decfile, " ");
 			}
 			fprintf(decfile, "\n");
@@ -409,7 +407,7 @@ void calculate_dec_dependence(FluxWappData * wappdata, int order, int chan, floa
 int d;
 for(d=0; d<wappdata->numDays; d++) 
 	{
-	printf("Day %d of %d\n", d+1, wappdata->numDays);
+	printf("Day %d of %d", d+1, wappdata->numDays);
 	day_dec_dependence(wappdata, d, order, chan, cIc, cQc, cUc, cVc, avg);
 	}
 }

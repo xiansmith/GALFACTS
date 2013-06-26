@@ -46,7 +46,6 @@ void rfi_detection_frequency_domain(SpecRecord dataset[], int size, int lowchan,
 					diffyyoff[k] = dataset[i].caloff.yy[k + 1] - dataset[i].caloff.yy[k];
 					diffxxon[k] = dataset[i].calon.xx[k + 1] - dataset[i].calon.xx[k];
 					diffyyon[k] = dataset[i].calon.yy[k + 1] - dataset[i].calon.yy[k];
-
 					diffxyoff[k] = dataset[i].caloff.xy[k + 1] - dataset[i].caloff.xy[k];
 					diffyxoff[k] = dataset[i].caloff.yx[k + 1] - dataset[i].caloff.yx[k];
 					diffxyon[k] = dataset[i].calon.xy[k + 1] - dataset[i].calon.xy[k];
@@ -87,11 +86,11 @@ void rfi_detection_frequency_domain(SpecRecord dataset[], int size, int lowchan,
 				mean[7] /= N;
 
 
-				if (fabs(dataset[i].RA - 71.390589) < 0.001) {
-					for (j = 0; j < 8; j++) {
-						printf("mean %d = %f\n", j, mean[j]);
-					}
-				}
+				//if (fabs(dataset[i].RA - 71.390589) < 0.001) {
+			//		for (j = 0; j < 8; j++) {
+		//				printf("mean %d = %f\n", j, mean[j]);
+	//				}
+			//	}
 
 				for (k = lowchan; k < highchan - 1; k++) {
 					if (dataset[i].flagRFI[k] == RFI_NONE && dataset[i].flagRFI[k + 1] == RFI_NONE && (freq[k] < minf || freq[k] > maxf)) {
@@ -113,12 +112,12 @@ void rfi_detection_frequency_domain(SpecRecord dataset[], int size, int lowchan,
 						sigma[j] = sqrt(sigma[j] / (N - 1));
 					else sigma[j] = sqrt(sigma[j]);
 
-					if (fabs(dataset[i].RA - 71.390589) < 0.001) {
-						printf("sigma %d = %f\n", j, sigma[j]);
-					}
+					//if (fabs(dataset[i].RA - 71.390589) < 0.001) {
+					//	printf("sigma %d = %f\n", j, sigma[j]);
+					//}
 				}
-
-				if (fabs(dataset[i].RA - 71.390589) < 0.001) {
+				/*
+				if (fabs(dataset[i].RA - 71.390589) < 0.05) {
 					sprintf(filename, "diff_%f_%f.dat%d", dataset[i].RA, dataset[i].DEC, diffcounter++);
 					diffoutput = fopen(filename, "w");
 
@@ -135,7 +134,7 @@ void rfi_detection_frequency_domain(SpecRecord dataset[], int size, int lowchan,
 					}
 					fclose(diffoutput);
 				}
-
+				*/
 
 				outlierFound = 0;
 				for (k = lowchan; k < highchan - 1; k++) {
@@ -167,33 +166,33 @@ void rfi_detection_frequency_domain(SpecRecord dataset[], int size, int lowchan,
 						// Cross correlations
 						if (fabs(diffxyoff[k] - mean[4]) > numSigma * sigma[4]) {
 							if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
-							dataset[i].flagRFI[k] |= RFI_CALOFF_XX;
-							dataset[i].flagRFI[k + 1] |= RFI_CALOFF_XX;
+							dataset[i].flagRFI[k] |= RFI_CALOFF_XY;
+							dataset[i].flagRFI[k + 1] |= RFI_CALOFF_XY;
 
 						}
 						if (fabs(diffyxoff[k] - mean[5]) > numSigma * sigma[5]) {
 							if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
-							dataset[i].flagRFI[k] |= RFI_CALOFF_YY;
-							dataset[i].flagRFI[k + 1] |= RFI_CALOFF_YY;
+							dataset[i].flagRFI[k] |= RFI_CALOFF_YX;
+							dataset[i].flagRFI[k + 1] |= RFI_CALOFF_YX;
 						}
 						if (fabs(diffxyon[k] - mean[6]) > numSigma * sigma[6]) {
 							if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
-							dataset[i].flagRFI[k] |= RFI_CALON_XX;
-							dataset[i].flagRFI[k + 1] |= RFI_CALON_XX;
+							dataset[i].flagRFI[k] |= RFI_CALON_XY;
+							dataset[i].flagRFI[k + 1] |= RFI_CALON_XY;
 						}
 						if (fabs(diffyxon[k] - mean[7]) > numSigma * sigma[7]) {
 							if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
-							dataset[i].flagRFI[k] |= RFI_CALON_YY;
-							dataset[i].flagRFI[k + 1] |= RFI_CALON_YY;
+							dataset[i].flagRFI[k] |= RFI_CALON_YX;
+							dataset[i].flagRFI[k + 1] |= RFI_CALON_YX;
 						}
 
 						//}
 					}
 				}
 
-				if (fabs(dataset[i].RA - 71.390589) < 0.001) {
-					printf("outlierfound is %d at RA %f\n", outlierFound, dataset[i].RA);
-				}
+				//if (fabs(dataset[i].RA - 71.390589) < 0.001) {
+				//	printf("outlierfound is %d at RA %f\n", outlierFound, dataset[i].RA);
+				//}
 			}
 			while (outlierFound);
 		}
@@ -642,8 +641,7 @@ void rfi_detection_time_domain1(const char *field, SpecRecord dataset[], int siz
 	printf("!!! Found %d RFI\n", rfi_count);
 }
 
-void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int size, int lowchan, int highchan, float numSigma, float hidrogenfreq,
-		float hidrogenband, float freq[]) {
+void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int size, int lowchan, int highchan, float numSigma, float hidrogenfreq, float hidrogenband, float freq[]) {
 // average
 	int i, k, N, j, cur = 0;
 	float mean[8], sigma[8], diff, delta, minf = hidrogenfreq - hidrogenband, maxf = hidrogenfreq + hidrogenband, nSigma = numSigma;
@@ -697,12 +695,15 @@ void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int siz
 	}
 
 	int M = 0;
-	int count[8] = {0,0,0,0,0,0,0,0};
+	long count[8] = {0,0,0,0,0,0,0,0};
 
 	for (i = 0; i < size; i++) {
-		if (!dataset[i].flagBAD) {
-			for (j = 0; j < 8; j++)
-				signal[i][j] = 0;
+		//if (!dataset[i].flagBAD) {
+			
+			for (j = 0; j < 8; j++) {
+				signal[i][j] = 0.0;
+				count[j] = 0.0;
+			}
 			N = 0;
 			M++;
 			for (k = lowchan; k < highchan; k++) {
@@ -748,22 +749,31 @@ void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int siz
 				signal[i][j] = signal[i][j] / count[j];
 			}
 
-		}
+		//}
 	}
 
-	//printf("Counts %d %d %d %d %d %d %d %d", count[0], count[1],count[2],count[3],count[4],count[5],count[6],count[7]);
+	//printf("Counts %d %d %d %d %d %d %d %d\n", count[0], count[1],count[2],count[3],count[4],count[5],count[6],count[7]);
+	int diffcounter = 0;
+	FILE *diffoutput;
+	outlierFound = 0;
 
 	do {
 		N = 0;
 		M = 0;
 		for (j = 0; j < 8; j++) {
-			mean[j] = 0;
-			sigma[j] = 0;
+			mean[j] = 0.0;
+			sigma[j] = 0.0;
+		}
+	
+		for( i = 0; i < size - 1; i++) {
+			for( j = 0; j < 8; j++ ) {
+				diffs[i][j] = 0.0;
+			}
 		}
 
 		for (i = 1; i < size - 1; i++) {
 			if (dataset[i].flagBAD && dataset[i - 1].flagBAD && dataset[i + 1].flagBAD) continue;
-
+	
 			for (j = 0; j < 8; j++) {
 				diffs[i][j] = signal[i + 1][j] - 2 * signal[i][j] + signal[i - 1][j];
 				mean[j] += diffs[i][j];
@@ -771,9 +781,11 @@ void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int siz
 			M++;
 		}
 
+		//printf( "M was %d\n", M );
+	
 		for (j = 0; j < 8; j++) {
 			mean[j] /= M;
-			//printf("Mean %d = %.10f\n", j, mean[j] );
+			//printf("Mean %d = %.14f\n", j, mean[j] );
 		}
 
 		for (i = 1; i < size - 1; i++) {
@@ -790,21 +802,40 @@ void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int siz
 				sigma[j] = sqrt(sigma[j] / (N - 1));
 			else sigma[j] = sqrt(sigma[j]);
 
-			//printf("Sigma %d = %.10f\n", j, sigma[j] );
+			//printf("Sigma %d = %.14f\n", j, sigma[j] );
 		}
+
+		char filename[50];
+		sprintf(filename, "timediff.dat%d", diffcounter++);
+		diffoutput = fopen(filename, "w");
+
+		if (diffoutput == NULL) {
+				printf("diffoutput was null!!!!\n");
+				exit(1);
+		}
+
+		for (i = 0; i < size - 1; i++) {
+				fprintf(diffoutput, "%f %f %f %f %f %f %f %f ", diffs[i][0], diffs[i][1], diffs[i][2], diffs[i][3], diffs[i][4], diffs[i][5], diffs[i][6], diffs[i][7] ); 
+				//fprintf(diffoutput, "%f ", diffs[i][0] );
+				if (dataset[i].flagBAD == 1 ) //flagRFI[k] != RFI_NONE || dataset[i].flagRFI[k + 1] != RFI_NONE)
+						fprintf(diffoutput, "%.12f\n", (sigma[0] * numSigma));
+				else fprintf(diffoutput, "%.12f\n", 0.0);
+		}
+		fclose(diffoutput);
+
+		//printf("numSigma is %f", numSigma );
 
 		outlierFound = 0;
 		for (i = 1; i < size - 1; i++) {
-			//if(field[0] == 'N' && field[1] == '1' && ((dataset[i].RA>82.9333 && dataset[i].RA<84.0666) || (dataset[i].RA>68.95 && dataset[i].RA<69.6))) continue; // Just for N1!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			if (dataset[i].flagBAD && dataset[i - 1].flagBAD && dataset[i + 1].flagBAD) continue;
-			if (fabs(signal[i + 1][0] - 2 * signal[i][0] + signal[i - 1][0] - mean[0]) > numSigma * sigma[0]
-					|| fabs(signal[i + 1][1] - 2 * signal[i][1] + signal[i - 1][1] - mean[1]) > numSigma * sigma[1]
-					|| fabs(signal[i + 1][2] - 2 * signal[i][2] + signal[i - 1][2] - mean[2]) > numSigma * sigma[2]
-					|| fabs(signal[i + 1][3] - 2 * signal[i][3] + signal[i - 1][3] - mean[3]) > numSigma * sigma[3]
-					|| fabs(signal[i + 1][4] - 2 * signal[i][4] + signal[i - 1][4] - mean[4]) > numSigma * sigma[4]
-					|| fabs(signal[i + 1][5] - 2 * signal[i][5] + signal[i - 1][5] - mean[5]) > numSigma * sigma[5]
-					|| fabs(signal[i + 1][6] - 2 * signal[i][6] + signal[i - 1][6] - mean[6]) > numSigma * sigma[6]
-					|| fabs(signal[i + 1][7] - 2 * signal[i][7] + signal[i - 1][7] - mean[7]) > numSigma * sigma[7]) {
+			if (fabs(diffs[i][0] - mean[0]) > numSigma * sigma[0]
+					|| fabs(diffs[i][1] - mean[1]) > numSigma * sigma[1]
+					|| fabs(diffs[i][2] - mean[2]) > numSigma * sigma[2]
+					|| fabs(diffs[i][3] - mean[3]) > numSigma * sigma[3]
+					|| fabs(diffs[i][4] - mean[4]) > numSigma * sigma[4]
+					|| fabs(diffs[i][5] - mean[5]) > numSigma * sigma[5]
+					|| fabs(diffs[i][6] - mean[6]) > numSigma * sigma[6]
+					|| fabs(diffs[i][7] - mean[7]) > numSigma * sigma[7]) {
 
 				fprintf(RFIin, "CROSS %f %f 0.2 0.2\n", dataset[i].RA, dataset[i].DEC);
 
@@ -845,6 +876,7 @@ void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int siz
 				}
 			}
 		}
+		//printf("Outlier found, count so far: %d\n", outliercount );
 	}
 	while (outlierFound);
 

@@ -25,178 +25,181 @@ void mark_bad_channels(SpecRecord dataset[], int size, int lowchan, int highchan
 
 void rfi_detection_frequency_domain(SpecRecord dataset[], int size, int lowchan, int highchan, float numSigma, float hidrogenfreq, float hidrogenband,float freq[])
 {
-	int i, j, k, N;
-	float mean[8], sigma[8], diffs[size], diff, delta, minf = hidrogenfreq - hidrogenband, maxf = hidrogenfreq + hidrogenband;
-	int outlierFound;
-	char filename[50];
-	FILE *diffoutput;
-	int diffcounter = 0;
+		int i, j, k, N;
+		float mean[8], sigma[8], diffs[size], diff, delta, minf = hidrogenfreq - hidrogenband, maxf = hidrogenfreq + hidrogenband;
+		int outlierFound;
+		char filename[50];
+		FILE *diffoutput;
+		int diffcounter = 0;
 
-	for (i = 0; i < size; i++) {
-		if (!dataset[i].flagBAD) {
-			for (k = lowchan; k < highchan; k++)
-				dataset[i].flagRFI[k] = RFI_NONE;
+		for (i = 0; i < size; i++) {
+				if (!dataset[i].flagBAD) {
+						for (k = lowchan; k < highchan; k++) {
+								dataset[i].flagRFI[k] = RFI_NONE;
+						}
 
-			float diffxxon[MAX_CHANNELS], diffyyon[MAX_CHANNELS],diffxyon[MAX_CHANNELS],diffyxon[MAX_CHANNELS];
-			float diffxxoff[MAX_CHANNELS], diffyyoff[MAX_CHANNELS],diffxyoff[MAX_CHANNELS],diffyxoff[MAX_CHANNELS];
+						float diffxxon[MAX_CHANNELS], diffyyon[MAX_CHANNELS],diffxyon[MAX_CHANNELS],diffyxon[MAX_CHANNELS];
+						float diffxxoff[MAX_CHANNELS], diffyyoff[MAX_CHANNELS],diffxyoff[MAX_CHANNELS],diffyxoff[MAX_CHANNELS];
 
-			for (k = lowchan; k < highchan - 1; k++) {
-				if (dataset[i].flagRFI[k] == RFI_NONE && dataset[i].flagRFI[k + 1] == RFI_NONE) {
-					diffxxoff[k] = dataset[i].caloff.xx[k + 1] - dataset[i].caloff.xx[k];
-					diffyyoff[k] = dataset[i].caloff.yy[k + 1] - dataset[i].caloff.yy[k];
-					diffxxon[k] = dataset[i].calon.xx[k + 1] - dataset[i].calon.xx[k];
-					diffyyon[k] = dataset[i].calon.yy[k + 1] - dataset[i].calon.yy[k];
-					diffxyoff[k] = dataset[i].caloff.xy[k + 1] - dataset[i].caloff.xy[k];
-					diffyxoff[k] = dataset[i].caloff.yx[k + 1] - dataset[i].caloff.yx[k];
-					diffxyon[k] = dataset[i].calon.xy[k + 1] - dataset[i].calon.xy[k];
-					diffyxon[k] = dataset[i].calon.yx[k + 1] - dataset[i].calon.yx[k];
+						for (k = lowchan; k < highchan - 1; k++) {
+								if (dataset[i].flagRFI[k] == RFI_NONE && dataset[i].flagRFI[k + 1] == RFI_NONE && (freq[k] < minf || freq[k] > maxf) ) {
+										diffxxoff[k] = dataset[i].caloff.xx[k + 1] - dataset[i].caloff.xx[k];
+										diffyyoff[k] = dataset[i].caloff.yy[k + 1] - dataset[i].caloff.yy[k];
+										diffxxon[k] = dataset[i].calon.xx[k + 1] - dataset[i].calon.xx[k];
+										diffyyon[k] = dataset[i].calon.yy[k + 1] - dataset[i].calon.yy[k];
+										diffxyoff[k] = dataset[i].caloff.xy[k + 1] - dataset[i].caloff.xy[k];
+										diffyxoff[k] = dataset[i].caloff.yx[k + 1] - dataset[i].caloff.yx[k];
+										diffxyon[k] = dataset[i].calon.xy[k + 1] - dataset[i].calon.xy[k];
+										diffyxon[k] = dataset[i].calon.yx[k + 1] - dataset[i].calon.yx[k];
+								}
+						}
+
+						//diffcounter = 0;
+
+						do {
+								N = 0;
+								for (j = 0; j < 8; j++) {
+										mean[j] = 0.0;
+										sigma[j] = 0.0;
+								}
+
+								for (k = lowchan; k < highchan - 1; k++) {
+										if (dataset[i].flagRFI[k] == RFI_NONE && dataset[i].flagRFI[k + 1] == RFI_NONE && (freq[k] < minf || freq[k] > maxf) )
+										{
+												mean[0] += diffxxoff[k];
+												mean[1] += diffyyoff[k];
+												mean[2] += diffxxon[k];
+												mean[3] += diffyyon[k];
+												mean[4] += diffxyoff[k];
+												mean[5] += diffyxoff[k];
+												mean[6] += diffxyon[k];
+												mean[7] += diffyxon[k];
+
+												N++;
+										}
+								}
+
+								mean[0] /= N;
+								mean[1] /= N;
+								mean[2] /= N;
+								mean[3] /= N;
+								mean[4] /= N;
+								mean[5] /= N;
+								mean[6] /= N;
+								mean[7] /= N;
+
+
+								/*if (fabs(dataset[i].RA - 71.390589) < 0.001) {
+								  for (j = 0; j < 8; j++) {
+								  printf("mean %d = %f\n", j, mean[j]);
+								  }
+								  }
+								 */
+
+								for (k = lowchan; k < highchan - 1; k++) {
+										if (dataset[i].flagRFI[k] == RFI_NONE && dataset[i].flagRFI[k + 1] == RFI_NONE && (freq[k] < minf || freq[k] > maxf)) {
+												sigma[0] += (diffxxoff[k] - mean[0]) * (diffxxoff[k] - mean[0]);
+												sigma[1] += (diffyyoff[k] - mean[1]) * (diffyyoff[k] - mean[1]);
+												sigma[2] += (diffxxon[k] - mean[2]) * (diffxxon[k] - mean[2]);
+												sigma[3] += (diffyyon[k] - mean[3]) * (diffyyon[k] - mean[3]);
+
+												sigma[4] += (diffxyoff[k] - mean[4]) * (diffxyoff[k] - mean[4]);
+												sigma[5] += (diffyxoff[k] - mean[5]) * (diffyxoff[k] - mean[5]);
+												sigma[6] += (diffxyon[k] - mean[6]) * (diffxyon[k] - mean[6]);
+												sigma[7] += (diffyxon[k] - mean[7]) * (diffyxon[k] - mean[7]);
+
+										}
+								}
+
+								for (j = 0; j < 8; j++) {
+										if (N > 1)
+												sigma[j] = sqrt(sigma[j] / (N - 1));
+										else sigma[j] = sqrt(sigma[j]);
+
+										/*if (fabs(dataset[i].RA - 71.390589) < 0.001) {
+										  printf("sigma %d = %f\n", j, sigma[j]);
+										  }*/
+								}
+
+								outlierFound = 0;
+								for (k = lowchan; k < highchan - 1; k++) {
+										if (freq[k] < minf || freq[k] > maxf) {
+												if (fabs(diffxxoff[k] - mean[0]) > numSigma * sigma[0]) {
+														if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
+														dataset[i].flagRFI[k] |= RFI_CALOFF_XX;
+														dataset[i].flagRFI[k + 1] |= RFI_CALOFF_XX;
+												}
+												if (fabs(diffyyoff[k] - mean[1]) > numSigma * sigma[1]) {
+														if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
+														dataset[i].flagRFI[k] |= RFI_CALOFF_YY;
+														dataset[i].flagRFI[k + 1] |= RFI_CALOFF_YY;
+												}
+												if (fabs(diffxxon[k] - mean[2]) > numSigma * sigma[2]) {
+														if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
+														dataset[i].flagRFI[k] |= RFI_CALON_XX;
+														dataset[i].flagRFI[k + 1] |= RFI_CALON_XX;
+												}
+												if (fabs(diffyyon[k] - mean[3]) > numSigma * sigma[3]) {
+														if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
+														dataset[i].flagRFI[k] |= RFI_CALON_YY;
+														dataset[i].flagRFI[k + 1] |= RFI_CALON_YY;
+												}
+
+												// Cross correlations
+												if (fabs(diffxyoff[k] - mean[4]) > numSigma * sigma[4]) {
+														if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
+														dataset[i].flagRFI[k] |= RFI_CALOFF_XY;
+														dataset[i].flagRFI[k + 1] |= RFI_CALOFF_XY;
+
+												}
+												if (fabs(diffyxoff[k] - mean[5]) > numSigma * sigma[5]) {
+														if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
+														dataset[i].flagRFI[k] |= RFI_CALOFF_YX;
+														dataset[i].flagRFI[k + 1] |= RFI_CALOFF_YX;
+												}
+												if (fabs(diffxyon[k] - mean[6]) > numSigma * sigma[6]) {
+														if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
+														dataset[i].flagRFI[k] |= RFI_CALON_XY;
+														dataset[i].flagRFI[k + 1] |= RFI_CALON_XY;
+												}
+												if (fabs(diffyxon[k] - mean[7]) > numSigma * sigma[7]) {
+														if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
+														dataset[i].flagRFI[k] |= RFI_CALON_YX;
+														dataset[i].flagRFI[k + 1] |= RFI_CALON_YX;
+												}
+										}
+								}
+								/*if (fabs(dataset[i].RA - 71.390589) < 0.001) {
+								  sprintf(filename, "diff_%f_%f.dat%d", dataset[i].RA, dataset[i].DEC, diffcounter);
+								  diffoutput = fopen(filename, "w");
+
+								  if (diffoutput == NULL) {
+								  printf("diffoutput was null!!!!\n");
+								  exit(1);
+								  }
+
+								  for (k = lowchan; k < highchan - 1; k++) {
+								  if (freq[k] < minf || freq[k] > maxf) {
+								  fprintf(diffoutput, "%f %f %f %f %f %f %f %f ", diffxxoff[k], diffyyoff[k], diffxxon[k], diffyyon[k], diffxyoff[k], diffyxoff[k], diffxyon[k], diffyxon[k]);
+								  for( j = 0; j < 8; j++) {
+								  if( dataset[i].flagRFI[k] != RFI_NONE ) 
+								  fprintf(diffoutput, "%f ", (sigma[j] * numSigma) );
+								  else 
+								  fprintf(diffoutput, "%f ", 0.0);
+
+								  }
+								  fprintf(diffoutput, "\n");
+								  }
+								  }
+								  fclose(diffoutput);
+								  }
+								 */
+
+
+								//diffcounter++;
+						} while (outlierFound);
 				}
-			}
-
-			do {
-				N = 0;
-				for (j = 0; j < 8; j++) {
-					mean[j] = 0.0;
-					sigma[j] = 0.0;
-				}
-
-				for (k = lowchan; k < highchan - 1; k++) {
-					if (dataset[i].flagRFI[k] == RFI_NONE && dataset[i].flagRFI[k + 1] == RFI_NONE && (freq[k] < minf || freq[k] > maxf) )
-					{
-						mean[0] += diffxxoff[k];
-						mean[1] += diffyyoff[k];
-						mean[2] += diffxxon[k];
-						mean[3] += diffyyon[k];
-						mean[4] += diffxyoff[k];
-						mean[5] += diffyxoff[k];
-						mean[6] += diffxyon[k];
-						mean[7] += diffyxon[k];
-
-						N++;
-					}
-				}
-
-				mean[0] /= N;
-				mean[1] /= N;
-				mean[2] /= N;
-				mean[3] /= N;
-				mean[4] /= N;
-				mean[5] /= N;
-				mean[6] /= N;
-				mean[7] /= N;
-
-
-				//if (fabs(dataset[i].RA - 71.390589) < 0.001) {
-			//		for (j = 0; j < 8; j++) {
-		//				printf("mean %d = %f\n", j, mean[j]);
-	//				}
-			//	}
-
-				for (k = lowchan; k < highchan - 1; k++) {
-					if (dataset[i].flagRFI[k] == RFI_NONE && dataset[i].flagRFI[k + 1] == RFI_NONE && (freq[k] < minf || freq[k] > maxf)) {
-						sigma[0] += (diffxxoff[k] - mean[0]) * (diffxxoff[k] - mean[0]);
-						sigma[1] += (diffyyoff[k] - mean[1]) * (diffyyoff[k] - mean[1]);
-						sigma[2] += (diffxxon[k] - mean[2]) * (diffxxon[k] - mean[2]);
-						sigma[3] += (diffyyon[k] - mean[3]) * (diffyyon[k] - mean[3]);
-
-						sigma[4] += (diffxyoff[k] - mean[4]) * (diffxyoff[k] - mean[4]);
-						sigma[5] += (diffyxoff[k] - mean[5]) * (diffyxoff[k] - mean[5]);
-						sigma[6] += (diffxyon[k] - mean[6]) * (diffxyon[k] - mean[6]);
-						sigma[7] += (diffyxon[k] - mean[7]) * (diffyxon[k] - mean[7]);
-
-					}
-				}
-
-				for (j = 0; j < 8; j++) {
-					if (N > 1)
-						sigma[j] = sqrt(sigma[j] / (N - 1));
-					else sigma[j] = sqrt(sigma[j]);
-
-					//if (fabs(dataset[i].RA - 71.390589) < 0.001) {
-					//	printf("sigma %d = %f\n", j, sigma[j]);
-					//}
-				}
-				/*
-				if (fabs(dataset[i].RA - 71.390589) < 0.05) {
-					sprintf(filename, "diff_%f_%f.dat%d", dataset[i].RA, dataset[i].DEC, diffcounter++);
-					diffoutput = fopen(filename, "w");
-
-					if (diffoutput == NULL) {
-						printf("diffoutput was null!!!!\n");
-						exit(1);
-					}
-
-					for (k = lowchan; k < highchan - 1; k++) {
-						fprintf(diffoutput, "%f %f %f %f %f %f %f %f ", diffxxoff[k], diffyyoff[k], diffxxon[k], diffyyon[k], diffxyoff[k], diffyxoff[k], diffxyon[k], diffyxon[k]);
-						if (dataset[i].flagRFI[k] != RFI_NONE || dataset[i].flagRFI[k + 1] != RFI_NONE)
-							fprintf(diffoutput, "%f\n", (sigma[0] * numSigma));
-						else fprintf(diffoutput, "%f\n", 0.0);
-					}
-					fclose(diffoutput);
-				}
-				*/
-
-				outlierFound = 0;
-				for (k = lowchan; k < highchan - 1; k++) {
-					if (freq[k] < minf || freq[k] > maxf) {
-						//if (dataset[i].flagRFI[k] == RFI_NONE && dataset[i].flagRFI[k + 1] == RFI_NONE) {
-
-						if (fabs(diffxxoff[k] - mean[0]) > numSigma * sigma[0]) {
-							if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
-							dataset[i].flagRFI[k] |= RFI_CALOFF_XX;
-							dataset[i].flagRFI[k + 1] |= RFI_CALOFF_XX;
-
-						}
-						if (fabs(diffyyoff[k] - mean[1]) > numSigma * sigma[1]) {
-							if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
-							dataset[i].flagRFI[k] |= RFI_CALOFF_YY;
-							dataset[i].flagRFI[k + 1] |= RFI_CALOFF_YY;
-						}
-						if (fabs(diffxxon[k] - mean[2]) > numSigma * sigma[2]) {
-							if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
-							dataset[i].flagRFI[k] |= RFI_CALON_XX;
-							dataset[i].flagRFI[k + 1] |= RFI_CALON_XX;
-						}
-						if (fabs(diffyyon[k] - mean[3]) > numSigma * sigma[3]) {
-							if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
-							dataset[i].flagRFI[k] |= RFI_CALON_YY;
-							dataset[i].flagRFI[k + 1] |= RFI_CALON_YY;
-						}
-
-						// Cross correlations
-						if (fabs(diffxyoff[k] - mean[4]) > numSigma * sigma[4]) {
-							if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
-							dataset[i].flagRFI[k] |= RFI_CALOFF_XY;
-							dataset[i].flagRFI[k + 1] |= RFI_CALOFF_XY;
-
-						}
-						if (fabs(diffyxoff[k] - mean[5]) > numSigma * sigma[5]) {
-							if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
-							dataset[i].flagRFI[k] |= RFI_CALOFF_YX;
-							dataset[i].flagRFI[k + 1] |= RFI_CALOFF_YX;
-						}
-						if (fabs(diffxyon[k] - mean[6]) > numSigma * sigma[6]) {
-							if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
-							dataset[i].flagRFI[k] |= RFI_CALON_XY;
-							dataset[i].flagRFI[k + 1] |= RFI_CALON_XY;
-						}
-						if (fabs(diffyxon[k] - mean[7]) > numSigma * sigma[7]) {
-							if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
-							dataset[i].flagRFI[k] |= RFI_CALON_YX;
-							dataset[i].flagRFI[k + 1] |= RFI_CALON_YX;
-						}
-
-						//}
-					}
-				}
-
-				//if (fabs(dataset[i].RA - 71.390589) < 0.001) {
-				//	printf("outlierfound is %d at RA %f\n", outlierFound, dataset[i].RA);
-				//}
-			}
-			while (outlierFound);
 		}
-	}
 }
 
 
@@ -806,7 +809,7 @@ void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int siz
 		}
 
 		char filename[50];
-		sprintf(filename, "timediff.dat%d", diffcounter++);
+		sprintf(filename, "timediff.dat%d", diffcounter);
 		diffoutput = fopen(filename, "w");
 
 		if (diffoutput == NULL) {

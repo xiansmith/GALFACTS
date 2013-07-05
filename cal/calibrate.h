@@ -6,7 +6,7 @@
 
 void compute_raw_cal(SpecRecord dataset[], int size, int lowchan, int highchan);
 void linear_fit_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int RFIF);
-void smooth_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int window);
+void smooth_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int window, int cwindow);
 
 #endif //_CALIBRATE_H
 

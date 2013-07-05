@@ -4,7 +4,7 @@
 #ifndef _STOKES_H
 #define _STOKES_H
 
-void calculate_stokes(SpecRecord dataset[], int size, int lowchan, int highchan, int RFIF, int calskyfiles, float Tcalx[], float Tcaly[], int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda);
+void calculate_stokes(SpecRecord dataset[], int size, int lowchan, int highchan, int RFIF, int calskyfiles, float Tcalx[], float Tcaly[], int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, int start, int end);
 void write_channel_data(SpecRecord dataset[], int size, int lowchan, int highchan);
 void write_binary_channel_data(SpecRecord dataset[], int size, int lowchan, int highchan);
 void average_stokes(SpecRecord dataset[], int size, int lowchan, int highchan, float hidrogenfreq, float hidrogenband, float freq[]);

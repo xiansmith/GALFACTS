@@ -144,28 +144,59 @@ void linear_fit_cal(SpecRecord dataset[], int size, int lowchan, int highchan, i
 	free(Yyx);
 }
 //----------------------------------------------------------------------------------------------------------
-void smooth_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int window)
+//void smooth_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int window)
+void smooth_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int window, int cwindow)
 {
 	int n, chan, dchan = highchan - lowchan;
 	float mean[4], sigma[4], tmp;
 	float *XRA, *Yxx, *Yyy, *Yxy, *Yyx, *Fxx, *Fyy, *Fxy, *Fyx, *w;
-//	FILE *fxx, *fyy, *fxy, *fyx;
+	float *Fxxs, *Fyys, *Fxys, *Fyxs;
 
 	Yxx = (float*) malloc(sizeof(float) * size);
 	Yyy = (float*) malloc(sizeof(float) * size);
 	Yxy = (float*) malloc(sizeof(float) * size);
 	Yyx = (float*) malloc(sizeof(float) * size);
 	
+	float **Sxx,**Syy,**Syx,**Sxy;
+
+	Sxx = (float**) malloc(sizeof(float *) * size);
+	Syy = (float**) malloc(sizeof(float *) * size);
+	Sxy = (float**) malloc(sizeof(float *) * size);
+	Syx = (float**) malloc(sizeof(float *) * size);
+	for(n=0; n<size; n++) 
+	{
+		Sxx[n] = (float*) malloc(sizeof(float) * MAX_CHANNELS);
+		Syy[n] = (float*) malloc(sizeof(float) * MAX_CHANNELS);
+		Sxy[n] = (float*) malloc(sizeof(float) * MAX_CHANNELS);
+		Syx[n] = (float*) malloc(sizeof(float) * MAX_CHANNELS);
+	}
+
 	Fxx = (float*) malloc(sizeof(float) * dchan);
 	Fyy = (float*) malloc(sizeof(float) * dchan);
 	Fxy = (float*) malloc(sizeof(float) * dchan);
 	Fyx = (float*) malloc(sizeof(float) * dchan);
 
-//	w = (float*) malloc(sizeof(float) * (window+1));
-	
-//	for(n=0; n<=window; n++) {tmp = n*2.0/window; w[n] = exp(-0.5*tmp*tmp);}
-//	tmp = w[0]; for(n=1; n<=window; n++) tmp += 2*w[n];
-//	for(n=0; n<=window; n++) w[n] /= tmp;
+	Fxxs = (float*) malloc(sizeof(float) * dchan);
+	Fyys = (float*) malloc(sizeof(float) * dchan);
+	Fxys = (float*) malloc(sizeof(float) * dchan);
+	Fyxs = (float*) malloc(sizeof(float) * dchan);
+
+	if(Yxx == NULL || Yyy == NULL || Yxy == NULL || Yyx == NULL)
+	{
+		printf("malloc failed !\n");
+		exit(0);
+	}
+	if(Fxx == NULL || Fyy == NULL || Fxy == NULL || Fyx == NULL)
+	{
+		printf("malloc failed !\n");
+		exit(0);
+	}
+	if(Fxxs == NULL || Fyys == NULL || Fxys == NULL || Fyxs == NULL)
+	{
+		printf("malloc failed !\n");
+		exit(0);
+	}
+
 
 	for(chan=lowchan; chan<highchan; chan++) 
 	{
@@ -214,7 +245,6 @@ void smooth_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int w
 			sigma[3] = sqrt(sigma[3]/count);
 		}
 		
-		Fxx[chan - lowchan] = Fyy[chan - lowchan] = Fxy[chan - lowchan] = Fyx[chan - lowchan] = 0;
 		for(n=0; n<size; n++) 
 		{
 			if(dataset[n].flagBAD || dataset[n].flagRFI[chan] != RFI_NONE)
@@ -224,15 +254,7 @@ void smooth_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int w
 				dataset[n].cal.xy[chan] = mean[2];
 				dataset[n].cal.yx[chan] = mean[3];
 			}
-			Fxx[chan - lowchan] += dataset[n].cal.xx[chan];
-			Fyy[chan - lowchan] += dataset[n].cal.yy[chan];
-			Fxy[chan - lowchan] += dataset[n].cal.xy[chan];
-			Fyx[chan - lowchan] += dataset[n].cal.yx[chan];
 		}
-		Fxx[chan - lowchan] /= size;
-		Fyy[chan - lowchan] /= size;
-		Fxy[chan - lowchan] /= size;
-		Fyx[chan - lowchan] /= size;
 	}
 
 	mean[0] = mean[1] = mean[2] = mean[3] = 0;
@@ -291,36 +313,6 @@ void smooth_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int w
 		Yxy[n] /= mean[2];
 		Yyx[n] /= mean[3];
 	}
-/*
-	fxx=fopen("acxx.dat", "w");
-	fyy=fopen("acyy.dat", "w");
-	fxy=fopen("acxy.dat", "w");
-	fyx=fopen("acyx.dat", "w");
-
-	for(n=0; n<size; n++) 
-		{
-		fprintf(fxx, "%f %f\n", dataset[n].RA, Yxx[n]);
-		fprintf(fyy, "%f %f\n", dataset[n].RA, Yyy[n]);
-		fprintf(fxy, "%f %f\n", dataset[n].RA, Yxy[n]);
-		fprintf(fyx, "%f %f\n", dataset[n].RA, Yyx[n]);
-		}
-	fclose(fxx);
-	fclose(fyy);
-	fclose(fxy);
-	fclose(fyx);
-*/
-/*	
-	moving_average_filter(Yxx, size, window);
-	moving_average_filter(Yyy, size, window);
-	moving_average_filter(Yxy, size, window);
-	moving_average_filter(Yyx, size, window);
-*/
-
-/*	gaussian_filter(Yxx, size, w, window);
-	gaussian_filter(Yyy, size, w, window);
-	gaussian_filter(Yxy, size, w, window);
-	gaussian_filter(Yyx, size, w, window);
-*/
 
 	//In this case window is actually the number of iterations for diffusion smoothing
 	//Carried over the variable name from the other fitting routines that actually 
@@ -330,84 +322,177 @@ void smooth_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int w
         diffusion_filter(Yxy, size, window);
         diffusion_filter(Yyx, size, window);
 
+        FILE * outfile2 = fopen("smoothcal1.dat","w");
+        if(outfile2 == NULL)
+        {
+                printf("Can't open smoothcal1.dat\n");
+                exit(0);
+        }
+        for(n=0; n<size; n++)
+        {
+                if(dataset[n].flagBAD) continue;
+                //fprintf(outfile2, "%05i %7.6f %7.6f %7.6f %7.6f\n",n,Yxx[n]*Fxxm,Yyy[n]*Fyym,Yxy[n]*Fxym,Yyx[n]*Fyxm);
+                fprintf(outfile2, "%05i %7.6f %7.6f %7.6f %7.6f\n",n,Yxx[n],Yyy[n],Yxy[n],Yyx[n]);
+                //printf("%f %%\r", (n + 1)*100.0/size);
+	}
+	fclose(outfile2);
+
 	//apply the moving average filter to reduce noise
 	moving_average_filter(Yxx, size, 500);
 	moving_average_filter(Yyy, size, 500);
 	moving_average_filter(Yxy, size, 500);
 	moving_average_filter(Yyx, size, 500);
 
-	float Fxxm,Fyym,Fxym,Fyxm;
-	Fxxm = Fyym = Fxym = Fyxm = 0.0;
-        for(n=0; n<dchan; n++)
-        {
-		if(Fxx[n] == 0)
-		{
-			Fxx[n] = Fxx[n-1];
-			Fyy[n] = Fyy[n-1];
-			Fxy[n] = Fxy[n-1];
-			Fyx[n] = Fyx[n-1];
-		}
-		Fxxm += Fxx[n];
-		Fyym += Fyy[n];
-		Fxym += Fxy[n];
-		Fyxm += Fyx[n];
+	for(chan=lowchan; chan<highchan; chan++)
+ 	{
+		Fxx[chan - lowchan] = 0.0;
+		Fyy[chan - lowchan] = 0.0;
+		Fxy[chan - lowchan] = 0.0;
+		Fyx[chan - lowchan] = 0.0;
 	}
 
-	Fxxm /= dchan;
-	Fyym /= dchan;
-	Fxym /= dchan;
-	Fyxm /= dchan;
-	//reduce noise in band shape as well
-	moving_average_filter(Fxx, dchan, 25);
-	moving_average_filter(Fyy, dchan, 25);
-	moving_average_filter(Fxy, dchan, 25);
-	moving_average_filter(Fyx, dchan, 25);
-/*	
-	fxx=fopen("scxx.dat", "w");
-	fyy=fopen("scyy.dat", "w");
-	fxy=fopen("scxy.dat", "w");
-	fyx=fopen("scyx.dat", "w");
+	int cc[MAX_CHANNELS] = {0};
 	for(n=0; n<size; n++) 
-		{
-		fprintf(fxx, "%f %f\n", dataset[n].RA, Yxx[n]);
-		fprintf(fyy, "%f %f\n", dataset[n].RA, Yyy[n]);
-		fprintf(fxy, "%f %f\n", dataset[n].RA, Yxy[n]);
-		fprintf(fyx, "%f %f\n", dataset[n].RA, Yyx[n]);
-		}
-	fclose(fxx);
-	fclose(fyy);
-	fclose(fxy);
-	fclose(fyx);
-*/	
-				
-	for(chan=lowchan; chan<highchan; chan++) 
 	{
-		for(n=0; n<size; n++) 
+		for(chan=lowchan; chan<highchan; chan++) 
 		{
-			if(dataset[n].flagRFI[chan] == RFI_NONE)
+
+			if(n == 0)
 			{
-			dataset[n].cal.xx[chan] = Yxx[n]*Fxx[chan-lowchan];
-			dataset[n].cal.yy[chan] = Yyy[n]*Fyy[chan-lowchan];
-			dataset[n].cal.xy[chan] = Yxy[n]*Fxy[chan-lowchan];
-			dataset[n].cal.yx[chan] = Yyx[n]*Fyx[chan-lowchan];
+				cc[chan] = 0;
+				int nn;
+				for(nn=0; nn<cwindow; nn++) 
+				{
+					if(!dataset[nn].flagBAD && dataset[nn].flagRFI[chan] == RFI_NONE)
+					{
+
+						Fxx[chan - lowchan] += dataset[nn].cal.xx[chan];
+						Fyy[chan - lowchan] += dataset[nn].cal.yy[chan];
+						Fxy[chan - lowchan] += dataset[nn].cal.xy[chan];
+						Fyx[chan - lowchan] += dataset[nn].cal.yx[chan];
+						cc[chan]++;
+					}
+				}
+				if(cc[chan])
+				{
+					Fxx[chan - lowchan] /= cc[chan];
+					Fyy[chan - lowchan] /= cc[chan];
+					Fxy[chan - lowchan] /= cc[chan];
+					Fyx[chan - lowchan] /= cc[chan];
+				}
+				else
+				{
+					printf("Rec %d chan %d count zero.\n",n,chan);
+					Fxx[chan - lowchan] = Fxx[chan-lowchan-1];
+					Fyy[chan - lowchan] = Fyy[chan-lowchan-1];
+					Fxy[chan - lowchan] = Fxy[chan-lowchan-1];
+					Fyx[chan - lowchan] = Fyx[chan-lowchan-1];
+				}
 			}
+			else if(n < cwindow/2 && n > 0)
+			{
+				;
+			}
+			else if(n >= cwindow/2 && n < size - cwindow/2)
+			{
+				int a = n - cwindow/2;
+				int b = n + cwindow/2;
+				if(!dataset[a].flagBAD && dataset[a].flagRFI[chan] == RFI_NONE)
+				{
+					if(cc[chan])
+					{
+						Fxx[chan - lowchan] = Fxx[chan - lowchan]*cc[chan] - (dataset[a].cal.xx[chan]);
+						Fyy[chan - lowchan] = Fyy[chan - lowchan]*cc[chan] - (dataset[a].cal.yy[chan]);
+						Fxy[chan - lowchan] = Fxy[chan - lowchan]*cc[chan] - (dataset[a].cal.xy[chan]);
+						Fyx[chan - lowchan] = Fyx[chan - lowchan]*cc[chan] - (dataset[a].cal.yx[chan]);
+						cc[chan]--;
+						if(cc[chan])
+						{
+							Fxx[chan - lowchan] = Fxx[chan - lowchan]/cc[chan];
+							Fyy[chan - lowchan] = Fyy[chan - lowchan]/cc[chan];
+							Fxy[chan - lowchan] = Fxy[chan - lowchan]/cc[chan];
+							Fyx[chan - lowchan] = Fyx[chan - lowchan]/cc[chan];
+						}
+						else
+						{
+							Fxx[chan - lowchan] = Fxx[chan-lowchan-1];
+							Fyy[chan - lowchan] = Fyy[chan-lowchan-1];
+							Fxy[chan - lowchan] = Fxy[chan-lowchan-1];
+							Fyx[chan - lowchan] = Fyx[chan-lowchan-1];
+						}
+					}
+				}
+				if(!dataset[b].flagBAD && dataset[b].flagRFI[chan] == RFI_NONE)
+				{
+					if(cc[chan])
+					{
+						Fxx[chan-lowchan] = Fxx[chan-lowchan]*cc[chan];
+						Fyy[chan-lowchan] = Fyy[chan-lowchan]*cc[chan];
+						Fxy[chan-lowchan] = Fxy[chan-lowchan]*cc[chan];
+						Fyx[chan-lowchan] = Fyx[chan-lowchan]*cc[chan];
+					}	
+					cc[chan]++;
+					Fxx[chan - lowchan] = (Fxx[chan - lowchan] + dataset[b].cal.xx[chan])/cc[chan];
+					Fyy[chan - lowchan] = (Fyy[chan - lowchan] + dataset[b].cal.yy[chan])/cc[chan];
+					Fxy[chan - lowchan] = (Fxy[chan - lowchan] + dataset[b].cal.xy[chan])/cc[chan];
+					Fyx[chan - lowchan] = (Fyx[chan - lowchan] + dataset[b].cal.yx[chan])/cc[chan];
+				}
+			}
+			else
+			{
+				;
+			}
+
+			if(Fxx[chan-lowchan] == 0.0)
+			{
+				Fxxs[chan-lowchan] = Fxx[chan - lowchan-1];
+				Fyys[chan-lowchan] = Fyy[chan - lowchan-1];
+				Fxys[chan-lowchan] = Fxy[chan - lowchan-1];
+				Fyxs[chan-lowchan] = Fyx[chan - lowchan-1];
+			}
+			else
+			{
+				Fxxs[chan-lowchan] = Fxx[chan - lowchan];
+				Fyys[chan-lowchan] = Fyy[chan - lowchan];
+				Fxys[chan-lowchan] = Fxy[chan - lowchan];
+				Fyxs[chan-lowchan] = Fyx[chan - lowchan];
+			}
+		}		
+
+		moving_average_filter(Fxxs, dchan, 100);
+		moving_average_filter(Fyys, dchan, 100);
+		moving_average_filter(Fxys, dchan, 100);
+		moving_average_filter(Fyxs, dchan, 100);
+
+		for(chan=lowchan; chan<highchan; chan++) 
+		{
+			Sxx[n][chan] = Yxx[n]*Fxxs[chan-lowchan];
+			Syy[n][chan] = Yyy[n]*Fyys[chan-lowchan];
+			Sxy[n][chan] = Yxy[n]*Fxys[chan-lowchan];
+			Syx[n][chan] = Yyx[n]*Fyxs[chan-lowchan];
+
 		}
 	}
 	printf("\n");
 
-
-	//For making plots of the fits
-        FILE * outfile2 = fopen("smoothcal.dat","w");
+      outfile2 = fopen("smoothcal2.dat","w");
         if(outfile2 == NULL)
         {
-                printf("Can't open smoothcal.dat\n");
-                exit(1);
+                printf("Can't open smoothcal2.dat\n");
+                exit(0);
         }
         for(n=0; n<size; n++)
         {
-                if(dataset[n].flagBAD) continue;
-                fprintf(outfile2, "%05i %7.6f %7.6f %7.6f %7.6f\n",n,Yxx[n]*Fxxm,Yyy[n]*Fyym,Yxy[n]*Fxym,Yyx[n]*Fyxm);
-                //printf("%f %%\r", (n + 1)*100.0/size);
+		if(dataset[n].flagBAD)
+			continue;
+                fprintf(outfile2, "%05i %7.6f %7.6f %7.6f %7.6f\n",n,Yxx[n],Yyy[n],Yxy[n],Yyx[n]);
+		for(chan=lowchan; chan<highchan; chan++) 
+		{
+			dataset[n].cal.xx[chan] = Sxx[n][chan];
+			dataset[n].cal.yy[chan] = Syy[n][chan];
+			dataset[n].cal.xy[chan] = Sxy[n][chan];
+			dataset[n].cal.yx[chan] = Syx[n][chan];
+		}
 	}
 	fclose(outfile2);
 
@@ -447,6 +532,20 @@ void smooth_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int w
 	free(Fyy);
 	free(Fxy);
 	free(Fyx);
-	//free(w);
+	free(Fxxs);
+	free(Fyys);
+	free(Fxys);
+	free(Fyxs);
+	for(n=0; n<size; n++) 
+	{
+		free(Sxx[n]);
+		free(Syy[n]);
+		free(Sxy[n]);
+		free(Syx[n]);
+	}
+	free(Sxx);
+	free(Syy);
+	free(Sxy);
+	free(Syx);
 }
 //----------------------------------------------------------------------------------------------------------

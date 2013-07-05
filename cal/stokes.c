@@ -33,7 +33,6 @@ static void compute_gains(const SpecRecord * pRec, GainSet * pGain, int lowchan,
 {
 	int i;
 	double calU, calV;
-
 	for (i=lowchan; i<highchan; i++)
 		{
 		pGain->x[i] = sqrt(Tcalx[i]/pRec->cal.xx[i]);
@@ -67,7 +66,7 @@ static void calibrate_stokes(StokesSet * calStokes, const GainSet * gain, const 
 		calStokes->Q[i] =  ((gain->x[i]*gain->x[i] - gain->y[i]*gain->y[i])/4.0) * obsStokes->I[i] + ((gain->x[i]*gain->x[i] + gain->y[i]*gain->y[i])/4.0) * obsStokes->Q[i];
 
 
-		//The factor of 2 might be missing in these calculations below giving bigger U and V that are fixed later. Need
+		//A factor of 2 might be missing in these calculations below giving bigger U and V that are fixed later. Need
 		// to confirm. The original assumption that the spectrometer was spitting values a factor of 2 too large
 		// may be incorrect. nonetheless we are dividing by 2 later and hence the output is all good. but it may
 		//be better to fix it here if the problem is actually here.
@@ -145,7 +144,9 @@ static void compute_observed_stokes(const SpecRecord * pRec, StokesSet * ObsCal,
 		ObsSky->Q[i] = data.xx - data.yy;
 		ObsSky->U[i] = data.xy + data.yx;
 		ObsSky->V[i] = data.xy - data.yx;
+
 		}
+
 }
 //----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -175,7 +176,6 @@ static void compute_final_stokes(SpecRecord * pRec, StokesSet * TrueSky, int RFI
 			pRec->stokes.V[i] = NAN;
 			}
 		}
-
 }
 //----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -230,7 +230,7 @@ void average_stokes(SpecRecord dataset[], int size, int lowchan, int highchan, f
 
 //external function to calculate the stokes parameters
 
-void calculate_stokes(SpecRecord dataset[], int size, int lowchan, int highchan, int RFIF, int calskyfiles, float Tcalx[], float Tcaly[], int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda)
+void calculate_stokes(SpecRecord dataset[], int size, int lowchan, int highchan, int RFIF, int calskyfiles, float Tcalx[], float Tcaly[], int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, int start, int end)
 {
 	int i, n;
 
@@ -301,7 +301,8 @@ void calculate_stokes(SpecRecord dataset[], int size, int lowchan, int highchan,
 */
 	
 	//iterate over each time step
-	for (i=0; i<size; i++) 
+	//for (i=0; i<size; i++) 
+        for(i=start; i<end; i++)
 		{
 		pRec = &(dataset[i]);
 		if (pRec->flagBAD) continue;

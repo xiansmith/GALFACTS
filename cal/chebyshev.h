@@ -47,5 +47,7 @@ void chebyshev_qrgsr_surface(int n, float c[], int N, float x[], float y[], floa
 void chebyshev_fit_bw(float X[], float Y[], int size, float nsigma, float C[], int order);
 
 void chebyshev_fit_dec(float X[], float Y[], int size, float nsigma, float C[], int order);
+void chebyshev_fit_sat(float X[], float Y[], int size, float nsigma, float C[], int order, int RFI[], float RA);
+
 
 #endif

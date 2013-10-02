@@ -1,6 +1,7 @@
 #include "rfi.h"
 #include <stdlib.h>
 #include <math.h>
+#include "chebyshev.h"
 
 void mark_bad_channels(SpecRecord dataset[], int size, int lowchan, int highchan, float numSigma, float hidrogenfreq, float hidrogenband, float freq[],
 		int *badchannels) {
@@ -22,218 +23,292 @@ void mark_bad_channels(SpecRecord dataset[], int size, int lowchan, int highchan
 	}
 }
 
-
+/*
+ * define a satellite band
+ * exclude it from stats like H line
+ *
+ * once flagging is done on diffs (except in satellite band)
+ *
+ * run on satellite band as special case only on XX YY on and off
+ * fit 2nd order poly over the satellite band
+ * subtract poly from data
+ * calculate mean and sigma
+ * sigma rejection and repeat
+ * redo fit each time,  chebychev fit
+ * converges
+ *
+ */
 void rfi_detection_frequency_domain(SpecRecord dataset[], int size, int lowchan, int highchan, float numSigma, float hidrogenfreq, float hidrogenband,float freq[])
 {
-		int i, j, k, N;
-		float mean[8], sigma[8], diffs[size], diff, delta, minf = hidrogenfreq - hidrogenband, maxf = hidrogenfreq + hidrogenband;
-		int outlierFound;
-		char filename[50];
-		FILE *diffoutput;
-		int diffcounter = 0;
+	int i, j, k, N;
+	float mean[8], sigma[8], diffs[size], diff, delta, minf = hidrogenfreq - hidrogenband, maxf = hidrogenfreq + hidrogenband;
+	int satlowchan = 3400, sathighchan = 3800;
+	float satlowfrq = freq[satlowchan], sathighfrq[sathighchan];
 
-		for (i = 0; i < size; i++) {
-				if (!dataset[i].flagBAD) {
-						for (k = lowchan; k < highchan; k++) {
-								dataset[i].flagRFI[k] = RFI_NONE;
-						}
+	int outlierFound;
+	char filename[50];
+	FILE *diffoutput;
+	int diffcounter = 0;
 
-						float diffxxon[MAX_CHANNELS], diffyyon[MAX_CHANNELS],diffxyon[MAX_CHANNELS],diffyxon[MAX_CHANNELS];
-						float diffxxoff[MAX_CHANNELS], diffyyoff[MAX_CHANNELS],diffxyoff[MAX_CHANNELS],diffyxoff[MAX_CHANNELS];
+	for (i = 0; i < size; i++) {
+		if (!dataset[i].flagBAD) {
+			for (k = lowchan; k < highchan; k++)
+				dataset[i].flagRFI[k] = RFI_NONE;
 
-						for (k = lowchan; k < highchan - 1; k++) {
-								if (dataset[i].flagRFI[k] == RFI_NONE && dataset[i].flagRFI[k + 1] == RFI_NONE && (freq[k] < minf || freq[k] > maxf) ) {
-										diffxxoff[k] = dataset[i].caloff.xx[k + 1] - dataset[i].caloff.xx[k];
-										diffyyoff[k] = dataset[i].caloff.yy[k + 1] - dataset[i].caloff.yy[k];
-										diffxxon[k] = dataset[i].calon.xx[k + 1] - dataset[i].calon.xx[k];
-										diffyyon[k] = dataset[i].calon.yy[k + 1] - dataset[i].calon.yy[k];
-										diffxyoff[k] = dataset[i].caloff.xy[k + 1] - dataset[i].caloff.xy[k];
-										diffyxoff[k] = dataset[i].caloff.yx[k + 1] - dataset[i].caloff.yx[k];
-										diffxyon[k] = dataset[i].calon.xy[k + 1] - dataset[i].calon.xy[k];
-										diffyxon[k] = dataset[i].calon.yx[k + 1] - dataset[i].calon.yx[k];
-								}
-						}
+			float diffxxon[MAX_CHANNELS], diffyyon[MAX_CHANNELS],diffxyon[MAX_CHANNELS],diffyxon[MAX_CHANNELS];
+			float diffxxoff[MAX_CHANNELS], diffyyoff[MAX_CHANNELS],diffxyoff[MAX_CHANNELS],diffyxoff[MAX_CHANNELS];
 
-						diffcounter = 0;
+			for (k = lowchan; k < highchan - 1; k++) {
+				if (dataset[i].flagRFI[k] == RFI_NONE && dataset[i].flagRFI[k + 1] == RFI_NONE) {
+					diffxxoff[k] = dataset[i].caloff.xx[k + 1] - dataset[i].caloff.xx[k];
+					diffyyoff[k] = dataset[i].caloff.yy[k + 1] - dataset[i].caloff.yy[k];
+					diffxxon[k] = dataset[i].calon.xx[k + 1] - dataset[i].calon.xx[k];
+					diffyyon[k] = dataset[i].calon.yy[k + 1] - dataset[i].calon.yy[k];
 
-						do {
-								N = 0;
-								for (j = 0; j < 8; j++) {
-										mean[j] = 0.0;
-										sigma[j] = 0.0;
-								}
-
-								for (k = lowchan; k < highchan - 1; k++) {
-										if (dataset[i].flagRFI[k] == RFI_NONE && dataset[i].flagRFI[k + 1] == RFI_NONE && (freq[k] < minf || freq[k] > maxf) )
-										{
-												mean[0] += diffxxoff[k];
-												mean[1] += diffyyoff[k];
-												mean[2] += diffxxon[k];
-												mean[3] += diffyyon[k];
-												mean[4] += diffxyoff[k];
-												mean[5] += diffyxoff[k];
-												mean[6] += diffxyon[k];
-												mean[7] += diffyxon[k];
-
-												N++;
-										}
-								}
-
-								mean[0] /= N;
-								mean[1] /= N;
-								mean[2] /= N;
-								mean[3] /= N;
-								mean[4] /= N;
-								mean[5] /= N;
-								mean[6] /= N;
-								mean[7] /= N;
-
-
-								/*if (fabs(dataset[i].RA - 71.390589) < 0.001) {
-								  for (j = 0; j < 8; j++) {
-								  printf("mean %d = %f\n", j, mean[j]);
-								  }
-								  }
-								 */
-
-								for (k = lowchan; k < highchan - 1; k++) {
-										if (dataset[i].flagRFI[k] == RFI_NONE && dataset[i].flagRFI[k + 1] == RFI_NONE && (freq[k] < minf || freq[k] > maxf)) {
-												sigma[0] += (diffxxoff[k] - mean[0]) * (diffxxoff[k] - mean[0]);
-												sigma[1] += (diffyyoff[k] - mean[1]) * (diffyyoff[k] - mean[1]);
-												sigma[2] += (diffxxon[k] - mean[2]) * (diffxxon[k] - mean[2]);
-												sigma[3] += (diffyyon[k] - mean[3]) * (diffyyon[k] - mean[3]);
-
-												sigma[4] += (diffxyoff[k] - mean[4]) * (diffxyoff[k] - mean[4]);
-												sigma[5] += (diffyxoff[k] - mean[5]) * (diffyxoff[k] - mean[5]);
-												sigma[6] += (diffxyon[k] - mean[6]) * (diffxyon[k] - mean[6]);
-												sigma[7] += (diffyxon[k] - mean[7]) * (diffyxon[k] - mean[7]);
-
-										}
-								}
-
-								for (j = 0; j < 8; j++) {
-										if (N > 1)
-												sigma[j] = sqrt(sigma[j] / (N - 1));
-										else sigma[j] = sqrt(sigma[j]);
-
-										/*if (fabs(dataset[i].RA - 71.390589) < 0.001) {
-										  printf("sigma %d = %f\n", j, sigma[j]);
-										  }*/
-								}
-
-								outlierFound = 0;
-								for (k = lowchan; k < highchan - 1; k++) {
-										if (freq[k] < minf || freq[k] > maxf) {
-												if (fabs(diffxxoff[k] - mean[0]) > numSigma * sigma[0]) {
-														if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
-														dataset[i].flagRFI[k] |= RFI_CALOFF_XX;
-														dataset[i].flagRFI[k + 1] |= RFI_CALOFF_XX;
-												}
-												if (fabs(diffyyoff[k] - mean[1]) > numSigma * sigma[1]) {
-														if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
-														dataset[i].flagRFI[k] |= RFI_CALOFF_YY;
-														dataset[i].flagRFI[k + 1] |= RFI_CALOFF_YY;
-												}
-												if (fabs(diffxxon[k] - mean[2]) > numSigma * sigma[2]) {
-														if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
-														dataset[i].flagRFI[k] |= RFI_CALON_XX;
-														dataset[i].flagRFI[k + 1] |= RFI_CALON_XX;
-												}
-												if (fabs(diffyyon[k] - mean[3]) > numSigma * sigma[3]) {
-														if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
-														dataset[i].flagRFI[k] |= RFI_CALON_YY;
-														dataset[i].flagRFI[k + 1] |= RFI_CALON_YY;
-												}
-
-												// Cross correlations
-												if (fabs(diffxyoff[k] - mean[4]) > numSigma * sigma[4]) {
-														if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
-														dataset[i].flagRFI[k] |= RFI_CALOFF_XY;
-														dataset[i].flagRFI[k + 1] |= RFI_CALOFF_XY;
-
-												}
-												if (fabs(diffyxoff[k] - mean[5]) > numSigma * sigma[5]) {
-														if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
-														dataset[i].flagRFI[k] |= RFI_CALOFF_YX;
-														dataset[i].flagRFI[k + 1] |= RFI_CALOFF_YX;
-												}
-												if (fabs(diffxyon[k] - mean[6]) > numSigma * sigma[6]) {
-														if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
-														dataset[i].flagRFI[k] |= RFI_CALON_XY;
-														dataset[i].flagRFI[k + 1] |= RFI_CALON_XY;
-												}
-												if (fabs(diffyxon[k] - mean[7]) > numSigma * sigma[7]) {
-														if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
-														dataset[i].flagRFI[k] |= RFI_CALON_YX;
-														dataset[i].flagRFI[k + 1] |= RFI_CALON_YX;
-												}
-										}
-								}
-								/*if (fabs(dataset[i].RA - 71.390589) < 0.001) {
-								  sprintf(filename, "diff_%f_%f.dat%d", dataset[i].RA, dataset[i].DEC, diffcounter);
-								  FILE *diffoutput = fopen(filename, "w");
-
-								  if (diffoutput == NULL) {
-								  printf("diffoutput was null!!!!\n");
-								  exit(1);
-								  }
-
-								  for (k = lowchan; k < highchan - 1; k++) {
-								  if (freq[k] < minf || freq[k] > maxf) {
-								  fprintf(diffoutput, "%f %f %f %f %f %f %f %f ", fabs( diffxxoff[k]), fabs(diffyyoff[k]), fabs(diffxxon[k]), fabs(diffyyon[k]), fabs(diffxyoff[k]), fabs(diffyxoff[k]), fabs(diffxyon[k]), fabs(diffyxon[k]));
-								  for( j = 0; j < 8; j++) {
-								  if( dataset[i].flagRFI[k] != RFI_NONE ) 
-								  fprintf(diffoutput, "%f ", (sigma[j] * numSigma) );
-								  else 
-								  fprintf(diffoutput, "%f ", 0.0);
-
-								  }
-								  fprintf(diffoutput, "\n");
-								  }
-								  }
-								  fclose(diffoutput);
-								  }*/
-								 
-
-
-								diffcounter++;
-						} while (outlierFound);
-				
-					// find any points surrounded by RFI flags and flag middle point	
-			for (k = lowchan+1; k < highchan - 1; k++) {
-				if( dataset[i].flagRFI[k-1] != RFI_NONE && dataset[i].flagRFI[k+1] != RFI_NONE) {
-					dataset[i].flagRFI[k] |= RFI_CALOFF_XX;
+					diffxyoff[k] = dataset[i].caloff.xy[k + 1] - dataset[i].caloff.xy[k];
+					diffyxoff[k] = dataset[i].caloff.yx[k + 1] - dataset[i].caloff.yx[k];
+					diffxyon[k] = dataset[i].calon.xy[k + 1] - dataset[i].calon.xy[k];
+					diffyxon[k] = dataset[i].calon.yx[k + 1] - dataset[i].calon.yx[k];
 				}
 			}
 
-			/*if (fabs(dataset[i].RA - 71.390589) < 0.001) {
-					sprintf(filename, "diff_%f_%f.dat%d", dataset[i].RA, dataset[i].DEC, diffcounter);
+			do {
+				N = 0;
+				for (j = 0; j < 8; j++) {
+					mean[j] = 0.0;
+					sigma[j] = 0.0;
+				}
+
+				for (k = lowchan; k < highchan - 1; k++) {
+					if (dataset[i].flagRFI[k] == RFI_NONE && dataset[i].flagRFI[k + 1] == RFI_NONE && (freq[k] < minf || freq[k] > maxf) && (freq[k] < satlowfrq || freq[k] > sathighchan) )
+					{
+						mean[0] += diffxxoff[k];
+						mean[1] += diffyyoff[k];
+						mean[2] += diffxxon[k];
+						mean[3] += diffyyon[k];
+						mean[4] += diffxyoff[k];
+						mean[5] += diffyxoff[k];
+						mean[6] += diffxyon[k];
+						mean[7] += diffyxon[k];
+
+						N++;
+					}
+				}
+
+				mean[0] /= N;
+				mean[1] /= N;
+				mean[2] /= N;
+				mean[3] /= N;
+				mean[4] /= N;
+				mean[5] /= N;
+				mean[6] /= N;
+				mean[7] /= N;
+
+
+//				if (fabs(dataset[i].RA - 71.390589) < 0.001) {
+//					for (j = 0; j < 8; j++) {
+//						printf("mean %d = %f\n", j, mean[j]);
+//					}
+//				}
+
+				for (k = lowchan; k < highchan - 1; k++) {
+					if (dataset[i].flagRFI[k] == RFI_NONE && dataset[i].flagRFI[k + 1] == RFI_NONE && (freq[k] < minf || freq[k] > maxf)) {
+						sigma[0] += (diffxxoff[k] - mean[0]) * (diffxxoff[k] - mean[0]);
+						sigma[1] += (diffyyoff[k] - mean[1]) * (diffyyoff[k] - mean[1]);
+						sigma[2] += (diffxxon[k] - mean[2]) * (diffxxon[k] - mean[2]);
+						sigma[3] += (diffyyon[k] - mean[3]) * (diffyyon[k] - mean[3]);
+
+						sigma[4] += (diffxyoff[k] - mean[4]) * (diffxyoff[k] - mean[4]);
+						sigma[5] += (diffyxoff[k] - mean[5]) * (diffyxoff[k] - mean[5]);
+						sigma[6] += (diffxyon[k] - mean[6]) * (diffxyon[k] - mean[6]);
+						sigma[7] += (diffyxon[k] - mean[7]) * (diffyxon[k] - mean[7]);
+
+					}
+				}
+
+				for (j = 0; j < 8; j++) {
+					if (N > 1)
+						sigma[j] = sqrt(sigma[j] / (N - 1));
+					else sigma[j] = sqrt(sigma[j]);
+
+					//if (fabs(dataset[i].RA - 71.390589) < 0.001) {
+					//	printf("sigma %d = %f\n", j, sigma[j]);
+					//}
+				}
+
+				if (fabs(dataset[i].RA - 71.390589) < 0.001) {
+					sprintf(filename, "diff_%f_%f.dat%d", dataset[i].RA, dataset[i].DEC, diffcounter++);
 					diffoutput = fopen(filename, "w");
 
 					if (diffoutput == NULL) {
-							printf("diffoutput was null!!!!\n");
-							exit(1);
+						printf("diffoutput was null!!!!\n");
+						exit(1);
 					}
 
 					for (k = lowchan; k < highchan - 1; k++) {
-							if (freq[k] < minf || freq[k] > maxf) {
-									fprintf(diffoutput, "%f %f %f %f %f %f %f %f ", fabs( diffxxoff[k]), fabs(diffyyoff[k]), fabs(diffxxon[k]), fabs(diffyyon[k]), fabs(diffxyoff[k]), fabs(diffyxoff[k]), fabs(diffxyon[k]), fabs(diffyxon[k]));
-									for( j = 0; j < 8; j++) {
-											if( dataset[i].flagRFI[k] != RFI_NONE )
-													fprintf(diffoutput, "%f ", (sigma[j] * numSigma) );
-											else
-													fprintf(diffoutput, "%f ", 0.0);
-
-									}
-									fprintf(diffoutput, "\n");
-							}
+						fprintf(diffoutput, "%f %f %f %f %f %f %f %f ", diffxxoff[k], diffyyoff[k], diffxxon[k], diffyyon[k], diffxyoff[k], diffyxoff[k], diffxyon[k], diffyxon[k]);
+						if (dataset[i].flagRFI[k] != RFI_NONE || dataset[i].flagRFI[k + 1] != RFI_NONE)
+							fprintf(diffoutput, "%f\n", (sigma[0] * numSigma));
+						else fprintf(diffoutput, "%f\n", 0.0);
 					}
 					fclose(diffoutput);
-			}*/
-
-		
 				}
+
+
+				outlierFound = 0;
+				for (k = lowchan; k < highchan - 1; k++) {
+					if (freq[k] < minf || freq[k] > maxf) {
+						//if (dataset[i].flagRFI[k] == RFI_NONE && dataset[i].flagRFI[k + 1] == RFI_NONE) {
+
+						if (fabs(diffxxoff[k] - mean[0]) > numSigma * sigma[0]) {
+							if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
+							dataset[i].flagRFI[k] |= RFI_CALOFF_XX;
+							dataset[i].flagRFI[k + 1] |= RFI_CALOFF_XX;
+
+						}
+						if (fabs(diffyyoff[k] - mean[1]) > numSigma * sigma[1]) {
+							if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
+							dataset[i].flagRFI[k] |= RFI_CALOFF_YY;
+							dataset[i].flagRFI[k + 1] |= RFI_CALOFF_YY;
+						}
+						if (fabs(diffxxon[k] - mean[2]) > numSigma * sigma[2]) {
+							if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
+							dataset[i].flagRFI[k] |= RFI_CALON_XX;
+							dataset[i].flagRFI[k + 1] |= RFI_CALON_XX;
+						}
+						if (fabs(diffyyon[k] - mean[3]) > numSigma * sigma[3]) {
+							if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
+							dataset[i].flagRFI[k] |= RFI_CALON_YY;
+							dataset[i].flagRFI[k + 1] |= RFI_CALON_YY;
+						}
+
+						// Cross correlations
+						if (fabs(diffxyoff[k] - mean[4]) > numSigma * sigma[4]) {
+							if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
+							dataset[i].flagRFI[k] |= RFI_CALOFF_XX;
+							dataset[i].flagRFI[k + 1] |= RFI_CALOFF_XX;
+
+						}
+						if (fabs(diffyxoff[k] - mean[5]) > numSigma * sigma[5]) {
+							if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
+							dataset[i].flagRFI[k] |= RFI_CALOFF_YY;
+							dataset[i].flagRFI[k + 1] |= RFI_CALOFF_YY;
+						}
+						if (fabs(diffxyon[k] - mean[6]) > numSigma * sigma[6]) {
+							if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
+							dataset[i].flagRFI[k] |= RFI_CALON_XX;
+							dataset[i].flagRFI[k + 1] |= RFI_CALON_XX;
+						}
+						if (fabs(diffyxon[k] - mean[7]) > numSigma * sigma[7]) {
+							if (dataset[i].flagRFI[k] == RFI_NONE || dataset[i].flagRFI[k + 1] == RFI_NONE) outlierFound = 1;
+							dataset[i].flagRFI[k] |= RFI_CALON_YY;
+							dataset[i].flagRFI[k + 1] |= RFI_CALON_YY;
+						}
+
+						//}
+					}
+				}
+
+				//if (fabs(dataset[i].RA - 71.390589) < 0.001) {
+				//	printf("outlierfound is %d at RA %f\n", outlierFound, dataset[i].RA);
+			//	}
+			}
+			while (outlierFound);
 		}
+
+//		if (fabs(dataset[i].RA - 71.390589) < 0.001) {
+//			sprintf(filename, "diff_%f_%f.dat%d", dataset[i].RA, dataset[i].DEC, diffcounter++);
+//			diffoutput = fopen(filename, "w");
+//
+//			if (diffoutput == NULL) {
+//				printf("diffoutput was null!!!!\n");
+//				exit(1);
+//			}
+//
+//			for (k = lowchan; k < highchan - 1; k++) {
+//				fprintf(diffoutput, "%f %f %f %f %f %f %f %f ", diffxxoff[k], diffyyoff[k], diffxxon[k], diffyyon[k], diffxyoff[k], diffyxoff[k], diffxyon[k],
+//						diffyxon[k]);
+//				if (dataset[i].flagRFI[k] != RFI_NONE || dataset[i].flagRFI[k + 1] != RFI_NONE)
+//					fprintf(diffoutput, "%f\n", (sigma[0] * numSigma));
+//				else fprintf(diffoutput, "%f\n", 0.0);
+//			}
+//			fclose(diffoutput);
+//		}
+
+
+		// now do satellite frequency region
+		float satregionxx[400], satregionyy[400];
+		int RFI[400];
+
+		float min, max, cI[3], xaxis[400];
+		int m, nsigma = 2.5, order = 2, arraysize = 400;
+
+		for( m = 0; m < 400; m++) {
+			satregionxx[m] = dataset[i].calon.xx[3400 + m];
+			satregionyy[m] = dataset[i].calon.yy[3400 + m];
+		}
+
+		for( m = 0; m < 400; m++) {
+			RFI[m] = 0;
+			xaxis[m] = 3400 + m;
+		}
+
+		chebyshev_minmax(xaxis, arraysize, &min, &max);
+		chebyshev_normalize(xaxis, arraysize, min, max);
+		chebyshev_fit_sat( xaxis, satregionxx, arraysize, nsigma, cI, order, RFI, dataset[i].RA);
+
+
+		if (fabs(dataset[i].RA - 71.390589) < 0.001) {
+			sprintf(filename, "fit_%f_%f.dat", dataset[i].RA, dataset[i].DEC);
+			diffoutput = fopen(filename, "w");
+
+			if (diffoutput == NULL) {
+				printf("diffoutput was null!!!!\n");
+				exit(1);
+			}
+
+			int k = 0;
+			for (k = 0; k < 400; k++) {
+				//fprintf(diffoutput, "%f ", xaxis[k] );
+				fprintf(diffoutput, "%f ", satregionxx[k] );
+
+				if ( RFI[k] == 1 )
+					fprintf(diffoutput, "%f\n", 1.0);
+				else fprintf(diffoutput, "%f\n", 0.0);
+			}
+			fclose(diffoutput);
+		}
+
+		for (m = 0; m < 400; m++) {
+
+			// apply RFI flags
+			if( RFI[m] == 1 ) {
+				dataset[i].flagRFI[3400 + m] |= RFI_CALON_XX;
+			}
+
+			// reset RFI flags for YY
+			RFI[m] = 0;
+			xaxis[m] = 3400 + m;
+
+		}
+
+		chebyshev_minmax(xaxis, arraysize, &min, &max);
+		chebyshev_normalize(xaxis, arraysize, min, max);
+		chebyshev_fit_sat( xaxis, satregionyy, arraysize, nsigma, cI, order, RFI, dataset[i].RA);
+
+		// translate array values into RFI flags
+		for (m = 0; m < 400; m++) {
+			if (RFI[m] == 1) {
+				dataset[i].flagRFI[3400 + m] |= RFI_CALON_YY;
+			}
+		}
+
+
+
+	}
+
+
+
 }
 
 
@@ -678,6 +753,7 @@ void rfi_detection_time_domain1(const char *field, SpecRecord dataset[], int siz
 	printf("!!! Found %d RFI\n", rfi_count);
 }
 
+
 void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int size, int lowchan, int highchan, float numSigma, float hidrogenfreq, float hidrogenband, float freq[]) {
 // average
 	int i, k, N, j, cur = 0;
@@ -919,6 +995,8 @@ void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int siz
 	//printf("!!! Found %d RFI points in %d channels and %d outliers\n", rfi_count, rfi_chancount, outliercount);
 }
 
+
+
 void rfi_detection_time_domain3(const char *field, SpecRecord dataset[], int size, int lowchan, int highchan, float numSigma, float hidrogenfreq,
 		float hidrogenband, float freq[]) {
 // difference
@@ -1034,4 +1112,38 @@ void rfi_ann(SpecRecord dataset[], int size, int lowchan, int highchan, float fr
 	}
 
 	fclose(file);
+
+	for (i = 0; i < size; i++) {
+	                FILE *diffoutput; // = fopen("rfi_signal.ann", "w");
+	                char filename[50];
+
+	                if (fabs(dataset[i].RA - 71.390589) < 0.05) {
+	                        sprintf(filename, "diff_%f_%f.sig", dataset[i].RA, dataset[i].DEC );
+
+	                        if (diffoutput == NULL) {
+	                                printf("diffoutput was null!!!!\n");
+	                                exit(1);
+	                        }
+
+	                        diffoutput = fopen( filename, "w" );
+
+	                        for (k = lowchan; k < highchan - 1; k++) {
+	                                if( dataset[i].flagRFI[k] == RFI_NONE ) {
+	                                	fprintf(diffoutput, "%d %f %f %f %f %f %f %f %f ", k, dataset[i].calon.xx[k], dataset[i].calon.xy[k], dataset[i].calon.yx[k], dataset[i].calon.yy[k], dataset[i].caloff.xx[k], dataset[i].calon.xy[k], dataset[i].calon.yx[k], dataset[i].calon.yy[k] );
+					}
+	                                /*if( dataset[i].flagRFI[k] != RFI_NONE ) {
+	                                        fprintf( diffoutput, "1 " );
+	                                }
+	                                else {
+	                                        fprintf(diffoutput, "0 " );
+	                                }*/
+
+	                                fprintf(diffoutput, "\n");
+
+	                        }
+	                        fclose(diffoutput);
+
+	                }
+
+	        }
 }

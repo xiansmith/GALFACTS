@@ -614,3 +614,79 @@ void chebyshev_fit_dec(float *X, float *Y, int size, float nsigma, float *C, int
 }
 
 
+void chebyshev_fit_sat(float *X, float *Y, int size, float nsigma, float *C, int order, int *RFI, float RA)
+{
+/*
+ satellite RFI fitting function: fit + outlier removal
+*/
+
+	int i, M, outlier, outliercount = 0;
+	float mean, sigma;
+
+	float *x = (float*)malloc(size * sizeof(float));
+	float *y = (float*)malloc(size * sizeof(float));
+	float *p = (float*)malloc(size * sizeof(float));
+	float *diff = (float*)malloc(size * sizeof(float));
+	for(i=0; i<size; i++){x[i] = X[i]; y[i] = Y[i];}
+
+	do
+		{
+		//chebyshev_cholesky(order, C, size, x, y);
+		chebyshev_qrgsm(order, C, size, x, y);
+		mean = 0.0;
+		for(i=0; i<size; i++)
+			{
+			p[i] = chebyshev_eval(x[i], C, order);
+			diff[i] = y[i] - p[i];
+			mean += diff[i];
+			}
+		mean = mean/size;
+
+		sigma = 0.0;
+		for(i=0; i<size; i++)
+			{
+			diff[i] = diff[i] - mean;
+			sigma += diff[i]*diff[i];
+			}
+		sigma = nsigma*sqrt(sigma/size);
+
+		//printf("size = %d ", size );
+		/*if ( fabs(RA - 71.390589) < 0.001 )
+		{
+		char filename[50];
+		sprintf(filename, "fit_%f.dat", RA);
+		FILE *fit = fopen( filename , "w" );
+		for(i=0; i<size; i++)
+		{
+			fprintf(fit, "%f", diff[i] );
+			fprintf(fit, "\n");
+		}
+		fclose( fit );
+		}
+		*/
+
+		outlier = 0;
+		for(i=0; i<size; i++)
+			{
+			if(fabs(diff[i]) > sigma)
+				{
+				outlier = 1;
+				outliercount++;
+				RFI[i] = 1.0;
+				size --;
+				x[i] = x[size];
+				y[i] = y[size];
+				}
+			}
+		}while(outlier && size > order);
+	free(x);
+	free(y);
+	free(diff);
+	free(p);
+
+
+
+	//printf("Chevy outlier = %d\n", outliercount );
+}
+
+

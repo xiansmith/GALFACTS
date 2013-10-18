@@ -219,7 +219,7 @@ void grid_data(const FluxWappData *wappdata, const MapMetaData *md, float * data
 		for(i=0;i<n1;i++) 
 			{
 			float w = weight[i+j*n1];
-			if(w > 0.0)
+			if(w > 2.0)
 				{
 				dataI[i+j*n1] /= w;
 				dataQ[i+j*n1] /= w;

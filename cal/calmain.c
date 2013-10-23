@@ -306,7 +306,6 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 		calculate_stokes(dataset, numRecords, lowchan, highchan, RFIF, calskyfiles, Tcalx_s, Tcaly_s, uvDenoising, uvDenoisingTau, uvDenoisingLambda,r,r+1);
 	}
 		read_clock(); start_clock();
-		exit(0);
 		printf("Writing channel data to single file\n");
 		write_binary_channel_data_single_file(dataset, numRecords, lowchan, highchan);
 		// old method: write_binary_channel_data(dataset, numRecords, lowchan, highchan);

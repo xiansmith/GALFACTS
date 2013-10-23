@@ -176,7 +176,7 @@ static void compute_final_stokes(SpecRecord * pRec, StokesSet * TrueSky, int RFI
 			pRec->stokes.V[i] = NAN;
 			}
 		}
-	printf("Chan 1000 Stokes I %f\n",pRec->stokes.I[1000]);
+	//printf("Chan 1000 Stokes I %f\n",pRec->stokes.I[1000]);
 }
 //----------------------------------------------------------------------------------------------------------------------------------------
 

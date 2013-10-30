@@ -300,8 +300,8 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 		moving_average_filter(Tcalx_s, MAX_CHANNELS, 100);
 		moving_average_filter(Tcaly_s, MAX_CHANNELS, 100);
 
-	        //if(!(r%1000))
-        	//        write_tcal(Tcalx_s,Tcaly_s,r,0,MAX_CHANNELS);
+	        if(!(r%1000))
+        	        write_tcal(Tcalx_s,Tcaly_s,r,0,MAX_CHANNELS);
 
 		calculate_stokes(dataset, numRecords, lowchan, highchan, RFIF, calskyfiles, Tcalx_s, Tcaly_s, uvDenoising, uvDenoisingTau, uvDenoisingLambda,r,r+1);
 	}

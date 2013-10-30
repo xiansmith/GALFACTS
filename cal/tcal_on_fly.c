@@ -66,7 +66,7 @@ void write_tcal(float* tcalxx,float* tcalyy, int r, int low, int high)
 {
 	char filename[64];
 	int i;
-	sprintf(filename,"Tcalw_%04i.dat",r);
+	sprintf(filename,"Tcalw_%04i.new",r);
         FILE * tcalfile = fopen(filename,"w");
         if(tcalfile == NULL)
         {

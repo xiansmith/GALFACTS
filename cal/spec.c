@@ -72,6 +72,12 @@ int read_datafile(FILE * pFile, SpecRecord ** pDataset, int beam, float RAmin,fl
 		numRead += fread_record(rec, pFile, beam);
 		//printf("%f %%\r", numRead*100.0/numExpected);
 		rec->RA *= 15.0; //convert to degrees
+	
+		// for N4 and S4, wrap RA around 24 hours, minimum RA minus an hour should eliminate
+		// data near edges from
+		if( rec->RA <= (RAmin - 15) ) {
+ 			rec->RA += 360.0;
+		}
 
 		//set data outset imaging window as bad
 	        if(rec->DEC > DECmax || rec->DEC < DECmin || rec->RA > RAmax || rec->RA < RAmin)
@@ -136,7 +142,8 @@ static int fread_record(SpecRecord * rec, FILE * datafile, int beam)
 		default:
 				printf("WARN: invalid beam (%i) specified.\n", beam);
 		}
-    
+   
+ 
     rec->AST = block.centralBeam.atlantic_solar_time_now_in_sec;
 
     //read the data

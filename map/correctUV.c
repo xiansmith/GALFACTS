@@ -19,8 +19,16 @@ void correct_UV(FluxWappData * wappdata, int chan, MapMetaData *md)
 		float Uleak[MAX_CHANNELS], Vleak[MAX_CHANNELS];
 		FILE *epsphi;
 		char filename[64];
-		sprintf(filename,"UVleakage%d.dat",d%7);
+                if(!strcmp(wappdata->wapp,"multibeam"))
+		{
+			sprintf(filename,"UVleakage%d.dat",d%7);
+		}
+		else
+		{
+			sprintf(filename,"UVleakage%c.dat",wappdata->wapp[4]);
+		}
 		epsphi = fopen(filename,"r");
+		//printf("Filename :%s\n",filename);
 		if(epsphi == NULL)
 		{
 			printf("ERROR: unable to open file %s\n", filename);

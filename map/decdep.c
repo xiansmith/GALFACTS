@@ -5,7 +5,7 @@
 #include "decdep.h"
 #include "chebyshev.h"
 //----------------------------------------------------------------------------------------------------------------------------------------
-static void day_dec_dependence(FluxWappData * wappdata, int day, int order, int chan, float *cIc, float *cQc, float *cUc, float *cVc, int avg)
+static void day_dec_dependence(FluxWappData * wappdata, int day, int beam, int order, int chan, float *cIc, float *cQc, float *cUc, float *cVc, int avg)
 {
 	int Hchan = 2752; // hard wired!!!
 	int r, N, R, n, navg;
@@ -16,9 +16,11 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int order, int 
 	float min, max, DEC, nsigma = 2.5;
 	float cI[order + 1], cQ[order + 1], cU[order + 1], cV[order + 1];
 	char decrmfilename[50];
-	sprintf(decrmfilename, "decrm/decremoval%d.dat", day);
+	//sprintf(decrmfilename, "decrm/decremoval%d.dat", day);
 
 	FluxDayData * daydata = &wappdata->daydata[day];
+	sprintf(decrmfilename, "%s/beam%d/decremoval.dat", daydata->mjd,beam);
+
 	R = daydata->numRecords;
 
 	float *x = (float*) malloc(R * sizeof(float));
@@ -30,7 +32,7 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int order, int 
 // not doing average image, read coefficients from a file
 // and apply them
 	if (chan) {
-		printf(" from file\n");
+		//printf(" from file\n");
 		FILE *decfile = fopen(decrmfilename, "r");
 		char line[500];
 		int i = 0, num = 0;
@@ -170,7 +172,7 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int order, int 
 	}
 	else {
 		// we are processing average image, create coefficients and write to file
-		printf(" and write to file\n");
+		//printf(" and write to file\n");
 
 		N = 0;
 		for (r = 0; r < R; r++) {
@@ -223,7 +225,7 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int order, int 
 		}
 
 		// finished applying correction, write the coefficients to file
-		mkdir("decrm", 0777);
+		//mkdir("decrm", 0777);
 		FILE *decfile = fopen(decrmfilename, "w"); // write files to decrm/decremovalN.dat
 		if (decfile != NULL) {
 			int i = 0;
@@ -404,11 +406,18 @@ else if(chan >= cal_low && chan <= cal_high)
 //-------------------------------------------------------------------------------
 void calculate_dec_dependence(FluxWappData * wappdata, int order, int chan, float *cIc, float *cQc, float *cUc, float *cVc, int avg)
 {
-int d;
+int d,beam;
 for(d=0; d<wappdata->numDays; d++) 
 	{
-	printf("Day %d of %d", d+1, wappdata->numDays);
-	day_dec_dependence(wappdata, d, order, chan, cIc, cQc, cUc, cVc, avg);
+	//printf("Day %d of %d", d+1, wappdata->numDays);
+        if(!strcmp(wappdata->wapp,"multibeam"))
+	{
+		beam = d%7;
+	}
+	else
+		beam = atoi(&wappdata->wapp[4]);
+
+	day_dec_dependence(wappdata, d, beam, order, chan, cIc, cQc, cUc, cVc, avg);
 	}
 }
 //-------------------------------------------------------------------------------

@@ -293,12 +293,10 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 	        	Tcalx_s[k] = Tcalx[k];
 	        	Tcaly_s[k] = Tcaly[k];
 	    	}
-	        //if(!(r%1000))
-        	//       write_tcal(Tcalx_s,Tcaly_s,r,0,MAX_CHANNELS);
-		//norm_one_tcal(lowchan,highchan,badchannels,Tcalx_s,Tcaly_s);
+
 		norm_one_tcal(0,MAX_CHANNELS,badchannels,Tcalx_s,Tcaly_s);
-		moving_average_filter(Tcalx_s, MAX_CHANNELS, 100);
-		moving_average_filter(Tcaly_s, MAX_CHANNELS, 100);
+		moving_average_filter(Tcalx_s, MAX_CHANNELS, 20);
+		moving_average_filter(Tcaly_s, MAX_CHANNELS, 20);
 
 	        if(!(r%1000))
         	        write_tcal(Tcalx_s,Tcaly_s,r,0,MAX_CHANNELS);

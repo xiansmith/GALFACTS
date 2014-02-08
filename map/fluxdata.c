@@ -294,11 +294,11 @@ int fluxdaydata_read_binary_single_file(const char *field, FluxDayData *daydata,
 		//exit(1);
 	}
 
-	printf( "Get data from single binary file. Fetching channel %d at position %d for %d numRecords\n", cfgChan, cfgStart, cfgNumRecords);
+//	printf( "Get data from single binary file. Fetching channel %d at position %d for %d numRecords\n", cfgChan, cfgStart, cfgNumRecords);
 
 	// we could assume numRecords never changes, but just in case
 	numRecords = cfgNumRecords;
-	printf("numRecords after is %d\n", numRecords );
+//	printf("numRecords after is %d\n", numRecords );
 
 	if(daydata->records != NULL) free(daydata->records);
 	daydata->records = (FluxRecord*) malloc(numRecords * sizeof(FluxRecord));
@@ -475,10 +475,10 @@ if(field[0] == 'N' && field[1] == '1')
     daydata->RAmax = RAmax;
   
 	// check if not closed to avoid leaking 
-	if ( fcntl(fileno(baddatafile), F_GETFD) != -1 )  {
+/*	if ( fcntl(fileno(baddatafile), F_GETFD) != -1 )  {
 		fclose(baddatafile);
 	}
-	
+*/	
 	return k;
 }
 /**********************************************************************/
@@ -534,6 +534,7 @@ for(m=0; m<wappdata->numDays; m++)
 		else
 		{
 			j = atoi(&wappdata->wapp[4]);
+			sprintf(beamno,"beam%d",j);
 			if(id == CLEAN)
 			{
 				sprintf(filename, "%s/%s/balance.dat", daydata->mjd, wappdata->wapp);
@@ -563,7 +564,7 @@ for(m=0; m<wappdata->numDays; m++)
 				}
 				else
 				{
-					printf("Error. Looking for average.dat for average image, failed. Exitting.\n");
+					printf("Error. Looking for %s for average image, failed. Exitting.\n",filename);
 					exit(1);
 
 				}

@@ -7,4 +7,6 @@
 enum ShowProgress {NONE,I,Q,U,V,ALL};
 void balance_data(FluxWappData * wappdata, int day_order, int scan_order, float loop_gain, float loop_epsilon, int bw_order);
 void find_intersections(FluxWappData *wappdata);
+void write_balance_data(FluxWappData * wappdata, int day_order, int scan_order, float loop_gain, float loop_epsilon, int order);
+void read_apply_balance_data( FluxWappData * wappdata, int day_order, int scan_order, float loop_gain, float loop_epsilon, int bw_order );
 #endif

@@ -259,8 +259,7 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int beam, int o
 		}
 		else {
 			// can not recover
-			printf("couldn't write decremoval.dat file\n");
-			exit(1);
+			printf("Likely hit bad beam. Couldn't write decremoval.dat file to file %s\n", decrmfilename);
 		}
 
 	} // end if (avg == 0)

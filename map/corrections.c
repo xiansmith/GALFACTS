@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 #include "corrections.h"
 
 //contains all the corrections derived from the CALIBRATOR sources. Since the multiple steps in the correction all rely on original data its better to deal with them all at a same place. Otherwise it is messy to pass the same data back and forth between different functions

@@ -13,6 +13,7 @@
 #include "correctUV.h"
 #include "pacorr.h"
 #include "spec_corr.h"
+#include "corrections.h"
 // MAPMAIN with Chebyshev fitting
 
 int multibeam; 

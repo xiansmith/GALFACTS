@@ -170,7 +170,19 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 			determine_scan_lines(wappdata, md->decmin, md->decmax);	
 			printf("Finding crossing points ...\n"); 
 			find_intersections(wappdata);							
-			
+			printf("Performing basketweaving from file...\n");
+			if( chan == 0 ) {
+					write_balance_data( wappdata, md->day_iter, md->scan_iter, md->balgain, md->balepsilon, md->bw_order);
+					//read_apply_balance_data( wappdata, md->day_iter, md->scan_iter, md->balgain, md->balepsilon, md->bw_order );
+			}
+			else {
+					read_apply_balance_data( wappdata, md->day_iter, md->scan_iter, md->balgain, md->balepsilon, md->bw_order );
+					balance_data(wappdata, md->day_iter, md->scan_iter, md->balgain, md->balepsilon, md->bw_order);
+
+			}
+
+
+	
 			printf("Performing basketweaving...\n"); 
 			balance_data(wappdata, md->day_iter, md->scan_iter, md->balgain, md->balepsilon, md->bw_order);
 		

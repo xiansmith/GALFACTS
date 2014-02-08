@@ -9,83 +9,43 @@ void correct_UV(FluxWappData * wappdata, int chan, MapMetaData *md)
 	//this is because the table contains MAX_CHANNEL values
 	//For channel averages should we average the table values ??
 
-	int d,i;
+	int d;
+	int i = 0, j = 0, k = 0;
+
+	float Ulk, Vlk;
+//	float Qlk[7];
+	int cnt;
+
 	for(d=0; d<wappdata->numDays; d++)
         {
 		FluxDayData * daydata = &wappdata->daydata[d];
 
-		//read the table
-		//float epsilon[MAX_CHANNELS], phi[MAX_CHANNELS];
-		float Uleak[MAX_CHANNELS], Vleak[MAX_CHANNELS];
-		FILE *epsphi;
-		char filename[64];
-                if(!strcmp(wappdata->wapp,"multibeam"))
-		{
-			sprintf(filename,"UVleakage%d.dat",d%7);
-		}
-		else
-		{
-			sprintf(filename,"UVleakage%c.dat",wappdata->wapp[4]);
-		}
-		epsphi = fopen(filename,"r");
-		//printf("Filename :%s\n",filename);
-		if(epsphi == NULL)
-		{
-			printf("ERROR: unable to open file %s\n", filename);
-			return;
-		}
-		else
-		{
-			for(i = 0; i < MAX_CHANNELS; i++)
-			{
-			//fscanf(epsphi,"%f %f",&epsilon[i],&phi[i]);
-			fscanf(epsphi,"%f %f",&Uleak[i],&Vleak[i]);
-			}
-			fclose(epsphi);
-
-			if(md->avg)
-			{	
-				int j;
-				//sprintf(filename,"UVleakage%d_avg%04i.dat",d%7,chan);
-				//epsphi = fopen(filename,"w");
-				for(j = md->avg_lowchan;j < md->avg_highchan;j+=md->avg)
-				{
-					int k;
-					//int chn = j;
-					for(k = j+1;k<j+md->avg;k++)
-					{
-						Uleak[j]+=Uleak[k];
-						Vleak[j]+=Vleak[k];
-					}
-					Uleak[j]/=md->avg;
-					Vleak[j]/=md->avg;
-				}
-				//fprintf(epsphi,"%d %f %f\n",j,Uleak[j],Vleak[j]);
-				//fclose(epsphi);
-			}
-			if( chan == 0 ) {
-				int k = 0;
-				for(k = md->avg_lowchan;k< md->avg_highchan;k++)
-				{
-					Uleak[0]+=Uleak[k];
-					Vleak[0]+=Vleak[k];
-				}
-				Uleak[0]/=(md->avg_highchan - md->avg_lowchan);
-				Vleak[0]/=(md->avg_highchan - md->avg_lowchan);
-				//printf("averaged Uleak is %f Vleak is %f\n", Uleak[0], Vleak[0] );
-			}
-
-			//printf("INFO: read file %s\n", filename);
-		}
-
-		//apply the corrections
 		int r = daydata->numRecords;
+		Ulk = Vlk = 0.0;
+		cnt = 0;
+
 		for(i=0;i<r;i++)
 		{
-			//daydata->records[i].stokes.U -= 2*epsilon[chan]*daydata->records[i].stokes.I*cos(phi[chan]);
-			//daydata->records[i].stokes.V -= 2*epsilon[chan]*daydata->records[i].stokes.I*sin(phi[chan]);
-			daydata->records[i].stokes.U -= daydata->records[i].stokes.I*Uleak[chan];
-			daydata->records[i].stokes.V -= daydata->records[i].stokes.I*Vleak[chan];
+			if( daydata->records[i].RA < 202.70 || daydata->records[i].RA > 202.80 || daydata->records[i].DEC < 30.42 ||  daydata->records[i].DEC > 30.58)
+			{
+			Ulk =  Ulk + daydata->records[i].stokes.U/daydata->records[i].stokes.I;
+			Vlk =  Vlk + daydata->records[i].stokes.V/daydata->records[i].stokes.I;
+			//Qlk[b] =  Qlk[b] + daydata->records[i].stokes.Q/daydata->records[i].stokes.I;
+			cnt++;
+			}
+                }
+
+		if(cnt)
+		{
+			Ulk/=cnt;
+			Vlk/=cnt;
 		}
-        }
+
+		for(i=0;i<r;i++)
+		{
+			daydata->records[i].stokes.U -=  Ulk*daydata->records[i].stokes.I;
+			daydata->records[i].stokes.V -=  Vlk*daydata->records[i].stokes.I;
+                }
+	}
+
 }

@@ -322,10 +322,10 @@ if(num_delta > order)
 		coeffs->coeffsV[i] += cV[i];
 	}
 
-	if( day == 0 ){
-		printf("Day 0: %f %f %f\n", cI[0], cI[1], cI[2] );
-		printf("Day 0 total: %f %f %f\n", coeffs->coeffsI[0], coeffs->coeffsI[1], coeffs->coeffsI[2] );
-	}
+	//if( day == 0 ){
+//		printf("Day 0: %f %f %f\n", cI[0], cI[1], cI[2] );
+//		printf("Day 0 total: %f %f %f\n", coeffs->coeffsI[0], coeffs->coeffsI[1], coeffs->coeffsI[2] );
+//	}
 
 
 	//printf( "COEFF %f %f %f\n", cI[0], cI[1], cI[2]);

@@ -1,0 +1,355 @@
+#include "fluxdata.h"
+#include "jsd/jsd_futil.h"
+#include "psfmodel.h"
+#include <gsl/gsl_multifit.h>
+
+#undef I
+
+int main(int argc, char * argv[])
+{
+	int linecount,j,k,counter,count1,apcount,order,num_iter,beamno,apfield;
+	FluxRecord * rec;
+	char filename[64+1],header[80+1];
+	FILE * beammodelfile,*errfile,*psffile;
+	dftdata *imgdata, *apdata;
+	double *mod_img,*phase_img,*mod_ap,*phase_ap,*modn_ap, *pct_err, *psf_orig;
+	double mse,denom,denom1,maxerr,chisq;
+	float *x,*y,*znk,*weight,*znk1,*znk2,apradius,sigma,temp;
+	gsl_matrix *x_gsl, *cov;
+	gsl_vector *y_gsl, *c;
+	
+	if (argc != 7) {
+		printf("Insufficient number of arguments");
+		return EXIT_FAILURE;
+	} 
+	else
+	{
+		beamno = atoi(argv[1]);
+		num_iter = atoi(argv[2]);
+		apradius = atof(argv[3]);
+		apfield = atoi(argv[4]);
+		order = atoi(argv[5]);
+		sigma = atoi(argv[6]);
+	}
+
+	sprintf(filename, "beam%d_model/beam%d_model050.dat",beamno,beamno); ///for the time being
+//	sprintf(filename, "psftestcase.dat"); ///for the time being
+	beammodelfile = fopen(filename, "r");
+        fgets(header, 80, beammodelfile);
+	linecount = jsd_line_count(beammodelfile);
+	printf("Beginning PSF modelling.\n");
+	printf("%d datapoints in the beam model.\n",linecount);
+
+
+	rec = (FluxRecord *)malloc(sizeof (FluxRecord) * linecount);
+	imgdata = (dftdata *)malloc(sizeof (dftdata) * linecount);
+	apdata = (dftdata *)malloc(sizeof (dftdata) * linecount);
+	mod_img = (double *)malloc(sizeof (double) * linecount);
+	phase_img = (double *)malloc(sizeof (double) * linecount);
+	mod_ap = (double *)malloc(sizeof (double) * linecount);
+	phase_ap = (double *)malloc(sizeof (double) * linecount);
+	modn_ap = (double *)malloc(sizeof (double) * linecount);
+	pct_err = (double *)malloc(sizeof (double) * linecount);
+	psf_orig = (double *)malloc(sizeof (double) * linecount);
+
+	denom = 0.0;
+	denom1 = 0.0;
+	apcount = 0;
+
+//	sprintf(filename,"root_psf_%d.dat",beamno);
+//	psffile = fopen(filename,"w");
+//	fprintf(psffile,"#x y rootI\n");
+	printf("Reading beam model.\n");
+	for(j = 0;j < linecount;j++)
+	{
+//		fscanf(beammodelfile,"%f %f %lf %lf",&rec[j].RA,&rec[j].DEC,&rec[j].stokes.I,&rec[j].stokes.Q);
+		fscanf(beammodelfile,"%f %f %f %lf %lf %lf %lf",&rec[j].RA,&rec[j].DEC,&rec[j].AST,&rec[j].stokes.I,&rec[j].stokes.Q,\
+		&rec[j].stokes.U, &rec[j].stokes.V);
+
+		if(rec[j].stokes.I < 0) //for the time being taking out any DC component
+		{
+			mod_img[j] = 0;
+			psf_orig[j] = 0.0;			
+		}
+		else
+		{
+			mod_img[j] = sqrt(rec[j].stokes.I);
+//			mod_img[j] = rec[j].stokes.I;  
+			psf_orig[j] = rec[j].stokes.I;
+		}
+//		denom1 += mod_img[j]*mod_img[j];
+		
+		//setting up img coord in theta radians
+		imgdata[j].x = rec[j].RA/57.3; //coordinates in radians
+		imgdata[j].y = rec[j].DEC/57.3;	
+//		fprintf(psffile,"%f %f %lf\n",imgdata[j].x,imgdata[j].y,mod_img[j]);
+
+		//setting up aperture coord in lambdas	
+		apdata[j].x = (rec[j].RA/0.15)*apfield; //for the time being 500 lambda * 500 lambda grid for aperture
+		apdata[j].y = (rec[j].DEC/0.15)*apfield; //for the time being
+
+		//setting up modulus of aperture (1 within the aperture 0 outside), setting up random phase for gerchberg saxton algorithm
+/*		if((apdata[j].x*apdata[j].x+apdata[j].y*apdata[j].y) < apradius*apradius) //todo remove hard coding
+		{
+//			if((apdata[j].x*apdata[j].x+apdata[j].y*apdata[j].y) < 40000) 	//obstructed aperture		
+//				mod_ap[j] = 0.5;
+//			else
+//				mod_ap[j] = 1;
+			mod_ap[j] = 1.0;
+//			mod_ap[j] =  (RAND_MAX-rand())/(RAND_MAX);
+//			printf("%f\n",mod_ap[j]);
+//			mod_ap[j] = 1*apradius/(apradius-200)-(apdata[j].x*apdata[j].x+apdata[j].y*apdata[j].y)/(apradius*apradius); //triangular aperture
+//			mod_ap[j] = exp(-(apdata[j].x*apdata[j].x+apdata[j].y*apdata[j].y)/(sigma*sigma)); //gaussian aperture
+//			phase_ap[j] = ((rand()-RAND_MAX/2)*M_PI)/(RAND_MAX/2);
+//			printf("%f\n",phase_ap[j]);
+			phase_ap[j] = 0.0;
+//			zernike_pt(3,1,apdata[j].x,apdata[j].y,&temp,apradius);
+//			phase_ap[j] = 0-temp/5;
+//			denom++;
+			apcount++;
+		}
+		else
+		{
+			mod_ap[j] = 0.0;
+			phase_ap[j] = 0.0;
+		}
+
+		//calculating modulus in aperture plane from modulus and phase generated above
+		apdata[j].z = mod_ap[j]*cexp(_Complex_I*phase_ap[j]);
+//		printf("%f+i%f\n",creal(apdata[j].z),cimag(apdata[j].z));
+*/
+
+		imgdata[j].z = mod_img[j];
+	}
+//	fclose(psffile);
+	//hack
+	idft2d(imgdata,linecount,apdata);
+	exit(1);
+
+
+	//hack	
+/*	znk = (float*)malloc(sizeof(float)*apcount);
+	x = (float*)malloc(sizeof(float)*apcount);
+	y = (float*)malloc(sizeof(float)*apcount);
+	counter = 0;
+	for(j = 0;j < linecount;j++)
+	{
+		if((apdata[j].x*apdata[j].x+apdata[j].y*apdata[j].y) < 250000) //todo remove hard coding
+		{
+			x[counter]=apdata[j].x;
+			y[counter]=apdata[j].y;
+			counter++;
+		}
+	}
+	counter = 0;
+	zernike(3,1,x,y,apcount,znk,500);
+	for(j = 0;j < linecount;j++)
+	{
+		if((apdata[j].x*apdata[j].x+apdata[j].y*apdata[j].y) < 250000) //todo remove hard coding
+		{
+//			mod_ap[j] = 1.0;
+			phase_ap[j] = znk[counter];
+			counter++;
+		}
+		apdata[j].z = mod_ap[j]*cexp(_Complex_I*phase_ap[j]);
+	}
+*/	//hack
+
+//	printf("Denom1 %lf\n",denom1);
+
+	fclose(beammodelfile);
+	free(rec);
+	
+//	errfile = fopen("MSE.dat","w");	
+//	fprintf(errfile,"#Img Ap\n");
+	counter = 0;
+
+	//Gerchberg Saxton main loop
+	printf("Starting Gerchberg-Saxton algorithm.\n");
+	do
+	{
+//		printf("Fourier transforming the aperture plane data.\n");
+		dft2d(apdata,linecount,imgdata);
+
+		mse = 0.0;
+		maxerr = 0.0;
+		//retreiving phase from the fourier transform and setting up for inverse transform
+		for(j = 0;j < linecount;j++)
+		{
+			phase_img[j] = carg(imgdata[j].z);
+//			phase_img[j] = 0;
+//			count1 = 0;
+//			if(mod_img[j] != 0)	
+//			{
+//				mse += (mod_img[j] - cabs(imgdata[j].z))*(mod_img[j] - cabs(imgdata[j].z));
+//				count1++;
+//			}
+			mse += (psf_orig[j]-cabs(imgdata[j].z)*cabs(imgdata[j].z))*(psf_orig[j]-cabs(imgdata[j].z)*cabs(imgdata[j].z));
+			if(maxerr < fabs(psf_orig[j] - cabs(imgdata[j].z)*cabs(imgdata[j].z)))
+				maxerr = fabs(psf_orig[j] - cabs(imgdata[j].z)*cabs(imgdata[j].z));
+//			pct_err[j] = (cabs(imgdata[j].z) - mod_img[j])*100/mod_img[j];
+			imgdata[j].z = mod_img[j]*cexp(_Complex_I*phase_img[j]);
+		}
+//		printf("Max error %lf\n",maxerr);
+		printf("Iteration %d, MSE:%1.9f MaxErr:%1.9f\n",counter,mse,maxerr);
+//		fprintf(errfile,"%lf ",mse/denom1);
+
+//		printf("Inverse Fourier transforming the intensity data.\n");
+		idft2d(imgdata,linecount,apdata);
+
+//		mse = 0.0;
+		//retreiving phase from the fourier transform and calculating mse
+		for(j = 0;j < linecount;j++)
+		{
+			if((apdata[j].x*apdata[j].x+apdata[j].y*apdata[j].y) < apradius*apradius) //todo remove hard coding
+			{
+//				phase_ap[j] = carg(apdata[j].z);
+				modn_ap[j] = cabs(apdata[j].z);
+			}
+			else	
+//				phase_ap[j] = 0;
+				modn_ap[j] = 0;
+
+//			modn_ap[j] = cabs(apdata[j].z);
+//			mse = mse + (mod_ap[j]-modn_ap[j])*(mod_ap[j]-modn_ap[j]);
+//			mse = mse/denom;
+		}
+
+//		printf("Mean squared error (aperture plane) after %d iteration %lf\n",counter,mse);
+//		fprintf(errfile,"%lf\n",mse);
+
+		//setup new aperture plane
+		for(j = 0;j < linecount;j++)
+		{
+//			apdata[j].z = mod_ap[j]*cexp(_Complex_I*phase_ap[j]);
+			apdata[j].z = modn_ap[j]*cexp(_Complex_I*phase_ap[j]);
+		}
+		counter++;
+
+	}while(counter < num_iter);
+
+	sprintf(filename,"beam%d_psf.dat",beamno);
+	psffile = fopen(filename,"w");
+	fprintf(psffile,"#x y rootI I err\n");
+	dft2d(apdata,linecount,imgdata);
+	for(j = 0;j < linecount;j++)
+	{
+	 fprintf(psffile,"%f %f %lf %lf %lf\n",imgdata[j].x,imgdata[j].y,cabs(imgdata[j].z),pow(cabs(imgdata[j].z),2),pow(cabs(imgdata[j].z),2)-psf_orig[j]);
+	}
+	fclose(psffile);
+		
+/*	fprintf(errfile,"#PCT ERR\n");
+	for(j = 0;j < linecount;j++)
+	{
+		fprintf(errfile,"%lf %lf %lf\n",imgdata[j].x,imgdata[j].y,pct_err[j]);
+	}
+
+	fclose(errfile);
+*/	free(mod_img);
+	free(phase_img);
+	free(mod_ap);
+	free(phase_ap);
+	free(modn_ap);
+	free(imgdata);
+	free(pct_err);
+	
+//	order = 10;
+//	printf("Apcount:%d\n",apcount);
+
+	//setting up for least squares fitting
+	znk = (float*)malloc(sizeof(float)*apcount);
+	x = (float*)malloc(sizeof(float)*apcount);
+	y = (float*)malloc(sizeof(float)*apcount);
+	weight = (float*)malloc(sizeof(float)*order);
+	x_gsl = gsl_matrix_alloc(apcount,order);
+	y_gsl = gsl_vector_alloc(apcount);
+	c = gsl_vector_alloc(order);
+	cov = gsl_matrix_alloc(order,order);
+	gsl_multifit_linear_workspace * work = gsl_multifit_linear_alloc (apcount,order);
+//	znk1 = (float*)malloc(sizeof(float)*apcount);
+//	znk2 = (float*)malloc(sizeof(float)*apcount);
+
+	printf("Setting up least square fitting matrices.\n");
+	counter = 0;
+
+	for(j = 0;j < linecount;j++)
+	{
+//		printf("j:%d\n",j);
+		if((apdata[j].x*apdata[j].x+apdata[j].y*apdata[j].y) < apradius*apradius)
+		{
+			x[counter]=apdata[j].x;
+			y[counter]=apdata[j].y;
+			gsl_vector_set(y_gsl,counter,phase_ap[j]);
+			counter++;
+		}
+	}
+
+	//testing
+/*	zernike(3,1,x,y,apcount,znk,500);
+	zernike(2,-2,x,y,apcount,znk1,500);
+	zernike(2,0,x,y,apcount,znk2,500);
+	float random1;
+	for(j = 0;j < apcount;j++)
+	{
+//		random1 = ((rand()-RAND_MAX/2)*100.45)/(RAND_MAX/2);
+		printf("%f\n",znk[j]);
+		fprintf(errfile,"%lf %lf %lf\n",x[j],y[j],znk[j]);
+		gsl_vector_set(y_gsl,j,znk[j]+znk1[j]+znk2[j]);
+	}
+	fclose(errfile);
+*/	//testing
+//	printf("Counter: %d\n",counter);
+
+	int n,m;
+	n=0;
+	m=0;
+	for(j = 0;j < order;j++)
+	{
+//		printf("Calculating Zernike polynomial n:%d m:%d\n",n,m);
+		zernike(n,m,x,y,apcount,znk,apradius);
+//		printf("Done\n");
+		for(k = 0;k < apcount;k++)
+		{
+			gsl_matrix_set(x_gsl,k,j,znk[k]);
+		}
+		if(m==n)
+		{
+			n++;
+			m = -n;
+		}
+		else
+			m+=2;
+	}
+	
+	//perform the fit
+	printf("Performing the fit.\n");
+	gsl_multifit_linear(x_gsl,y_gsl,c,cov,&chisq,work);
+
+	//store the results in the output array
+	n=0;
+	m=0;
+	for (j=0; j < order; j++)
+	{
+		weight[j]=gsl_vector_get(c,j);
+		printf("n:%d m:%d calculated weight %f\n",n,m,weight[j]);
+		if(m==n)
+		{
+			n++;
+			m = -n;
+		}
+		else
+			m+=2;
+	}
+
+/*	free(apdata);
+	gsl_matrix_free(x_gsl);
+	gsl_vector_free(y_gsl);
+	gsl_vector_free(c);
+	gsl_matrix_free(cov);
+	gsl_multifit_linear_free (work);
+	free(x);
+	free(y);
+	free(znk);
+*/	
+	return EXIT_SUCCESS;
+}

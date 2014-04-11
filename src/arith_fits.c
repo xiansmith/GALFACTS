@@ -31,8 +31,14 @@
 #include "/u/gibson/src/util/mathdefs.h"
 #include "/u/gibson/src/util/misc.c"
 #include "/u/gibson/src/util/misc_math.c"
-#include "/u/gibson/src/fits/fitsio.c"
+//#include "/u/gibson/src/fits/fitsio.c"
 #include "/u/gibson/src/util/io_big.c"
+//#include "programs/chardefs.h"
+//#include "programs//mathdefs.h"
+//#include "programs/misc.c"
+//#include "programs/misc_math.c"
+#include "programs/fitsio.c"
+//#include "programs/io_big.c"
 
 		/* operand flag values */
 

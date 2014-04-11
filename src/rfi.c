@@ -489,48 +489,55 @@ void aerostat_rfi_blanking(SpecRecord dataset[], int size, int lowchan, int high
 	for (i=0; i<size; i++)
 	{
 		int count = 0;
-		for (chan = lowchan; chan<highchan; chan++) {
+		for (chan = 0; chan<MAX_CHANNELS; chan++) {
 			if (dataset[i].flagRFI[chan]) {
 				continue;
 			}
 			offxx[i] +=  dataset[i].caloff.xx[chan] - dataset[i].caloff.yy[chan];
 			count++;
 		}
+		if(count ==0)
+			printf("ERROR: count is 0 in aerostat_rfi_detection()\n");
 		offxx[i] /= count;
 	}
 
 
 	//compute first differences
-	for (i=0; i<size-1; i++) {
-		diff1[i] = offxx[i] - offxx[i+1];
-	}
+	if(size >= 1)
+		for (i=0; i<size-1; i++) {
+			diff1[i] = offxx[i] - offxx[i+1];
+		}
 	//compute second differences
-	for (i=0; i<size-2; i++) {
-		diff2[i] = diff1[i] - diff1[i+1];
-	}
+	if(size >= 2)
+		for (i=0; i<size-2; i++) {
+			diff2[i] = diff1[i] - diff1[i+1];
+		}
 
 	//print out the differences
 	{
 		FILE * difffile = fopen("diff.dat", "w");
-		for (i=0; i<size-2; i++) {
-			fprintf(difffile, "%f %f %f %f %f\n", dataset[i].AST, offxx[i], offxx[i+1], diff1[i], diff2[i]);
-		}
+		if(size >= 2)
+			for (i=0; i<size-2; i++) {
+				fprintf(difffile, "%f %f %f %f %f\n", dataset[i].AST, offxx[i], offxx[i+1], diff1[i], diff2[i]);
+			}
 		fclose(difffile);
 	}
 
+	if(size >= 2)
 	for (i=0; i<size-2; i++)
 	{
 		if (dataset[i].flagBAD || dataset[i+1].flagBAD) {
 			continue;
 		}
 
-//		if (diff2[i] > 0.07 || diff2[i] < -0.07)
-		if ((diff2[i] > 0.07 || diff2[i] < -0.07) && i>0) //ssg fixed i > 0
+		if (diff2[i] > 0.07 || diff2[i] < -0.07)
+//		if ((diff2[i] > 0.03 || diff2[i] < -0.03) && i>0) //ssg fixed i > 0
 		{
 
-			printf("Outofband rfi with diff %f %f\n", diff1[i], diff2[i]);
+			printf("Outofband rfi %d with diff %f %f\n", i,diff1[i], diff2[i]);
 			fprintf(file, "LINE W %i %f %i %f\n", 0, dataset[i+1].AST, 30, dataset[i+1].AST);
-			for (j=i-1; j<i+12*5 && j<size; j++)
+			//for (j=i-1; j<i+12*5 && j<size; j++)
+			for (j=i-1; j<i+2 && j<size && j>=0; j++)
 			{
 				dataset[j].flagBAD = 1;
 				for (chan=0; chan<MAX_CHANNELS; chan++)
@@ -538,7 +545,7 @@ void aerostat_rfi_blanking(SpecRecord dataset[], int size, int lowchan, int high
 					dataset[j].flagRFI[chan] |= RFI_OUTOFBAND;
 				}
 			}
-			i = j-1; //start a little early for the next round
+			//i = j-1; //start a little early for the next round
 		}
 	}
 

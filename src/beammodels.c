@@ -120,27 +120,29 @@ void get_peak_power_coord(char * filename,float RA[MAX_CHANNELS],float DEC[MAX_C
 			}
 		}	
 		l = (int)(indx % beam_hpar.naxis[0]);
-		m = (int)((indx - l)/ beam_hpar.naxis[0]);
+		//m = (int)((indx - l)/ beam_hpar.naxis[0]);
+		m = (int)((indx)/ beam_hpar.naxis[0]);
 		RA[startchannel + i] = (l - beam_hpar.crpix[0] + 1)*beam_hpar.cdelt[0] + beam_hpar.crval[0];
 		DEC[startchannel + i] = (m - beam_hpar.crpix[1] + 1)*beam_hpar.cdelt[1] + beam_hpar.crval[1];
-//		printf("Calculated RA: %f, DEC: %f\n",RA[startchannel + i],DEC[startchannel + i]);
-//		printf("Max response: %f, Min response: %f\n",max_response[startchannel+i],min_response[startchannel + i]);
+		printf("Calculated RA: %f, DEC: %f\n",RA[startchannel + i],DEC[startchannel + i]);
+		printf("Max response: %f, Min response: %f\n",max_response[startchannel+i],min_response[startchannel + i]);
 	}
 	free(plane_data);
 	fclose(beam_file);
 }
 
-void make_beam_model(FILE * beammodelfile,int channel,int beamno,float RA,float DEC,float radius,float max_response,float min_response,float avgQ,float avgU,float avgV)
+//void make_beam_model(FILE * beammodelfile,int channel,int beamno,float RA,float DEC,float radius,float max_response,float min_response,float avgQ,float avgU,float avgV)
+void make_beam_model(int channel,int beamno,float RA,float DEC,float radius)
 {
 	int i,j,numDays,count;
 	char **files;
-	char infilename[64];
-	FILE * infile;
+	char infilename[64],outfilename[80];
+	FILE * infile,* beammodelfile;
         char header[80+1];
 	FluxRecord pRec;
 	numDays = get_date_dirs("./", &files);
-/*	double maxI = 0.0;
-	for(j = 0;j < numDays;j++)
+	float maxI = 0.0;
+/*	for(j = 0;j < numDays;j++)
 	{
 		sprintf(infilename,"%s/beam%d/balance%03i.dat",files[j],beamno,channel);
 		infile = fopen(infilename, "r");
@@ -164,33 +166,105 @@ void make_beam_model(FILE * beammodelfile,int channel,int beamno,float RA,float 
 	        fclose(infile);
 	}
 */
-	for(j = 0;j < numDays;j++)
-	{
-		sprintf(infilename,"%s/beam%d/balance%03i.dat",files[j],beamno,channel);
-		infile = fopen(infilename, "r");
-	        if (infile == NULL) {
-        		printf("ERROR: can't open input file %s\n", infilename);
-		        continue;
-	        }
+//	float RA0[10000],DEC0[10000],cRA=0.0,cDEC=0.0;
 
-		count = jsd_line_count(infile);
-	        fgets(header, 80, infile);
-
-		for(i = 0;i < count;i++)
+//	for(beamno =  0;beamno <7; beamno++)
+//	{
+		int cnt = 0;
+		//float maxI,minI,avgQ,avgU,avgV;
+		for(j = 0;j < numDays;j++)
 		{
-			fscanf(infile,"%f %f %f %lf %lf %lf %lf",&pRec.RA,&pRec.DEC,&pRec.AST,&pRec.stokes.I,&pRec.stokes.Q,&pRec.stokes.U, &pRec.stokes.V);
+			sprintf(infilename,"%s/beam%d/balance%04i.dat",files[j],beamno,channel);
+			//sprintf(infilename,"%s/beam%d/balanceraw%04i.dat",files[j],beamno,channel);
+//			sprintf(infilename,"%s/beam%d/fluxtime%04i.dat",files[j],beamno,channel);
+			infile = fopen(infilename, "r");
+		        if (infile == NULL) {
+        			printf("ERROR: can't open input file %s\n", infilename);
+			        continue;
+		        }
+			sprintf(outfilename,"beam%d_model/beam%d_model%04i.dat",beamno,beamno,channel);
+			//sprintf(outfilename,"beam%d_model/beam%d_modelxxyy%04i.dat",beamno,beamno,channel);
+			beammodelfile = fopen(outfilename, "a");
+		        if (beammodelfile == NULL) {
+        			printf("ERROR: can't open output file %s\n", outfilename);
+			        continue;
+		        }
+	
+			count = jsd_line_count(infile);
+	        	fgets(header, 80, infile);
 
-			if(pRec.DEC <= (DEC + radius) && pRec.DEC >= (DEC - radius) && pRec.RA <= (RA + radius) && pRec.RA >= (RA - radius) \
-			&& !isnan(pRec.stokes.I)) 
+			for(i = 0;i < count;i++)
 			{
-				fprintf(beammodelfile,"%f %f %f %lf %lf %lf %lf\n",(pRec.RA - RA),(pRec.DEC - DEC),pRec.AST,(pRec.stokes.I - min_response) \
-				/(max_response- min_response),	(pRec.stokes.Q - avgQ)/(max_response- min_response),  \
-				(pRec.stokes.U - avgU)/(max_response- min_response), \
-				(pRec.stokes.V - avgV)/(max_response- min_response));
+				fscanf(infile,"%f %f %f %lf %lf %lf %lf",&pRec.RA,&pRec.DEC,&pRec.AST,&pRec.stokes.I,&pRec.stokes.Q,&pRec.stokes.U, &pRec.stokes.V);
+				if(maxI < pRec.stokes.I && !isnan(pRec.stokes.I)) 
+				{
+					maxI = pRec.stokes.I;
+				}
+/*				if(i)
+				{
+					cRA = (RA0[cnt] - RA0[cnt-1])*0.5;
+					cDEC = (DEC0[cnt] - DEC0[cnt-1])*0.5;
+				}
+				else
+				{
+					cRA = 0.0;
+					cDEC = 0.0;
+				}
+
+				//for MOCK pointing errors
+				switch(beamno)
+				{
+	        	            case 0:
+					RA0[cnt] = pRec.RA;
+					DEC0[cnt] = pRec.DEC;
+        	        	        break; 
+		                    case 1:
+        	                	pRec.RA = RA0[cnt] + 2.7417/(60*cos(DEC0[cnt]*M_PI/180)) + cRA;
+					pRec.DEC = DEC0[cnt] - 5.5426/60 + cDEC;
+        		                break; 
+	                	    case 2:
+        	                	pRec.RA = RA0[cnt] + 5.4833/(60*cos(DEC0[cnt]*M_PI/180)) + cRA;
+					pRec.DEC = DEC0[cnt] + cDEC;
+	        	                break; 
+		                    case 3:
+        	                	pRec.RA = RA0[cnt] + 2.7417/(60*cos(DEC0[cnt]*M_PI/180)) + cRA;
+					pRec.DEC = DEC0[cnt] + 5.5426/60 + cDEC;
+        		                break; 
+	        	            case 4:
+        	                	pRec.RA = RA0[cnt] - 2.7417/(60*cos(DEC0[cnt]*M_PI/180)) + cRA;
+					pRec.DEC = DEC0[cnt] + 5.5426/60 + cDEC;
+        		                break; 
+	        	            case 5:
+        	                	pRec.RA = RA0[cnt] + 5.4833/(60*cos(DEC0[cnt]*M_PI/180)) + cRA;
+					pRec.DEC = DEC0[cnt] + cDEC;
+        		                break; 
+	        	            case 6:
+        	                	pRec.RA = RA0[cnt] - 2.7417/(60*cos(DEC0[cnt]*M_PI/180)) + cRA;
+					pRec.DEC = DEC0[cnt] - 5.5426/60 + cDEC;
+        		                break; 
+        		            default:
+	                	        printf("WARN: invalid beam (%i) specified.\n", beamno);
+				}
+				cnt++;
+*/
+				if(pRec.DEC <= (DEC + radius) && pRec.DEC >= (DEC - radius) && pRec.RA <= (RA + radius) && pRec.RA >= (RA - radius) \
+				&& !isnan(pRec.stokes.I)) 
+				{
+					//fprintf(beammodelfile,"%f %f %f %lf %lf %lf %lf\n",(pRec.RA - RA),(pRec.DEC - DEC),pRec.AST,(pRec.stokes.I - min_response) \
+					/(max_response- min_response),	(pRec.stokes.Q - avgQ)/(max_response- min_response),  \
+					(pRec.stokes.U - avgU)/(max_response- min_response), \
+					(pRec.stokes.V - avgV)/(max_response- min_response));
+					//fprintf(beammodelfile,"%f %f %f %lf %lf %lf %lf\n",(pRec.RA - RA),(pRec.DEC - DEC),\
+					pRec.AST, pRec.stokes.I,(pRec.stokes.Q - avgQ)/(max_response- min_response),  \
+					(pRec.stokes.U - avgU)/(max_response- min_response), \
+					(pRec.stokes.V - avgV)/(max_response- min_response));
+					fprintf(beammodelfile,"%f %f %f %lf %lf %lf %lf\n",(pRec.RA - RA),(pRec.DEC - DEC),pRec.AST, \
+					pRec.stokes.I,pRec.stokes.Q,pRec.stokes.U,pRec.stokes.V);
+				}
 			}
+		        fclose(infile);
+		        fclose(beammodelfile);
 		}
-	        fclose(infile);
-	}
-
+		printf("MaxI : %f\n",maxI);
+//	}
 }
-

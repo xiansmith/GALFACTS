@@ -285,10 +285,10 @@ int main(int argc,char* argv[])
 			//		cnvrt_end_int(&row1.dataoff[k].U[l]);
 			//		cnvrt_end_int(&row1.dataoff[k].V[l]);
 					//normalize
-					A[l] = (float)(row1.data[k].A[l]/row1.stat[k].fftAccum);
-					B[l] = (float)(row1.data[k].B[l]/row1.stat[k].fftAccum);
-					U[l] = (float)((int)row1.data[k].U[l]/row1.stat[k].fftAccum);
-					V[l] = (float)((int)row1.data[k].V[l]/row1.stat[k].fftAccum);
+					A[l] = (float)(row1.data[k].A[l])/row1.stat[k].fftAccum;
+					B[l] = (float)(row1.data[k].B[l])/row1.stat[k].fftAccum;
+					U[l] = (float)((int)row1.data[k].U[l])/row1.stat[k].fftAccum;
+					V[l] = (float)((int)row1.data[k].V[l])/row1.stat[k].fftAccum;
 			//		Aoff[l] = (float)(row1.dataoff[k].A[l]/row1.statoff[k].fftAccum);
 			//		Boff[l] = (float)(row1.dataoff[k].B[l]/row1.statoff[k].fftAccum);
 			//		Uoff[l] = (float)((int)row1.dataoff[k].U[l]/row1.statoff[k].fftAccum);

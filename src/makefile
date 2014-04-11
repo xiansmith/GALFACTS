@@ -21,9 +21,25 @@ cube2avg: cube2avg.c
 	$(CC) $(CFLAGS) -lm -o cube2avg cube2avg.c programs/fitsLib.a
 	mv cube2avg $(BIN)
 
+quickcube: quickcube.c common.o jsd/jsd_futil.o
+	$(CC) $(CFLAGS) -lm -o quickcube quickcube.c common.o jsd/jsd_futil.o programs/fitsLib.a
+	mv quickcube $(BIN)
+
 pointing: pointingmain.c common.o
 	$(CC) $(CFLAGS) -lm -o pointing common.o pointingmain.c
 	mv pointing $(BIN)
+
+vvsi: vvsi.c
+	$(CC) $(CFLAGS) -lm -o vvsi vvsi.c programs/fitsLib.a
+	mv vvsi $(BIN)
+
+poster: poster.c
+	$(CC) $(CFLAGS) -lm -o poster poster.c programs/fitsLib.a jsd/jsd_futil.o
+	mv poster $(BIN)
+
+posterbins: posterbins.c jsd/jsd_futil.o jsd/jsd_fit.o stats.o
+	$(CC) $(CFLAGS) -lm -o posterbins posterbins.c programs/fitsLib.a jsd/jsd_fit.o jsd/jsd_futil.o stats.o jsd/nrfit.o jsd/nrutil.o
+	mv posterbins $(BIN)
 
 calanalyze: calanalyze.c
 	$(CC) $(CFLAGS) -lm -o calanalyze calanalyze.c programs/fitsLib.a
@@ -32,6 +48,14 @@ calanalyze: calanalyze.c
 fits_smooth: fits_smooth.c
 	$(CC) $(CFLAGS) -lm -o fits_smooth fits_smooth.c programs/fitsLib.a
 	cp fits_smooth $(BIN)
+
+spIndex: spIndex.c
+	$(CC) $(CFLAGS) -lm -o spIndex spIndex.c programs/fitsLib.a jsd/jsd_futil.o jsd/jsd_fit.o jsd/nrfit.o jsd/nrutil.o
+	cp spIndex $(BIN)
+
+epsilonPhi: epsilonPhi.c
+	$(CC) $(CFLAGS) -lm -o epsilonPhi epsilonPhi.c  denoising.c programs/fitsLib.a
+	cp epsilonPhi $(BIN)
 
 spec2fits: spec2fits.c common.o smooth.o spec.o rfi.o markdata.o
 	$(CC) $(CFLAGS) -lm -o spec2fits common.o smooth.o spec.o rfi.o markdata.o spec2fits.c programs/fitsLib.a
@@ -54,14 +78,17 @@ calhack: calhack.c rfi.o stokes.o calibrate.o common.o smooth.o scan.o spec.o
 	mv calhack $(BIN)
 
 cal: calmain.o rfi.o stokes.o calibrate.o common.o smooth.o spec.o markdata.o stats.o smoothing.o
-	$(CC) $(CFLAGS) -lm -o cal rfi.o stokes.o calibrate.o common.o smooth.o smoothing.o calmain.o spec.o stats.o markdata.o jsd/jsd_fit.o  jsd/nrfit.o jsd/nrutil.o programs/fitsLib.a
+	$(CC) $(CFLAGS) -lm -o cal rfi.o stokes.o calibrate.o common.o smooth.o smoothing.o calmain.o spec.o stats.o markdata.o jsd/jsd_futil.o jsd/jsd_util.o jsd/jsd_fit.o  jsd/nrfit.o jsd/nrutil.o programs/fitsLib.a
 	mv cal $(BIN)
 
+cal_sdfits:
+	$(CC) $(CFLAGS) calmain_sdfits.c -o cal_sdfits /u/sguram/cfitsio/libcfitsio.a -lm rfi.o stokes.o calibrate.o common.o smooth.o smoothing.o spec.o stats.o markdata.o jsd/jsd_fit.o  jsd/nrfit.o jsd/nrutil.o jsd/jsd_futil.o  # programs/fitsLib.a
+	mv cal_sdfits $(BIN)
 spechack : 
 	$(CC) -lm -o spechack spechack.c common.o
 
-map: mapmain.o common.o jsd/jsd_futil.o jsd/jsd_util.o balance.o grid.o map.o scan.o fluxdata.o jsd/jsd_fit.o decdependence.o fieldflat.o stats.o
-	$(CC) $(CFLAGS) -lm -o map common.o jsd/jsd_futil.o jsd/jsd_util.o jsd/jsd_fit.o jsd/nrutil.o jsd/nrfit.o balance.o decdependence.o fieldflat.o grid.o map.o scan.o stats.o fluxdata.o mapmain.o programs/fitsLib.a
+map: mapmain.o common.o jsd/jsd_futil.o jsd/jsd_util.o balance.o grid.o map.o scan.o fluxdata.o jsd/jsd_fit.o decdependence.o fieldflat.o stats.o leakagefit.o
+	$(CC) $(CFLAGS) -lm -o map common.o jsd/jsd_futil.o jsd/jsd_util.o jsd/jsd_fit.o jsd/nrutil.o jsd/nrfit.o balance.o decdependence.o fieldflat.o grid.o map.o scan.o stats.o fluxdata.o mapmain.o programs/fitsLib.a leakagefit.o
 	mv map $(BIN)
 
 fitscat: fitscat.c programs/fitsio.a
@@ -71,6 +98,14 @@ fitscat: fitscat.c programs/fitsio.a
 dtm2spec: dtm2spec.c dtm2spec.h jsd/jsd_futil.o
 	$(CC) $(CFLAGS) -I. -lm -o dtm2spec dtm2spec.c jsd/jsd_futil.o
 	cp dtm2spec $(BIN)
+
+caldeflection: caldeflection.c dtm2spec.h jsd/jsd_futil.o
+	$(CC) $(CFLAGS) -I. -lm -o caldeflection caldeflection.c jsd/jsd_futil.o
+	mv caldeflection $(BIN)
+
+calamptest: calamptest.c dtm2spec.h jsd/jsd_futil.o
+	$(CC) $(CFLAGS) -I. -lm -o calamptest calamptest.c jsd/jsd_futil.o
+	cp calamptest $(BIN)
 
 dfrq2spec: dfrq2spec.c dfrq2spec.h jsd/jsd_futil.o
 	$(CC) $(CFLAGS) -I. -lm -o dfrq2spec dfrq2spec.c jsd/jsd_futil.o
@@ -93,12 +128,36 @@ beamgains: beamgains.c
 	mv beamgains $(BIN)
 
 beammodels: beammodels.c beammodels.o common.o
-	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o beammodels common.o beammodels.c beammodelsmain.c programs/fitsLib.a jsd/jsd_futil.o
+	$(CC) $(CFLAGS) -lm  -o beammodels common.o beammodels.c beammodelsmain.c programs/fitsLib.a jsd/jsd_futil.o
 	mv beammodels $(BIN)
+
+beamtest: beamtest.c
+	$(CC) $(CFLAGS) -lm  -o beamtest beamtest.c jsd/jsd_futil.o
+	mv beamtest $(BIN)
+
+rmtest: rmtest.c 
+	$(CC) $(CFLAGS) -lm  -o rmtest rmtest.c programs/fitsLib.a 
+	mv rmtest $(BIN)
 
 cleanmap: cleanmain.c 
 	$(CC) $(CFLAGS) -lm -lgsl -lgslcblas -o cleanmap common.o beammodels.o fluxdata.o map.o grid.o cleanmain.c programs/fitsLib.a jsd/jsd_futil.o
 	mv cleanmap $(BIN)
+
+quleakage: QUleakage.c 
+	$(CC) $(CFLAGS) QUleakage.c -o quleakage common.o jsd/jsd_futil.o
+	mv quleakage $(BIN)
+
+leakage_pattern: leakage_pattern.c 
+	$(CC) $(CFLAGS) -lm leakage_pattern.c -o leakage_pattern common.o jsd/jsd_futil.o
+	mv leakage_pattern $(BIN)
+
+corrmain: corrmain.c common.o beammodels.o fluxdata.o map.o grid.o corrmain.c programs/fitsLib.a jsd/jsd_futil.o cfit/chebyshev.c cfit/pfit.c
+	$(CC) $(CFLAGS) -lm -O2 -ffast-math -o corrmain common.o beammodels.o fluxdata.o map.o grid.o corrmain.c programs/fitsLib.a jsd/jsd_futil.o cfit/chebyshev.c cfit/pfit.c
+	mv corrmain $(BIN)
+
+corrtest: corrtest.c common.o beammodels.o fluxdata.o map.o grid.o corrtest.c programs/fitsLib.a jsd/jsd_futil.o cfit/chebyshev.c cfit/pfit.c leakagefit.c jsd/jsd_fit.o jsd/nrfit.o jsd/nrutil.o
+	$(CC) $(CFLAGS) -lm -O2 -ffast-math -o corrtest common.o beammodels.o fluxdata.o map.o grid.o corrtest.c programs/fitsLib.a jsd/jsd_futil.o cfit/chebyshev.c cfit/pfit.c leakagefit.c jsd/jsd_fit.o jsd/nrfit.o jsd/nrutil.o
+	mv corrtest $(BIN)
 
 beammodels.o : beammodels.h beammodels.c
 beammodelsmain.o : beammodelsmain.c
@@ -123,7 +182,7 @@ decdependence.o : decdependence.c decdependence.h
 fieldflat.o : fieldflat.c fieldflat.h
 smoothing.o : smoothing.c smoothing.h
 stats.o : stats.c stats.h
-
+leakagefit.o: leakagefit.c
 .PHONY : clean
 clean : empirical_clean
 	rm *.o 
@@ -145,5 +204,9 @@ empirical_clean:
 	rm -f empirical_determine empirical_apply empirical_intensity
 
 tcal: tcal.c
-	gcc -g -lm -lgsl -lgslcblas -o tcal tcal.c jsd/jsd_fit.o
-
+	gcc -g -lm  -o tcal tcal.c jsd/jsd_fit.o programs/fitsLib.a jsd/nrfit.o jsd/nrutil.o
+	mv tcal $(BIN)
+#	gcc -g -lm -lgsl -lgslcblas -o tcal tcal.c jsd/jsd_fit.o programs/fitsLib.a jsd/nrfit.o jsd/nrutil.o
+get_subregion:
+	gcc -o get_subregion get_subregion.c jsd/jsd_futil.c common.c
+	mv get_subregion bin/

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "programs/chardefs.h"
 #include "programs/mathdefs.h"
 #include "programs/misc.c"
@@ -9,7 +10,6 @@
 
 #include "common.h"
 #include "jsd/jsd_fit.h"
-
 
 #define IS_BLANK_PIXEL(X) ( (X>(BLANK_PIXEL-BLANK_THRESH)) && (X<(BLANK_PIXEL+BLANK_THRESH)) )
 
@@ -113,7 +113,7 @@ void polynomial_smooth(double Tcal[], double Tcal_smooth[], int size, int order)
 	for (i=0; i<size; i++) {
 		X[i] = i;
 	}
-	jsd_poly_fit(X, Tcal, size, C, nsigma, order, &chisq);
+	jsd_poly_fit(X, Tcal, size,  nsigma, C, order, &chisq);
 	for (i=0; i<size; i++) {
 		Tcal_smooth[i] = jsd_poly_eval(i, C, order);
 	}
@@ -196,8 +196,8 @@ int main(int argc, char * argv[])
 
 	//read cubes
 
-	readfits_cube (XXfilename, &XXdata, &XXhpar);
-	readfits_cube (YYfilename, &YYdata, &YYhpar);
+	readfits_cube (XXfilename, &XXdata, &XXhpar,1);
+	readfits_cube (YYfilename, &YYdata, &YYhpar,1);
 	
 	if (memcmp(XXhpar.naxis, YYhpar.naxis, 3) != 0) {
 		printf("ERROR: naxis size mismatch between fits headers\n");

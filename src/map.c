@@ -4,7 +4,7 @@
 #include <math.h>
 #include "programs/fitsLib.h"
 #include "map.h"
-
+#include "common.h"
 void write_fits_maps(const char * wapp, MapMetaData *md, float dataI[], float dataQ[], float dataU[], float dataV[])
 {
         header_param_list hpar;
@@ -68,17 +68,19 @@ static void create_header_param_list(header_param_list * hpar_ptr, MapMetaData *
 	hpar_ptr->naxis[1] = md->n2;
 	hpar_ptr->naxis[2] = md->n3;
 	sprintf (hpar_ptr->ctype[0], "RA---CAR");
-	sprintf (hpar_ptr->ctype[1], "DEC---CAR");
-	sprintf (hpar_ptr->ctype[2], "Frequency");
+	sprintf (hpar_ptr->ctype[1], "DEC--CAR");
+	sprintf (hpar_ptr->ctype[2], "FREQ");
 	hpar_ptr->crval[0] = md->RAcen;		/* degrees */
 	hpar_ptr->crval[1] = md->DECcen;               /* degrees */
-	hpar_ptr->crval[2] = md->fstart;               /* khz */
+	hpar_ptr->crval[2] = md->fstart*1000.0*1000.0;               /* hz */
 	hpar_ptr->crpix[0] = 0.5 + md->n1 / 2.0;	/* image center in pixels */
 	hpar_ptr->crpix[1] = 0.5 + md->n2 / 2.0;
-	hpar_ptr->crpix[2] = 0.0;
+	//hpar_ptr->crpix[2] = 0.0;
+	hpar_ptr->crpix[2] = 1.0;
 	hpar_ptr->cdelt[0] = -md->cellsize;                     /* degrees */
 	hpar_ptr->cdelt[1] = md->cellsize;                     /* degrees */
-	hpar_ptr->cdelt[2] = 100.0/256.0;	//TODO: magic numbers				/* Mhz */
+	//hpar_ptr->cdelt[2] = -172.032*1000000/MAX_CHANNELS;	//TODO: magic numbers				/* Mhz */
+	hpar_ptr->cdelt[2] = -172.032*10000000/MAX_CHANNELS;	//TODO: magic numbers				/* Mhz */
 	hpar_ptr->equinox = 2000.0;		//year of coordinate system
 	//hpar_ptr->epoch = 2004.???;		//year observations were taken
 
@@ -88,7 +90,7 @@ static void create_header_param_list(header_param_list * hpar_ptr, MapMetaData *
 
 void start_fits_cubes(const char * wapp, MapMetaData *md)
 {
-	char filename[31+1];
+	char filename[64+1];
 
 	create_header_param_list(&hparI, md);
 	create_header_param_list(&hparQ, md);
@@ -104,16 +106,23 @@ void start_fits_cubes(const char * wapp, MapMetaData *md)
 	sprintf (hparV.object, "%s Stokes V", md->title);
 	sprintf (hparW.object, "%s Weight Cube", md->title);
 
-	snprintf (filename, 31, "%s_Icube.fits", wapp);
-	fitsI = fopen(filename, "w");
-	snprintf (filename, 31, "%s_Qcube.fits", wapp);
-	fitsQ = fopen(filename, "w");
-	snprintf (filename, 31, "%s_Ucube.fits", wapp);
-	fitsU = fopen(filename, "w");
-	snprintf (filename, 31, "%s_Vcube.fits", wapp);
-	fitsV = fopen(filename, "w");
-	snprintf (filename, 31, "%s_Weightcube.fits", wapp);
-	fitsW = fopen(filename, "w");
+
+        //snprintf (filename, 64, "sguram_images/%s_%04i_%04i_Icube.fits",md->title, md->lowchan, md->highchan-1 );
+        snprintf (filename, 64, "leakage_cubes/%s_%04i_%04i_Icube.fits",md->title, md->lowchan, md->highchan-1 );
+        fitsI = fopen(filename, "w");
+        //snprintf (filename, 64, "sguram_images/%s_%04i_%04i_Qcube.fits",md->title, md->lowchan, md->highchan-1 );
+        snprintf (filename, 64, "leakage_cubes/%s_%04i_%04i_Qcube.fits",md->title, md->lowchan, md->highchan-1 );
+        fitsQ = fopen(filename, "w");
+        //snprintf (filename, 64, "sguram_images/%s_%04i_%04i_Ucube.fits",md->title, md->lowchan, md->highchan-1 );
+        snprintf (filename, 64, "leakage_cubes/%s_%04i_%04i_Ucube.fits",md->title, md->lowchan, md->highchan-1 );
+        fitsU = fopen(filename, "w");
+        //snprintf (filename, 64, "sguram_images/%s_%04i_%04i_Vcube.fits",md->title, md->lowchan, md->highchan-1 );
+        snprintf (filename, 64, "leakage_cubes/%s_%04i_%04i_Vcube.fits",md->title, md->lowchan, md->highchan-1 );
+        fitsV = fopen(filename, "w");
+        //snprintf (filename, 64, "sguram_images/%s_%04i_%04i_Weightcube.fits",md->title, md->lowchan, md->highchan-1 );
+        snprintf (filename, 64, "leakage_cubes/%s_%04i_%04i_Weightcube.fits",md->title, md->lowchan, md->highchan-1 );
+        fitsW = fopen(filename, "w");
+
 
 	if (fitsI == NULL || fitsQ == NULL || fitsU == NULL || fitsV == NULL || fitsW==NULL) {
 		printf("ERROR: failed to open fits files\n");
@@ -142,18 +151,19 @@ void finish_fits_cubes()
 	writefits_pad_end(fitsU, &hparU);
 	writefits_pad_end(fitsV, &hparV);
 	writefits_pad_end(fitsW, &hparW);
+	//printf("Here\n");
+//	fclose(fitsI);
+//	fclose(fitsQ);
+//	fclose(fitsU);
+//	fclose(fitsV);
+//	fclose(fitsW);
+	//printf("Here\n");
 
-	fclose(fitsI);
-	fclose(fitsQ);
-	fclose(fitsU);
-	fclose(fitsV);
-	fclose(fitsW);
-
-	fitsI = NULL;
-	fitsQ = NULL;
-	fitsU = NULL;
-	fitsV = NULL;
-	fitsW = NULL;
+//	fitsI = NULL;
+//	fitsQ = NULL;
+//	fitsU = NULL;
+//	fitsV = NULL;
+//	fitsW = NULL;
 }
 
 

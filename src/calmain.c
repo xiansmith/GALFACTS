@@ -306,9 +306,9 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 	printf("Data ranges from RA (%f, %f) DEC (%f, %f)\n", minRA, maxRA, minDEC, maxDEC);
 
 	/* mark bad datapoints */
-	sprintf(badfilename, "%s/%s/bad_datapoints.dat", datadirname, datedir);
-	printf("Marking bad data points\n");
-	mark_bad_datapoints(badfilename, dataset, numRecords);
+//	sprintf(badfilename, "%s/%s/bad_datapoints.dat", datadirname, datedir);
+//	printf("Marking bad data points\n");
+//	mark_bad_datapoints(badfilename, dataset, numRecords);
 
 	/* count remaining good records */
 //	for (i=0; i<numRecords; i++) {
@@ -316,8 +316,8 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 //	}
 
 
-	printf("Performing frequency smoothing\n");
-	perform_freq_smoothing(dataset, numRecords, lowchan, highchan);
+//	printf("Performing frequency smoothing\n");
+//	perform_freq_smoothing(dataset, numRecords, lowchan, highchan);
 
 	if (!ignoreRFI)
 	{
@@ -330,33 +330,35 @@ static void process_dataset(const char * datadirname, const char * datedir, cons
 		rfi_spanning(dataset, numRecords, lowchan, highchan, rfiSpan);
 		printf("Performing RFI blanking\n");
 		rfi_blanking(dataset, numRecords, lowchan, highchan, rfiTolerance);
-		printf("Performing RFI write\n");
-		rfi_write(dataset, numRecords, lowchan, highchan, freq);
+//		printf("Performing RFI write\n");
+//		rfi_write(dataset, numRecords, lowchan, highchan, freq);
 	}
 
 	/* Write out the annotations */
-	printf("Creating annotations\n");
-	create_annotations(dataset, numRecords);
+//	printf("Creating annotations\n");
+//	create_annotations(dataset, numRecords);
 
 	/* Compute the cal values */
 	printf("Compute the raw values of cal\n");
 	compute_raw_cal(dataset, numRecords, lowchan, highchan);
 
 	/* Compute curve fit cal */
-	printf("Compute smoothed cal\n");
-	smooth_cal_bandaverage(dataset, numRecords, lowchan, highchan, 120 * 5 - 1, 2.5);
+//	printf("Compute smoothed cal\n");
+//	smooth_cal_bandaverage(dataset, numRecords, lowchan, highchan, 120 * 5 - 1, 2.5);
+	printf("Compute linear cal\n");
+	linear_fit_cal(dataset, numRecords, lowchan, highchan, ignoreRFI);
 //lowchan and highchan are not being used most of the time it calibrates all the channels
 // need to fix this in next iteration.
-	printf("Writing cal fits on curve fit cal\n");
-	write_cal_fits(dataset, numRecords, fcen, df, lowchan, highchan);
+//	printf("Writing cal fits on curve fit cal\n");
+//	write_cal_fits(dataset, numRecords, fcen, df, lowchan, highchan);
 
 	/* Calculate Stokes parameters */
 	printf("Calculating stokes parameters\n");
 	calculate_stokes(dataset, numRecords, lowchan, highchan, ignoreRFI, Tcalx, Tcaly);
 
-	printf("Correcting beam gains\n");
-	if(multibeam)
-		correct_beamgains(dataset, numRecords, lowchan, highchan, beam);
+//	printf("Correcting beam gains\n");
+//	if(multibeam)
+//		correct_beamgains(dataset, numRecords, lowchan, highchan, beam);
 
 	/* Write Channel Data */
 	printf("Writing channel data\n");

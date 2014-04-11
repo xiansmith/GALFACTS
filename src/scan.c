@@ -159,7 +159,7 @@ void determine_scan_lines(FluxWappData * wappdata, float decmin, float decmax)
 
 		daydata = &wappdata->daydata[d];
 		scanDayData = &wappdata->scanDayData[d];
-		printf("Determining scans for day %s\n", daydata->mjd);
+//		printf("Determining scans for day %s\n", daydata->mjd);
 		numRecords = daydata->numRecords;
 
 		tags = malloc(sizeof(enum ScanTag) * numRecords);
@@ -196,7 +196,7 @@ void determine_scan_lines(FluxWappData * wappdata, float decmin, float decmax)
 				scanDayData->scans[scanCount].num_records = end-start;
 				scanCount++;
 			} else {
-				printf("WARN: short scan being ignored start:%i end:%i\n", start, end);
+				//printf("WARN: short scan being ignored start:%i end:%i\n", start, end);
 				;
 			}
 
@@ -217,4 +217,3 @@ void determine_scan_lines(FluxWappData * wappdata, float decmin, float decmax)
 		free(tags);
 	}
 }
-

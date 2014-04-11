@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <math.h>
 #include <float.h>
-//#include <gsl/gsl_fit.h>
-//#include <gsl/gsl_multifit.h>
+#include <gsl/gsl_fit.h>
+#include <gsl/gsl_multifit.h>
 #include "jsd_fit.h"
 #include "nrfit.h"
 #include "nrutil.h"
@@ -154,7 +154,6 @@ void jsd_linear_fit(double X[], double Y[], int size, float nsigma, double C[], 
 	free(eval);
 }
 */
-
 void jsd_print_poly(FILE *file, double C[], int order)
 {
 	int i;
@@ -176,14 +175,18 @@ int jsd_poly_fit(double X[], double Y[], int size, float nsigma, double C[], int
 	double mean;
 	double *diff, *eval;
 	int err = 0; //assume no error
-
 	if (nsigma < 1.0) {
 		printf("ERROR: nsigma less than 1.0\n");
 		return -2;
 	}
-
-	diff = malloc(sizeof(double) * size);
-	eval = malloc(sizeof(double) * size);
+	if(size < order+1)
+	{
+		for (i=1;i<=terms;i++)
+			C[i-1] = 0.0;
+		return -1;
+	}
+	diff = malloc(sizeof(double) * size+1);
+	eval = malloc(sizeof(double) * size+1);
 
 	x=dvector(1,size);
 	y=dvector(1,size);
@@ -193,17 +196,23 @@ int jsd_poly_fit(double X[], double Y[], int size, float nsigma, double C[], int
 	cvm=dmatrix(1,terms,1,terms);
 	u=dmatrix(1,size,1,terms);
 	v=dmatrix(1,terms,1,terms);
-
+		
+	for (i=1;i<=size;i++) { //nr fortran style indexing
+		x[i]=X[i-1];
+		y[i]=Y[i-1];
+		sig[i]=1.0;
+	}
+	
 	do {
-		for (i=1;i<=size;i++) { //nr fortran style indexing
+/*		for (i=1;i<=size;i++) { //nr fortran style indexing
 			x[i]=X[i-1];
 			y[i]=Y[i-1];
 			sig[i]=1.0;
 		}
-
+*/
 		err = svdfit(x,y,sig,size,a,terms,u,v,w,chisq,fpoly);
 		if (err || !isfinite(a[1])) {
-			printf("ERROR: svdfit curve fit failed!\n");
+			//printf("ERROR: svdfit curve fit failed! %d\n",size);
 			for (i=1;i<=terms;i++)
 			C[i-1] = 0.0;
 			err = -1;
@@ -212,35 +221,45 @@ int jsd_poly_fit(double X[], double Y[], int size, float nsigma, double C[], int
 		for (i=1;i<=terms;i++)
 			C[i-1] = a[i];
 
-		/* do the evaluations */
+		// do the evaluations 
 		mean = 0.0;
-		for (i=0; i<size; i++) { //normal indexing
-			eval[i] = jsd_poly_eval(X[i], C, order);
-			diff[i] = eval[i] - Y[i];
+//		for (i=0; i<size; i++) { //normal indexing
+		for (i=1; i<=size; i++) { //nr indexing
+			eval[i] = jsd_poly_eval(x[i], C, order);
+			diff[i] = eval[i] - y[i];
 			mean += diff[i];
 		}
 		mean /= size;
 
-		/* calc sigma */
+		// calc sigma 
 		sigma = 0.0;
+//<<<<<<< jsd_fit.c
+//		for (i=0; i<size; i++) {
+//		for (i=1; i<=size; i++) {
+//			sigma += (diff[i]-mean)*(diff[i]-mean);
+//=======
 		for (i=0; i<size; i++) {
 			sigma += SQR(diff[i]-mean);
+//>>>>>>> 1.4
 		}
 		sigma = sqrt(sigma/size);
 
-
-		/* determine outliers */
+		// determine outliers 
 		outlier = 0;
-		for (i=0; i<size; i++) {
-			if (fabs(diff[i]) > nsigma*sigma) {
+		for (i=1; i<=size; i++) {
+		//for (i=0; i<size; i++) {
+			if (fabs(diff[i] - mean) > nsigma*sigma) {
 				outlier = 1;
 				//printf("outlier=%g: (size=%i mean=%g sigma=%g nsigma=%g)\n",
 				//	Y[i], size, mean, sigma, nsigma);
-				Y[i] = eval[i];
+				//Y[i] = eval[i];
+				//size = size-1;
+				x[i] = x[size];
+				y[i] = y[size];
+				size = size-1;
 			}
 		}
 	} while (outlier && size > order+1);
-
 	free(eval);
 	free(diff);
 	free_dmatrix(v,1,terms,1,terms);
@@ -251,12 +270,11 @@ int jsd_poly_fit(double X[], double Y[], int size, float nsigma, double C[], int
 	free_dvector(sig,1,size);
 	free_dvector(y,1,size);
 	free_dvector(x,1,size);
-
 	return err;
 }
 
-/*
-void jsd_poly_fit(double X[], double Y[], int size, double C[], int order, double *chisq)
+
+/*int jsd_poly_fit(double X[], double Y[], int size, float nsigma,double C[], int order, double *chisq)
 {
 	int i, j;
 	gsl_matrix *x, *cov;
@@ -296,9 +314,10 @@ void jsd_poly_fit(double X[], double Y[], int size, double C[], int order, doubl
 	gsl_vector_free(y);
 	gsl_vector_free(c);
 	gsl_matrix_free(cov);
+	return 1;
 }
-
 */
+
 
 /* a - array of coefficients 1..ma
  * X is normalized on return of this function

@@ -34,15 +34,15 @@ void init_psf_map(float fwhm, float cellsize, int beamwidths)
 		}
 	}
 
-	{
-	header_param_list hpar;
-	init_header_param_list (&hpar);  /* initialize parameter records */
-	hpar.bitpix = -32;
+//	{
+//	header_param_list hpar;
+//	init_header_param_list (&hpar);  /* initialize parameter records */
+/*	hpar.bitpix = -32;
 	hpar.num_axes = 2;
 	hpar.naxis[0] = psf_map_size;
 	hpar.naxis[1] = psf_map_size;
 	sprintf (hpar.ctype[0], "RA---CAR");
-	sprintf (hpar.ctype[1], "DEC---CAR");
+	sprintf (hpar.ctype[1], "DEC--CAR");
 	hpar.crval[0] = 0;
 	hpar.crval[1] = 0;
 	hpar.crpix[0] = radius+1;
@@ -53,7 +53,7 @@ void init_psf_map(float fwhm, float cellsize, int beamwidths)
 	sprintf (hpar.bunit, "Weight");
 	sprintf (hpar.object, "PSF");
 	writefits_map ("psf_map.fits", psf_map, &hpar);
-	}
+	}*/
 }
 
 static double * psf_lookup_table;
@@ -209,17 +209,17 @@ void grid_data(const FluxWappData *wappdata, const MapMetaData *md, float * data
 	//TODO: currently ignoring the upscan/downscan functionality
 	for (d=0; d<wappdata->numDays; d++) 
 	{
-		if(d%7 == 0)
-			printf("Day %s: ",wappdata->daydata[d].mjd);
+//		if(d%7 == 0)
+//			printf("Day %s: ",wappdata->daydata[d].mjd);
 		//if (md->gridtype & GRID_UP_SCANS) {
-		printf("beam %d ",d%7);
-		fflush(stdout);
-		if(d%7 == 6)
-			printf("\n");
+//		printf("beam %d ",d%7);
+//		fflush(stdout);
+//		if(d%7 == 6)
+//			printf("\n");
 		grid_fluxdaydata(&wappdata->daydata[d], md, dataI, dataQ, dataU, dataV, weight);
 		//}
 	}
-	printf("\n");
+//	printf("\n");
 
 	//------------------- divide sums by weights ----------------------
 	for(j=0;j<n2;j++) {

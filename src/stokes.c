@@ -216,16 +216,16 @@ void calculate_stokes(SpecRecord dataset[], int size, int lowchan, int highchan,
 	GainSet gain;
 
 
-	FILE * skyfile;
-	FILE * calfile;
+//	FILE * skyfile;
+//	FILE * calfile;
 //	FILE * gainfile;
-	calfile = fopen("calfile.dat", "w");
-	fprintf(calfile, "# Chan ObsCalI ObsCalQ ObsCalU ObsCalV CalCalI CalCalQ CalCalU CalCalV "
-			"GainX GainY GainPhi\n");
+//	calfile = fopen("calfile.dat", "w");
+//	fprintf(calfile, "# Chan ObsCalI ObsCalQ ObsCalU ObsCalV CalCalI CalCalQ CalCalU CalCalV "
+//			"GainX GainY GainPhi\n");
 
-	skyfile = fopen("skyfile.dat", "w");
-	fprintf(skyfile, "# Chan ObsSkyI ObsSkyQ ObsSkyU ObsSkyV CalSkyI CalSkyQ CalSkyU CalSkyV "
-			"GainX GainY GainPhi\n");
+//	skyfile = fopen("skyfile.dat", "w");
+//	fprintf(skyfile, "# Chan ObsSkyI ObsSkyQ ObsSkyU ObsSkyV CalSkyI CalSkyQ CalSkyU CalSkyV "
+//			"GainX GainY GainPhi\n");
 /*SSG
 	gainfile = fopen("gainfile.dat", "w");
 	fprintf(gainfile, "# Chan ObsSkyI ObsSkyQ ObsSkyU ObsSkyV CalSkyI CalSkyQ CalSkyU CalSkyV "
@@ -254,12 +254,12 @@ SSG*/
 		//printf("Computing final stokes\n");
 		compute_final_stokes(pRec, &TrueSky, ignoreRFI, lowchan, highchan);
 
-		print_stokes(calfile, &ObsCal, &CalCal, &gain, lowchan, highchan);
-		print_stokes(skyfile, &ObsSky, &TrueSky, &gain, lowchan, highchan);
+//		print_stokes(calfile, &ObsCal, &CalCal, &gain, lowchan, highchan);
+//		print_stokes(skyfile, &ObsSky, &TrueSky, &gain, lowchan, highchan);
 	}
 
-	fclose(calfile);
-	fclose(skyfile);
+//	fclose(calfile);
+//	fclose(skyfile);
 //	fclose(gainfile);
 }
 

@@ -145,8 +145,8 @@ typedef struct {
 	double RA;
 	double DEC;
 	double AST;
-//	PolSet calon;
-//	PolSet caloff;
+	PolSet calon;
+	PolSet caloff;
 	PolSet cal;
 	enum RFIFlags flagRFI[MAX_CHANNELS];
 	char  flagBAD;

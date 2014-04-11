@@ -14,7 +14,7 @@ http://www2.naic.edu/~tghosh/a1947/continuum_pointing.inc
 #ifndef FITSHEADERH
 #define FITSHEADERH
 #include    "fits_des.h"
-/* AV20041118 $Id$
+/* AV20041118 $Id: cimafits2.h,v 1.6 2009/04/08 23:28:10 sguram Exp $
  *
  * 2005/02/03   lerner
  * Modified a number of comments
@@ -52,7 +52,7 @@ http://www2.naic.edu/~tghosh/a1947/continuum_pointing.inc
  * keywords and modified some comments
  *
  *
- * $Log$
+ * $Log: cimafits2.h,v $
  * Revision 1.6  2009/04/08 23:28:10  sguram
  * TRIVIAL: changed the RAW_CHANNELS and DUMPS_PER_ROW to more typical values. TODO: Need a config file for that.
  *

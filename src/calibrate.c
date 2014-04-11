@@ -289,7 +289,7 @@ void smooth_cal_bandaverage(SpecRecord dataset[], int size, int lowchan, int hig
 	int count;
 	int i, chan;
 	const char *filename = "calfile.dat";
-	FILE *calfile;
+//	FILE *calfile;
 	printf("Requesting malloc for %lu bytes of memory\n",sizeof(double)*size);
 	xx = (double*) calloc(size, sizeof(double));
 	if (xx == NULL) {
@@ -379,7 +379,7 @@ void smooth_cal_bandaverage(SpecRecord dataset[], int size, int lowchan, int hig
 		double xxf2[MAX_CHANNELS], yyf2[MAX_CHANNELS], xyf2[MAX_CHANNELS], yxf2[MAX_CHANNELS];
 		double xxf3[MAX_CHANNELS], yyf3[MAX_CHANNELS], xyf3[MAX_CHANNELS], yxf3[MAX_CHANNELS];
 		double xxf4[MAX_CHANNELS], yyf4[MAX_CHANNELS], xyf4[MAX_CHANNELS], yxf4[MAX_CHANNELS];
-		FILE * caldat;
+//		FILE * caldat;
 
 //		compute_avg_spectra(dataset, xxf1, yyf1, xyf1, yxf1, 0, MAX_CHANNELS, 0, size/4);
 //		compute_avg_spectra(dataset, xxf2, yyf2, xyf2, yxf2, 0, MAX_CHANNELS, size/4, 2*size/4);
@@ -410,14 +410,14 @@ void smooth_cal_bandaverage(SpecRecord dataset[], int size, int lowchan, int hig
 		normalize_data(yyf3, lowchan, highchan);
 		normalize_data(yyf4, lowchan, highchan);
 
-		caldat = fopen("calspectra.dat", "w");
-		fprintf(caldat, "#xxf xxf1 xxf2 xxf3 xxf4\n");
-		for (i=lowchan; i<highchan; i++) 
-		{
-			fprintf(caldat, "%g %g %g %g %g %g %g %g %g %g\n", 
-				xxf[i], xxf1[i], xxf2[i], xxf3[i], xxf4[i], yyf[i], yyf1[i], yyf2[i], yyf3[i], yyf4[i]);
-		}
-		fclose(caldat);
+//		caldat = fopen("calspectra.dat", "w");
+//		fprintf(caldat, "#xxf xxf1 xxf2 xxf3 xxf4\n");
+//		for (i=lowchan; i<highchan; i++) 
+//		{
+//			fprintf(caldat, "%g %g %g %g %g %g %g %g %g %g\n", 
+//				xxf[i], xxf1[i], xxf2[i], xxf3[i], xxf4[i], yyf[i], yyf1[i], yyf2[i], yyf3[i], yyf4[i]);
+//		}
+//		fclose(caldat);
 
 	}
 
@@ -436,18 +436,18 @@ void smooth_cal_bandaverage(SpecRecord dataset[], int size, int lowchan, int hig
 	}
 
 	// write out the cal file
-	calfile = fopen(filename, "w");
-	if (calfile == NULL) {
-		printf("ERROR: unable to open file %s\n", filename);
-		return;
-	}
-	fprintf(calfile, "# RA DEC AST calXX calYY calXY calYX\n");
-	for (i=0; i<size; i++) 
-	{
-		fprintf(calfile,"%2.8f %2.8f %8.2f %4.8f %4.8f %4.8f %4.8f\n", 
-				dataset[i].RA, dataset[i].DEC, dataset[i].AST, xx[i], yy[i], xy[i], yx[i]);
-	}
-	fclose(calfile);
+//	calfile = fopen(filename, "w");
+//	if (calfile == NULL) {
+//		printf("ERROR: unable to open file %s\n", filename);
+//		return;
+//	}
+//	fprintf(calfile, "# RA DEC AST calXX calYY calXY calYX\n");
+//	for (i=0; i<size; i++) 
+//	{
+//		fprintf(calfile,"%2.8f %2.8f %8.2f %4.8f %4.8f %4.8f %4.8f\n", 
+//				dataset[i].RA, dataset[i].DEC, dataset[i].AST, xx[i], yy[i], xy[i], yx[i]);
+//	}
+//	fclose(calfile);
 
 	free(ast);
 	free(xx);
@@ -457,12 +457,12 @@ void smooth_cal_bandaverage(SpecRecord dataset[], int size, int lowchan, int hig
 
 }
 
-/*
+
 void linear_fit_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int ignoreRFI)
 {
 	int n, chan;
 	double C[2]; //assuming linear fit 
-	float nsigma = 4.0;
+	float nsigma = 5.0;
 	double sumsq;
 	double *Xast, *Yxx, *Yyy, *Yxy, *Yyx;
 	FILE * eqfile;
@@ -472,8 +472,8 @@ void linear_fit_cal(SpecRecord dataset[], int size, int lowchan, int highchan, i
 	eqfile = fopen("caleq.dat", "w");
 	fprintf(eqfile, "#chan XXc0 XXc1 YYc0 YYc1 XYc0 XYc1 YXc0 YXc1\n");
 
-	chifile = fopen("calchi.dat", "w");
-	fprintf(chifile, "#chan XX YY XY YX\n");
+//	chifile = fopen("calchi.dat", "w");
+//	fprintf(chifile, "#chan XX YY XY YX\n");
 
 	//y is the cal value
 	//x is the time steps
@@ -483,9 +483,9 @@ void linear_fit_cal(SpecRecord dataset[], int size, int lowchan, int highchan, i
 	Yxy = (double*) malloc(sizeof(double) * size);
 	Yyx = (double*) malloc(sizeof(double) * size);
 
-	for (chan=lowchan; chan<=highchan; chan++) 
+	for (chan=lowchan; chan<highchan; chan++) 
 	{
-		fprintf(chifile, "%i ", chan);
+//		fprintf(chifile, "%i ", chan);
 
 		count = 0;
 		for (n=0; n<size; n++) {
@@ -512,45 +512,79 @@ void linear_fit_cal(SpecRecord dataset[], int size, int lowchan, int highchan, i
 		}
 
 		//XX
-		jsd_linear_fit(Xast, Yxx, count, nsigma, C, &sumsq);
-		fprintf (eqfile, "XX %i %g %g\n", chan, C[0], C[1]);
-		fprintf(chifile, "%g ", sumsq);
-		for (n=0; n<size; n++) //eval function
-			dataset[n].cal.xx[chan] = jsd_linear_eval(Xast[n], C);
+		//printf("call xx\n");
+//		jsd_linear_fit(Xast, Yxx, count, nsigma, C, &sumsq);
+		jsd_poly_fit(Xast, Yxx, count, nsigma, C,1, &sumsq);
+//		jsd_linear_fit(Xast, Yxx, count, nsigma, C, &sumsq);
+//		fprintf (eqfile, "XX %i %g %g\n", chan, C[0], C[1]);
+		fprintf (eqfile, "%i %2.6f %2.6f ", chan, C[0], C[1]);
+//		fprintf(chifile, "%g ", sumsq);
+//		for (n=0; n<size; n++) //eval function
+//			dataset[n].cal.xx[chan] = jsd_linear_eval(Xast[n], C);
+
+                for (n=0; n<size; n++) //eval function
+                {
+                        dataset[n].cal.xx[chan] = jsd_linear_eval(Xast[n], C);
+                        if(dataset[n].cal.xx[chan] < 0)
+                                printf("Fitting Problem xx value :%f RA %2.6f DEC %2.6f AST %8.2f CHAN %04i\n",dataset[n].cal.xx[chan],dataset[n].RA,dataset[n].DEC,dataset[n].AST,chan);
+                }
 
 		//YY
-		jsd_linear_fit(Xast, Yyy, count, nsigma, C, &sumsq);
-		fprintf (eqfile, "YY %i %g %g\n", chan, C[0], C[1]);
-		fprintf(chifile, "%g ", sumsq);
-		for (n=0; n<size; n++) //eval function
-			dataset[n].cal.yy[chan] = jsd_linear_eval(Xast[n], C);
+		//printf("call yy\n");
+		jsd_poly_fit(Xast, Yyy, count, nsigma, C,1, &sumsq);
+//		jsd_linear_fit(Xast, Yyy, count, nsigma, C, &sumsq);
+		fprintf (eqfile, "%2.6f %2.6f ", C[0], C[1]);
+//		fprintf (eqfile, "YY %i %g %g\n", chan, C[0], C[1]);
+//		fprintf(chifile, "%g ", sumsq);
+//		for (n=0; n<size; n++) //eval function
+//			dataset[n].cal.yy[chan] = jsd_linear_eval(Xast[n], C);
+                for (n=0; n<size; n++) //eval function
+                {
+                        dataset[n].cal.yy[chan] = jsd_linear_eval(Xast[n], C);
+                        if(dataset[n].cal.yy[chan] < 0)
+                                printf("Fitting Problem yy value :%f RA %2.6f DEC %2.6f AST %8.2f CHAN %04i\n",dataset[n].cal.yy[chan],dataset[n].RA,dataset[n].DEC,dataset[n].AST,chan);
+                }
 
 		//XY
-		jsd_linear_fit(Xast, Yxy, count, nsigma, C, &sumsq);
-		fprintf (eqfile, "XY %i %g %g\n", chan, C[0], C[1]);
-		fprintf(chifile, "%g ", sumsq);
-		for (n=0; n<size; n++) //eval function
-			dataset[n].cal.xy[chan] = jsd_linear_eval(Xast[n], C);
+		//printf("call xy\n");
+		jsd_poly_fit(Xast, Yxy, count, nsigma, C,1, &sumsq);
+		fprintf (eqfile, "%2.6f %2.6f ", C[0], C[1]);
+//		fprintf (eqfile, "XY %i %g %g\n", chan, C[0], C[1]);
+//		fprintf(chifile, "%g ", sumsq);
+//		for (n=0; n<size; n++) //eval function
+//			dataset[n].cal.xy[chan] = jsd_linear_eval(Xast[n], C);
+                for (n=0; n<size; n++) //eval function
+                {
+                        dataset[n].cal.xy[chan] = jsd_linear_eval(Xast[n], C);
+                //        if(dataset[n].cal.xy[chan] < 0)
+                //                printf("Fitting Problem xy value :%f RA %2.6f DEC %2.6f AST %8.2f CHAN %04i\n",dataset[n].cal.xy[chan],dataset[n].RA,dataset[n].DEC,dataset[n].AST,chan);
+                }
 
 		//YX
-		jsd_linear_fit(Xast, Yyx, count, nsigma, C, &sumsq);
-		fprintf (eqfile, "YX %i %g %g\n", chan, C[0], C[1]);
-		fprintf(chifile, "%g ", sumsq);
-		for (n=0; n<size; n++) //eval function
-			dataset[n].cal.yx[chan] = jsd_linear_eval(Xast[n], C);
+		//printf("call yx\n");
+		jsd_poly_fit(Xast, Yyx, count, nsigma, C,1, &sumsq);
+		fprintf (eqfile, "%2.6f %2.6f\n", chan, C[0], C[1]);
+//		fprintf (eqfile, "YX %i %g %g\n", chan, C[0], C[1]);
+//		fprintf(chifile, "%g ", sumsq);
+//		for (n=0; n<size; n++) //eval function
+//			dataset[n].cal.yx[chan] = jsd_linear_eval(Xast[n], C);
+                for (n=0; n<size; n++) //eval function
+                {
+                        dataset[n].cal.yx[chan] = jsd_linear_eval(Xast[n], C);
+                //        if(dataset[n].cal.yx[chan] < 0)
+                //                printf("Fitting Problem yx value :%f RA %2.6f DEC %2.6f AST %8.2f CHAN %04i\n",dataset[n].cal.yx[chan],dataset[n].RA,dataset[n].DEC,dataset[n].AST,chan);
+                }
 
-		fprintf(chifile, "\n");
+//		fprintf(chifile, "\n");
 
 	}
 
 	fclose(eqfile);
-	fclose(chifile);
+//	fclose(chifile);
 	free(Xast);
 	free(Yxx);
 	free(Yyy);
 	free(Yxy);
 	free(Yyx);
 }
-
-*/
 

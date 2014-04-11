@@ -66,7 +66,8 @@ int read_datafile(FILE * pFile, SpecRecord ** pDataset, int beam)
 	// malloc the memory for the expected umber of records
 	numExpected = fileSize / (512 + ((MAX_CHANNELS*4*4) * 2));
 //	printf("Requesting malloc for %ld bytes of memory\n",sizeof(SpecRecord)*numExpected);
-	*pDataset = (SpecRecord *)malloc(sizeof(SpecRecord) * numExpected);
+	//*pDataset = (SpecRecord *)malloc(sizeof(SpecRecord) * numExpected);
+	*pDataset = (SpecRecord *)malloc(sizeof(SpecRecord) * 300);
 	if (*pDataset == NULL) {
 		printf("ERROR: malloc failed in read_datafile() !\n");
 		return 0;
@@ -78,7 +79,8 @@ int read_datafile(FILE * pFile, SpecRecord ** pDataset, int beam)
 		SpecRecord * rec = &((*pDataset)[numRead]);
 		numRead += fread_record(rec, pFile, beam);
 		rec->RA *= 15.0; //convert to degrees
-	} while(!feof(pFile) && numRead < numExpected);
+	} while(!feof(pFile) && numRead < 300);
+	//} while(!feof(pFile) && numRead < numExpected);
 
 	//return results
 	return numRead;
@@ -135,15 +137,16 @@ static int fread_record(SpecRecord * rec, FILE * datafile, int beam)
 //fix end
 
     //read the data
-    itemsRead += fread(&(rec->cal),  sizeof(PolSet), 1, datafile);
-//  itemsRead += fread(&(rec->caloff), sizeof(PolSet), 1, datafile);
+    //itemsRead += fread(&(rec->cal),  sizeof(PolSet), 1, datafile);
+    itemsRead += fread(&(rec->calon), sizeof(PolSet), 1, datafile);
+    itemsRead += fread(&(rec->caloff), sizeof(PolSet), 1, datafile);
 
     //initialze the rest of the record
 	memset(rec->flagRFI, RFI_NONE, MAX_CHANNELS);
 	rec->flagBAD = 0;
 
     //return result
-	if (itemsRead == 2) {
+	if (itemsRead == 3) {
 		return 1; //successfully read 1 record
 	} else if (itemsRead == 0) {
 		return 0; //no more records to read
@@ -176,9 +179,9 @@ void print_data(SpecRecord dataset[], int numRecords, int lowchan, int highchan)
 		pRec = &(dataset[i]);
 		for (j=lowchan; j<highchan; j++) 
 		{
-			fprintf(file,"%4d %8.2f %8.2f %8.2f %8.3f %8.3f %8.3f %8.3f\n",
-					j, pRec->RA, pRec->DEC,pRec->AST, pRec->cal.xx[j], pRec->cal.yy[j],
-					pRec->cal.xy[j], pRec->cal.yx[j]);
+			fprintf(file,"%4d %2.8f %2.8f %2.8f %2.8f %2.8f %2.8f %2.8f\n",
+					j, pRec->RA, pRec->DEC,pRec->AST, pRec->calon.xx[j], pRec->calon.yy[j],
+					pRec->calon.xy[j], pRec->calon.yx[j]);
 		}
 	}
 	fclose(file);
@@ -205,5 +208,6 @@ void main(int argc, char *argv[])
 	numRecords = read_datafile(specfile, &dataset, beam);
 	fclose(specfile);
 	printf("Read %i records\n", numRecords);
-	print_data(dataset, numRecords, 0, 128);
+	//print_data(dataset, numRecords, 0, 128);
+	print_data(dataset, numRecords, 1000, 1001);
 }

@@ -4,14 +4,10 @@
 #include <string.h>
 #include <assert.h>
 
-
-
 /*
 Helper Function Declarations
 */
 static int fread_record(SpecRecord * rec, FILE * datafile, int beam);
-
-
 
 /*
 Read the .cfg metadata from file into the ConfigData structure.
@@ -27,15 +23,12 @@ int read_cfgfile(FILE * pFile, ConfigData * pCfg)
 	num += fscanf(pFile, "%i\n", &(pCfg->stokesSetSize)); 
 	num += fscanf(pFile, "%f\n", &(pCfg->centerMHz)); 
 	num += fscanf(pFile, "%f\n", &(pCfg->bandwitdhkHz)); 
-	num += fscanf(pFile, "%i%i%i%i%i\n", &(pCfg->startChanNum), &(pCfg->samplesPerStokesSet), 
-										&(pCfg->stokesProducts), &(pCfg->numStokesSets), &(pCfg->crap)); 
+	num += fscanf(pFile, "%i%i%i%i%i\n", &(pCfg->startChanNum), &(pCfg->samplesPerStokesSet), &(pCfg->stokesProducts), &(pCfg->numStokesSets), &(pCfg->crap)); 
 	num += fscanf(pFile, "%s\n", pCfg->observingTag); 
 	num += fscanf(pFile, "%i%i%i\n", &(pCfg->day), &(pCfg->month), &(pCfg->year)); 
 	num += fscanf(pFile, "%i%i%f\n", &(pCfg->hour), &(pCfg->minute), &(pCfg->second)); 
 	num += fscanf(pFile, "%s\n", pCfg->observatoryCode); 
 	num += fscanf(pFile, "%i\n", &(pCfg->bandFlip)); 			
-
-
 	return (num == 18);
 }
 
@@ -58,31 +51,49 @@ int read_datafile(FILE * pFile, SpecRecord ** pDataset, int beam)
 
 	assert(sizeof(SpecPointingBlock) == SIZEOF_SPECPOINTINGBLOCK);
 
-//  printf("Using pointing from beam %i\n", beam);
-
-	// obtain file size.			for (i=0; i<numRecords; i++) {
 	fseek (pFile , 0 , SEEK_END);
 	fileSize = ftell (pFile);
 	rewind (pFile);
 
-	// malloc the memory for the expected umber of records
 	numExpected = fileSize / (512 + ((MAX_CHANNELS*4*4) * 2));
 	printf("Requesting malloc for %ld bytes of memory\n",sizeof(SpecRecord)*numExpected);
 	*pDataset = (SpecRecord *)malloc(sizeof(SpecRecord) * numExpected);
-	if (*pDataset == NULL) {
+	if(*pDataset == NULL) 
+		{
 		printf("ERROR: malloc failed in read_datafile() !\n");
 		return 0;
-	}
+		}
 
 	// read from file to memory
 	numRead = 0;
-	do {
+	do 
+		{
 		SpecRecord * rec = &((*pDataset)[numRead]);
 		numRead += fread_record(rec, pFile, beam);
 		rec->RA *= 15.0; //convert to degrees
-	} while(!feof(pFile) && numRead < numExpected);
+		//just for 54787 beam6
+/*                if(rec->AST >= 21720.0)
+                {
+                        printf("Breaking out ...\n");
+                        break;
+                }
+*/
+		} 
+		while(!feof(pFile) && numRead < numExpected);
 
-	//return results
+	int i;
+	if(numRead > 1)
+	{
+		for(i=0;i < numRead -1;i++)
+		{
+			SpecRecord * rec1 = &((*pDataset)[i]);
+			SpecRecord * rec2 = &((*pDataset)[i+1]);
+			rec1->RA += 0.5*(rec2->RA-rec1->RA);
+			rec1->DEC += 0.5*(rec2->DEC-rec1->DEC);
+			rec1->AST += 0.5*(rec2->AST-rec1->AST);
+		}
+	}	
+
 	return numRead;
 }
 
@@ -103,44 +114,75 @@ static int fread_record(SpecRecord * rec, FILE * datafile, int beam)
     //read and handle the header block
     itemsRead += fread(&block, sizeof(SpecPointingBlock), 1, datafile);
 
-    switch (beam) {
-    case 0:
-        rec->RA = block.centralBeam.raj_true_in_hours;
-        rec->DEC = block.centralBeam.decj_true_in_degrees;
-        break;
-    case 1:
-    case 2:
-    case 3:
-    case 4:
-    case 5:
-    case 6:
-    case 7:
-        rec->RA = block.outerBeams[beam-1].raj_true_in_hours;
-        rec->DEC = block.outerBeams[beam-1].decj_true_in_degrees;
-        break;
-    default:
-        printf("WARN: invalid beam (%i) specified.\n", beam);
-    }
+    switch(beam) 
+		{
+		case 0:
+				rec->RA = block.centralBeam.raj_true_in_hours;
+				rec->DEC = block.centralBeam.decj_true_in_degrees;
+				break;
+		case 1:
+		case 2:
+		case 3:
+		case 4:
+		case 5:
+		case 6:
+		case 7:
+				rec->RA = block.outerBeams[beam-1].raj_true_in_hours;
+				rec->DEC = block.outerBeams[beam-1].decj_true_in_degrees;
+				break;
+		default:
+				printf("WARN: invalid beam (%i) specified.\n", beam);
+		}
     
     rec->AST = block.centralBeam.atlantic_solar_time_now_in_sec;
 
     //read the data
-    itemsRead += fread(&(rec->calon),  sizeof(PolSet), 1, datafile);
+    itemsRead += fread(&(rec->calon), sizeof(PolSet), 1, datafile);
     itemsRead += fread(&(rec->caloff), sizeof(PolSet), 1, datafile);
 
     //initialze the rest of the record
 	memset(rec->flagRFI, RFI_NONE, MAX_CHANNELS);
 	rec->flagBAD = 0;
 
-    //return result
-	if (itemsRead == 3) {
-		return 1; //successfully read 1 record
-	} else if (itemsRead == 0) {
-		return 0; //no more records to read
-	} else { //partial read of a record
-		printf("ERROR: partial record read %i items\n", itemsRead);
-		return 0;
+   //fix for central spike
+	int count = 0;
+	/*for (count = 2046;count<=2050;count++)
+	{
+		rec->calon.xx[count] = (rec->calon.xx[2045]+rec->calon.xx[2051])/2.0;
+		rec->calon.yy[count] = (rec->calon.yy[2045]+rec->calon.yy[2051])/2.0;
+		rec->calon.xy[count] = (rec->calon.xy[2045]+rec->calon.xy[2051])/2.0;
+		rec->calon.yx[count] = (rec->calon.yx[2045]+rec->calon.yx[2051])/2.0;
+		rec->caloff.xx[count] = (rec->caloff.xx[2045]+rec->caloff.xx[2051])/2.0;
+		rec->caloff.yy[count] = (rec->caloff.yy[2045]+rec->caloff.yy[2051])/2.0;
+		rec->caloff.xy[count] = (rec->caloff.xy[2045]+rec->caloff.xy[2051])/2.0;
+		rec->caloff.yx[count] = (rec->caloff.yx[2045]+rec->caloff.yx[2051])/2.0;
+	}*/
+
+	for (count = 1023;count<=1025;count++)
+	{
+		rec->calon.xx[count] = (rec->calon.xx[1022]+rec->calon.xx[1026])/2.0;
+		rec->calon.yy[count] = (rec->calon.yy[1022]+rec->calon.yy[1026])/2.0;
+		rec->calon.xy[count] = (rec->calon.xy[1022]+rec->calon.xy[1026])/2.0;
+		rec->calon.yx[count] = (rec->calon.yx[1022]+rec->calon.yx[1026])/2.0;
+		rec->caloff.xx[count] = (rec->caloff.xx[1022]+rec->caloff.xx[1026])/2.0;
+		rec->caloff.yy[count] = (rec->caloff.yy[1022]+rec->caloff.yy[1026])/2.0;
+		rec->caloff.xy[count] = (rec->caloff.xy[1022]+rec->caloff.xy[1026])/2.0;
+		rec->caloff.yx[count] = (rec->caloff.yx[1022]+rec->caloff.yx[1026])/2.0;
 	}
+    //return result
+	if(itemsRead == 3) 
+		{
+		return 1; //successfully read 1 record
+		} 
+		else if(itemsRead == 0) 
+			{
+			return 0; //no more records to read
+			} 
+			else 
+				{ //partial read of a record
+				printf("ERROR: partial record read %i items\n", itemsRead);
+				return 0;
+				}
 }
 
 /*
@@ -159,19 +201,18 @@ void print_data(SpecRecord dataset[], int numRecords, int lowchan, int highchan,
 	FILE * file;
 
 	file = fopen("datafile.dat", "w");
-	fprintf(file, "#chan freq AST offxx offyy onxx onyy\n");
+	fprintf(file, "#chan freq RA DEC AST onxx onyy onxy onyx offxx offyy offxy offyx\n");
 
 	for (i=0; i<numRecords; i++)
-	{ 
+		{ 
 		pRec = &(dataset[i]);
 		for (j=lowchan; j<highchan; j++) 
-		{
-			fprintf(file,"%4d %9.3f %8.2f %8.3f %8.3f %8.3f %8.3f\n", 
-					j, freq[j], pRec->AST, pRec->caloff.xx[j], pRec->caloff.yy[j], 
-					pRec->calon.xx[j], pRec->calon.yy[j]);
+			{
+			fprintf(file,"%4d %9.3f %8.2f %8.2f %8.2f %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n", 
+					j, freq[j], pRec->RA, pRec->DEC, pRec->AST,
+					pRec->calon.xx[j], 	pRec->calon.yy[j], 	pRec->calon.xy[j], 	pRec->calon.yx[j], 
+					pRec->caloff.xx[j], pRec->caloff.yy[j], pRec->caloff.xy[j], pRec->caloff.yx[j]);
+			}
 		}
-	}
 	fclose(file);
 }
-
-

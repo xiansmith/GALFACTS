@@ -10,8 +10,7 @@
 #include "map.h"
 #include "scan.h"
 #include "decdependence.h"
-#include "fieldflat.h"
-
+//#include "bw_fit.h"
 int multibeam; //SSG
 static void print_usage(const char * prog)
 {
@@ -92,6 +91,8 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 	int chan;
 	int numbytes;
 
+	//BWfit balfit;
+
 	printf("Map size: %d x %d\n", md->n1, md->n2);
 	printf("DEC range (degrees): (%f %f)\n", md->decmin, md->decmax);
 	printf("RA range (degrees): (%f %f)\n", md->ramin, md->ramax);
@@ -111,15 +112,10 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
  	printf("Balance Epsilon: %f\n", balepsilon);
 
 	numbytes = md->n1 * md->n2 * sizeof (float);
-	printf("Requesting malloc for %u bytes\n",numbytes);
 	dataI  = (float *) malloc (numbytes);
-	printf("Requesting malloc for %u bytes\n",numbytes);	
 	dataQ  = (float *) malloc (numbytes);
-	printf("Requesting malloc for %u bytes\n",numbytes);	
 	dataU  = (float *) malloc (numbytes);
-	printf("Requesting malloc for %u bytes\n",numbytes);	
 	dataV  = (float *) malloc (numbytes);
-	printf("Requesting malloc for %u bytes\n",numbytes);	
 	weight  = (float *) malloc (numbytes);
 	
 	if (!dataI || !dataQ || !dataU || !dataV || !weight) {
@@ -135,54 +131,49 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 		chan = md->lowchan;
 		printf("Creating a progress cube \n");
 		printf("Reading data\n");
-		fluxwappdata_readchan(wappdata,0,BASKETWEAVE);
+		fluxwappdata_readchan(wappdata,md->lowchan,BASKETWEAVE);
+		printf("Removing the declination dependence\n");
+	//	remove_dec_dependence(wappdata, md->decmin, md->decmax, 0.05, md->lowchan);
+		calculate_dec_dependence(wappdata, md->decmin, md->decmax, 0.05, 1);
 		printf("Determine scan lines\n");
 		determine_scan_lines(wappdata, md->decmin, md->decmax);
 		printf("Performing balancing\n");
-		balance_data(wappdata, md, day_order, scan_order, balgain, balepsilon, show_progress);
+		//balance_data(wappdata, md, day_order, scan_order, balgain, balepsilon, &balfit, show_progress);
 	}
 	else
 	{
-		start_fits_cubes(wapp, md);
 
-//TODO: currently only basketweaving average channel, need to fix this and apply the corrections determined to all channels
-//		for (chan=md->lowchan; chan<md->highchan; chan++)
-		for(chan=0;chan<1;chan++) 
+		start_fits_cubes(wapp, md);
+		for (chan=md->lowchan; chan<md->highchan; chan++)
 		{
-			printf("Channel: %i\n", chan);
+			printf("Channel: %i \n", chan);
 
 			//read channel data files for all the days
-			printf("Reading data\n");
-			//scanwappdata_readchan(wappdata, wapp, chan, days, num_days);
-			fluxwappdata_readchan(wappdata, chan, BASKETWEAVE);
-
-			//determine scan lines
-			printf("Determine scan lines\n");
-			determine_scan_lines(wappdata, md->decmin, md->decmax);
+			printf("Reading data ...\n");
+			//fluxwappdata_readchan(wappdata, chan, BASKETWEAVE);
+			fluxwappdata_readchan(wappdata, chan, CLEAN);
 
 			//remove declination dependence
-//			printf("Removing the declination dependence\n");
-//			remove_dec_dependence(wappdata, md->decmin, md->decmax, 0.01, chan);
+			//printf("Removing the declination dependence ...\n");
+			//remove_dec_dependence(wappdata, md->decmin, md->decmax, 0.05, chan);
+			//calculate_dec_dependence(wappdata, md->decmin, md->decmax, 0.05, chan);
 
-			//flatten the field
-			//printf("flatten the field...\n");
-			//flatten_field(wappdata, 1.5, 0);
+			//determine scan lines
+			//printf("Determine scan lines ...\n");
+			//determine_scan_lines(wappdata, md->decmin, md->decmax);
 
-			//perform balancing
-			printf("Performing balancing\n");
-			balance_data(wappdata, md, day_order, scan_order, balgain, balepsilon, show_progress);
-
-			//write out the balanced data
-			//printf("writing balanced data to file ...\n");
+			//printf("Performing balancing ...\n");
+			//balance_data(wappdata, md, day_order, scan_order, balgain, balepsilon, &balfit, show_progress);
+			//balance_data(wappdata, md, day_order, scan_order, balgain, balepsilon, show_progress);
+			//printf("Writing balanced data to file ...\n");
 			//fluxwappdata_writechan(wappdata, chan);
-
-			//perform gridding
-			printf("Performing gridding\n");
+			printf("Gridding ...\n");
 			grid_data(wappdata, md, dataI, dataQ, dataU, dataV, weight);
 
 			//write fits data
-			printf("Writing fits data\n");
+			printf("Writing fits data ...\n");
 			write_fits_planes(dataI, dataQ, dataU, dataV, weight);
+	
 		}
 
 		printf("Finishing fits files\n");
@@ -252,9 +243,9 @@ int main(int argc, char * argv[])
 		md.DECrange = md.decmax - md.decmin;
 		md.n1 = (int)(md.RArange/md.cellsize) + 1;
 		md.n2 = (int)(md.DECrange/md.cellsize) + 1;
-//		md.n3 = md.highchan - md.lowchan;
-		md.n3 = 1; //for the time being till figure out how to apply basketweave from avg to all  
-		md.fstart = md.fcen + (md.lowchan-(MAX_CHANNELS/2-1)) * (100.0/MAX_CHANNELS);
+		md.n3 = md.highchan - md.lowchan ;
+		//md.fstart = md.fcen + (md.lowchan-(MAX_CHANNELS/2-1)) * (100.00/MAX_CHANNELS);//watchout for the sign for MOCK
+		md.fstart = md.fcen - (md.lowchan-(MAX_CHANNELS/2-1)) * (0.042);//watchout for the sign for MOCK needs to change for WAPP
 		
 	}
 	numDays = get_date_dirs("./", &files);
@@ -262,7 +253,7 @@ int main(int argc, char * argv[])
 		printf("ERROR: could not find any date dirs\n");
 		return EXIT_FAILURE;
 	}
-	//SSG
+	//SG
 	if (!strcmp(wapp,"multibeam"))
 	{
 		numDays = numDays * 7;
@@ -270,7 +261,7 @@ int main(int argc, char * argv[])
 	}
 	else
 		multibeam = 0;
-	//SSG
+	//SG
 	// allocate and initialize the wapp data days
 	wappdata = fluxwappdata_alloc(wapp, files, numDays);
 

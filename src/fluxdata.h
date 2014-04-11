@@ -21,6 +21,7 @@ FluxWappData - an entire wapp worth of data for all days (single channel)
 //sguram
 #define BASKETWEAVE 0 //added to distinguish between which files to read for map and clean programs
 #define CLEAN 1
+#define CORR 2
 
 typedef struct {
     double I;

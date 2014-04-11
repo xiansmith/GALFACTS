@@ -553,23 +553,23 @@ static void process_dataset(const char * filepath, int beam, int smooth, float n
 	get_name_from_filepath(filename, path, FILENAME_SIZE, filepath);
 //	printf("Filename: %s\n",filename);
 
-	snprintf(badfilepath, 256, "%s/bad_datapoints.dat", path);
-	mark_bad_datapoints(badfilepath, dataset, numRecords);
+//	snprintf(badfilepath, 256, "%s/bad_datapoints.dat", path);
+//	mark_bad_datapoints(badfilepath, dataset, numRecords);
 
-	printf("Writing raw data to fits\n");
-	write_raw_pol_fits(dataset, numRecords, fcen, df, filename);
+//	printf("Writing raw data to fits\n");
+//	write_raw_pol_fits(dataset, numRecords, fcen, df, filename);
 
-	printf("Writing rfi data\n");
-	write_rfi_data(dataset, numRecords, filename, fcen, df,numsigma, numsigmathresh, ignoreA_low, ignoreA_high);
+//	printf("Writing rfi data\n");
+//	write_rfi_data(dataset, numRecords, filename, fcen, df,numsigma, numsigmathresh, ignoreA_low, ignoreA_high);
 
-	printf("Writing pointing data\n");
-	write_pointing(dataset, numRecords, filename);
+//	printf("Writing pointing data\n");
+//	write_pointing(dataset, numRecords, filename);
 
 	printf("Writing band average data\n");
 	write_band_average(dataset, numRecords, filename);
 
-	printf("Writing time average data\n");
-	write_time_average(dataset, numRecords, filename);
+//	printf("Writing time average data\n");
+//	write_time_average(dataset, numRecords, filename);
 
 //	printf("Writing noise measurements\n");
 //	write_noise_measurements(dataset, numRecords, filename, 100, numsigma);

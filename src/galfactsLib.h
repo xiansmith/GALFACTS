@@ -8,6 +8,7 @@
 #define	GFL_FTYPE_STR_DECTM   "DECTIME"
 #define	GFL_FTYPE_STR_DECFRQ  "DECFREQ"
 #define GFL_NUM_SHORTS_1STAT  10
+
 /*
  * fits pdev status structure 
  * Note: the fits files contain 10 shorts. the fill bytes are not written.

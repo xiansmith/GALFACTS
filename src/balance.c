@@ -134,14 +134,14 @@ static int scan_intersect(FILE * file, ScanData *ref, ScanData *curr, double *pR
 	else *currpos = j;
 
 	//printf("found cross: %f %f\n", *RA, *DEC);
-	fprintf(file, "COLOUR BLUE\n"); //the cross lines
-	fprintf(file, "LINE W %f %f %f %f\n", x1, y1, x2, y2);
-	fprintf(file, "LINE W %f %f %f %f\n", x3, y3, x4, y4);
-	fprintf(file, "COLOUR GREEN\n"); //the intersection point
-	fprintf(file, "CROSS W %f %f 0.004 0.004\n", *pRA, *pDEC);
-	fprintf(file, "COLOUR YELLOW\n"); //two points that are closest to the intersection point
-	fprintf(file, "DOT W %f %f\n", curr->records[*currpos].RA, curr->records[*currpos].DEC );
-	fprintf(file, "DOT W %f %f\n", ref->records[*refpos].RA, ref->records[*refpos].DEC );
+//	fprintf(file, "COLOUR BLUE\n"); //the cross lines
+//	fprintf(file, "LINE W %f %f %f %f\n", x1, y1, x2, y2);
+//	fprintf(file, "LINE W %f %f %f %f\n", x3, y3, x4, y4);
+//	fprintf(file, "COLOUR GREEN\n"); //the intersection point
+//	fprintf(file, "CROSS W %f %f 0.004 0.004\n", *pRA, *pDEC);
+//	fprintf(file, "COLOUR YELLOW\n"); //two points that are closest to the intersection point
+//	fprintf(file, "DOT W %f %f\n", curr->records[*currpos].RA, curr->records[*currpos].DEC );
+//	fprintf(file, "DOT W %f %f\n", ref->records[*refpos].RA, ref->records[*refpos].DEC );
 
 	return 1;
 }
@@ -173,14 +173,14 @@ static void find_intersections(FluxWappData *wappdata)
 		//printf("refday: %s\n", refday->mjd);
 
 //		sprintf(filename, "cross%s.ann", refday->mjd);
-		sprintf(filename, "cross%s_beam%d.ann", refday->mjd, r%7); //ssg to fix for overwriting of files
-		crossfile = fopen(filename, "w");
+//		sprintf(filename, "cross%s_beam%d.ann", refday->mjd, r%7); //ssg to fix for overwriting of files
+//		crossfile = fopen(filename, "w");
 
 		for (i=0; i<refScanDay->numScans; i++) 
 		{
 			ScanData *refscan = &refScanDay->scans[i];
 			refscan->num_cross_points = 0;
-			fprintf(crossfile, "#scan %i\n", i);
+//			fprintf(crossfile, "#scan %i\n", i);
 			if (refscan->num_records == 0) continue;
 
 			for (c=0; c<numDays; c++) 
@@ -235,17 +235,17 @@ static void find_intersections(FluxWappData *wappdata)
 				refscan->crossPoints[minpos] = tmp;
 			}
 		}
-		fclose(crossfile);
+//		fclose(crossfile);
 	}
 }
 
 
-static void cross_line(FluxRecord records[], int size, int pos, double cI[], double cQ[], double cU[], double cV[], int order)
+static void cross_line(FluxRecord records[], int size, int pos, double cI[], double cQ[], double cU[], double cV[], int order, double *xminmax)
 {
 	int k, p;
 	//TODO: make these constants parameters
-	const int stroke = 3; //number of points on either side
-	const float nsigma = 4.0;
+	const int stroke = 10; //number of points on either side
+	const float nsigma = 3.0;
 	double chisq;
 	double yI[MAX_NUM_DAYS];
 	double yQ[MAX_NUM_DAYS];
@@ -267,6 +267,11 @@ static void cross_line(FluxRecord records[], int size, int pos, double cI[], dou
 			}
 		}
 	}
+        double min, max;
+        jsd_minmax(RA, count, &min, &max);
+        xminmax[0] = min; xminmax[1] = max;
+        jsd_normalize(RA, count, min, max);
+
 	if (count > order) {
 		jsd_poly_fit(RA, yI, count, nsigma, cI, order, &chisq);
 		jsd_poly_fit(RA, yQ, count, nsigma, cQ, order, &chisq);
@@ -304,22 +309,22 @@ static double arravg(double array[], int low, int high)
 static double scan_weave(ScanDayData *daydata, int scan, int order, float loop_gain, int apply)
 {
 	//TODO: make these constants parameters
-	const float nsigma = 3.0;
+	const float nsigma = 2.5;
 	const int span = 0; //number of scans to include on either side of the ref scan
 
 	int x, j;
 	int k;
-	double RA, DEC;
+	double RA, DEC,nRA;
 	double min, max;
 	int num_delta;
-	double delta_sum;
+	double delta_sum = 0.0;
 
 	double dI[MAX_NUM_DAYS*MAX_NUM_SCANS], dQ[MAX_NUM_DAYS*MAX_NUM_SCANS], dU[MAX_NUM_DAYS*MAX_NUM_SCANS], dV[MAX_NUM_DAYS*MAX_NUM_SCANS];
 	double dRA[MAX_NUM_DAYS*MAX_NUM_SCANS];
 	double chisq[4];
 	double cI[CROSS_ORDER+1], cQ[CROSS_ORDER+1], cU[CROSS_ORDER+1], cV[CROSS_ORDER+1];
 	ScanData * refscan;
-
+        double *xminmax; xminmax = (double*)malloc(2*sizeof(double));
 
 	num_delta = 0;
 
@@ -346,18 +351,21 @@ static double scan_weave(ScanDayData *daydata, int scan, int order, float loop_g
 			DEC = crossPoint->DEC;
 
 			//compute interpolated values for RA and DEC for the refscan
-			cross_line(refscan->records, refscan->num_records, crossPoint->ref_pos, cI, cQ, cU, cV, CROSS_ORDER);
-			refI = jsd_poly_eval(RA, cI, CROSS_ORDER);
-			refQ = jsd_poly_eval(RA, cQ, CROSS_ORDER);
-			refU = jsd_poly_eval(RA, cU, CROSS_ORDER);
-			refV = jsd_poly_eval(RA, cV, CROSS_ORDER);
-
+			cross_line(refscan->records, refscan->num_records, crossPoint->ref_pos, cI, cQ, cU, cV, CROSS_ORDER,xminmax);
+                        nRA = NORMALIZE(RA, xminmax[0], xminmax[1]);
+			refI = jsd_poly_eval(nRA, cI, CROSS_ORDER);
+			refQ = jsd_poly_eval(nRA, cQ, CROSS_ORDER);
+			refU = jsd_poly_eval(nRA, cU, CROSS_ORDER);
+			refV = jsd_poly_eval(nRA, cV, CROSS_ORDER);
+			if(!isfinite(refI)) continue;
 			//compute interpolated values for RA and DEC for the crossscan
-			cross_line(crossScan->records, crossScan->num_records, crossPoint->cross_pos, cI, cQ, cU, cV, CROSS_ORDER);
-			crossI = jsd_poly_eval(RA, cI, CROSS_ORDER);
-			crossQ = jsd_poly_eval(RA, cQ, CROSS_ORDER);
-			crossU = jsd_poly_eval(RA, cU, CROSS_ORDER);
-			crossV = jsd_poly_eval(RA, cV, CROSS_ORDER);
+			cross_line(crossScan->records, crossScan->num_records, crossPoint->cross_pos, cI, cQ, cU, cV, CROSS_ORDER,xminmax);
+                        nRA = NORMALIZE(RA, xminmax[0], xminmax[1]);
+			crossI = jsd_poly_eval(nRA, cI, CROSS_ORDER);
+			crossQ = jsd_poly_eval(nRA, cQ, CROSS_ORDER);
+			crossU = jsd_poly_eval(nRA, cU, CROSS_ORDER);
+			crossV = jsd_poly_eval(nRA, cV, CROSS_ORDER);
+			if(!isfinite(crossI)) continue;
 
 			dI[num_delta] = refI - crossI;
 			dQ[num_delta] = refQ - crossQ;
@@ -367,15 +375,15 @@ static double scan_weave(ScanDayData *daydata, int scan, int order, float loop_g
 			num_delta++;
 		}
 	}
-
+        free(xminmax);
 
 	//ensure we have at least enough points
-	if (num_delta/2 > order) 
+	if (num_delta > order) 
 	{
 
 		//constrain the endpoints
 		int i;
-		int num = 20; //number of points to constrain on each end.
+		int num = 10; //number of points to constrain on each end.
 		for (i=num_delta-num; i<num_delta; i++) {
 			dI[i] = arravg(dI, i-num, i);
 			dQ[i] = arravg(dQ, i-num, i);
@@ -393,6 +401,13 @@ static double scan_weave(ScanDayData *daydata, int scan, int order, float loop_g
 		//apply the curve fits
 		if (apply) 
 		{
+			delta_sum = 0.0;
+                        for(k=0;k<num_delta;k++)
+                                delta_sum += dI[k]*dI[k];
+                        delta_sum/=num_delta;
+
+			//printf("deltasum:%lf num_delta:%d\n",delta_sum,num_delta);
+
 			refscan = &daydata->scans[scan];
 
 			jsd_minmax(dRA, num_delta, &min, &max);
@@ -418,11 +433,11 @@ static double scan_weave(ScanDayData *daydata, int scan, int order, float loop_g
 		}
 
 		//sum up delta magnitudes and return result (for I only)!
-		delta_sum = 0.0;
+/*		delta_sum = 0.0;
 		for (k=0; k<num_delta; k++) {
 			delta_sum += dI[k]*dI[k];
-		}
-		return delta_sum/num_delta;
+		}*/
+		return delta_sum;
 	}
 	else
 	{
@@ -506,36 +521,39 @@ static void apply_difference_corrections(ScanDayData *daydata, double *dRA, doub
 	jsd_minmax(dRA, num_delta, &min, &max);
 	jsd_normalize(dRA, num_delta, min, max);
 
-	jsd_poly_fit(dRA, dI, num_delta, nsigma, cI, order, &chisq);
-	jsd_poly_fit(dRA, dQ, num_delta, nsigma, cQ, order, &chisq);
-	jsd_poly_fit(dRA, dU, num_delta, nsigma, cU, order, &chisq);
-	jsd_poly_fit(dRA, dV, num_delta, nsigma, cV, order, &chisq);
-
-	//jsd_print_poly(stdout, cI, order);
-	//apply the dX values
-	for (i=0; i<daydata->numScans; i++) 
+	if(num_delta > order)
 	{
-		ScanData *refscan = &daydata->scans[i];
-		for (k=0; k<refscan->num_records; k++) 
+		jsd_poly_fit(dRA, dI, num_delta, nsigma, cI, order, &chisq);
+		jsd_poly_fit(dRA, dQ, num_delta, nsigma, cQ, order, &chisq);
+		jsd_poly_fit(dRA, dU, num_delta, nsigma, cU, order, &chisq);
+		jsd_poly_fit(dRA, dV, num_delta, nsigma, cV, order, &chisq);
+
+		//jsd_print_poly(stdout, cI, order);
+		//apply the dX values
+		for (i=0; i<daydata->numScans; i++) 
 		{
-			double RA = NORMALIZE(refscan->records[k].RA, min, max);
-			refscan->records[k].stokes.I -= jsd_poly_eval(RA, cI, order) * loop_gain;
-			refscan->records[k].stokes.Q -= jsd_poly_eval(RA, cQ, order) * loop_gain;
-			refscan->records[k].stokes.U -= jsd_poly_eval(RA, cU, order) * loop_gain;
-			refscan->records[k].stokes.V -= jsd_poly_eval(RA, cV, order) * loop_gain;
+			ScanData *refscan = &daydata->scans[i];
+			for (k=0; k<refscan->num_records; k++) 
+			{
+				double RA = NORMALIZE(refscan->records[k].RA, min, max);
+				refscan->records[k].stokes.I -= jsd_poly_eval(RA, cI, order) * loop_gain;
+				refscan->records[k].stokes.Q -= jsd_poly_eval(RA, cQ, order) * loop_gain;
+				refscan->records[k].stokes.U -= jsd_poly_eval(RA, cU, order) * loop_gain;
+				refscan->records[k].stokes.V -= jsd_poly_eval(RA, cV, order) * loop_gain;
+			}
 		}
 	}
-
 }
 
 static double day_weave(ScanDayData *daydata, int order, float loop_gain, int apply)
 {
 	int i, j;
-	double RA, DEC;
+	double RA, DEC,nRA;
 	double dI[MAX_NUM_DAYS*MAX_NUM_SCANS], dQ[MAX_NUM_DAYS*MAX_NUM_SCANS], dU[MAX_NUM_DAYS*MAX_NUM_SCANS], dV[MAX_NUM_DAYS*MAX_NUM_SCANS];
 	//TODO: cX size is related to the order, not days
 	double cI[MAX_NUM_DAYS], cQ[MAX_NUM_DAYS], cU[MAX_NUM_DAYS], cV[MAX_NUM_DAYS];
 	double dRA[MAX_NUM_DAYS*MAX_NUM_SCANS];
+        double *xminmax; xminmax = (double*)malloc(2*sizeof(double));
 	int num_delta = 0;
 	for (i=0; i<daydata->numScans; i++) 
 	{
@@ -552,20 +570,22 @@ static double day_weave(ScanDayData *daydata, int order, float loop_gain, int ap
 
 			//get RA and DEC from the crossing point structure
 			RA = crossPoint->RA;
-			DEC = crossPoint->RA;
+			DEC = crossPoint->DEC;
 
-			cross_line(refscan->records, refscan->num_records, crossPoint->ref_pos, cI, cQ, cU, cV, CROSS_ORDER);
-			refI = jsd_poly_eval(RA, cI, CROSS_ORDER);
-			refQ = jsd_poly_eval(RA, cQ, CROSS_ORDER);
-			refU = jsd_poly_eval(RA, cU, CROSS_ORDER);
-			refV = jsd_poly_eval(RA, cV, CROSS_ORDER);
+			cross_line(refscan->records, refscan->num_records, crossPoint->ref_pos, cI, cQ, cU, cV, CROSS_ORDER,xminmax);
+                        nRA = NORMALIZE(RA, xminmax[0], xminmax[1]);
+			refI = jsd_poly_eval(nRA, cI, CROSS_ORDER);
+			refQ = jsd_poly_eval(nRA, cQ, CROSS_ORDER);
+			refU = jsd_poly_eval(nRA, cU, CROSS_ORDER);
+			refV = jsd_poly_eval(nRA, cV, CROSS_ORDER);
 			if (!isfinite(refI)) continue;
 
-			cross_line(crossScan->records, crossScan->num_records, crossPoint->cross_pos, cI, cQ, cU, cV, CROSS_ORDER);
-			crossI = jsd_poly_eval(RA, cI, CROSS_ORDER);
-			crossQ = jsd_poly_eval(RA, cQ, CROSS_ORDER);
-			crossU = jsd_poly_eval(RA, cU, CROSS_ORDER);
-			crossV = jsd_poly_eval(RA, cV, CROSS_ORDER);
+			cross_line(crossScan->records, crossScan->num_records, crossPoint->cross_pos, cI, cQ, cU, cV, CROSS_ORDER,xminmax);
+                        nRA = NORMALIZE(RA, xminmax[0], xminmax[1]);
+			crossI = jsd_poly_eval(nRA, cI, CROSS_ORDER);
+			crossQ = jsd_poly_eval(nRA, cQ, CROSS_ORDER);
+			crossU = jsd_poly_eval(nRA, cU, CROSS_ORDER);
+			crossV = jsd_poly_eval(nRA, cV, CROSS_ORDER);
 			if (!isfinite(crossI)) continue;
 
 			dI[num_delta] = refI - crossI;
@@ -576,10 +596,20 @@ static double day_weave(ScanDayData *daydata, int order, float loop_gain, int ap
 			num_delta++;
 		}
 	}
+
+        free(xminmax);
+
 	if (num_delta <= 0) {
 		//printf("WARN: no crossing points for day %s\n", daydata->mjd);
 		return 0.0;
 	}
+
+        double sum = 0.0;
+        for (i=0; i<num_delta; i++) {
+                sum += dI[i]*dI[i];
+//              sum += dQ[i]*dQ[i];
+        }
+
 
 	if (apply) {
 		apply_difference_corrections(daydata, dRA, dI, dQ, dU, dV, num_delta, order, loop_gain);
@@ -589,13 +619,14 @@ static double day_weave(ScanDayData *daydata, int order, float loop_gain, int ap
 	day is.  chisq values are not valid, since bad data could have a good fit.
 	using the average absolute difference instead.
 	*/
-	{
+	/*{
 		double sum = 0.0;
 		for (i=0; i<num_delta; i++) {
 			sum += dI[i]*dI[i];
 		}
 		return sum/num_delta;
-	}
+	}*/
+	return sum/num_delta;
 }
 
 #define PERCENT_CHANGE(A,B) ((A-B)/B)
@@ -618,15 +649,15 @@ static void basket_weave(FluxWappData *wappdata, FILE * chisqfile, int day_order
 		n3 = 0; //don't know how many planes in the cube, it will be set later below
 
 		//start a fits cube
-		printf("Requesting malloc for %u bytes\n",n1 * n2 * sizeof (float));
+//		printf("Requesting malloc for %u bytes\n",n1 * n2 * sizeof (float));
 		dataI = (float *) malloc (n1 * n2 * sizeof (float));
-		printf("Requesting malloc for %u bytes\n",n1 * n2 * sizeof (float));
+//		printf("Requesting malloc for %u bytes\n",n1 * n2 * sizeof (float));
 		dataQ = (float *) malloc (n1 * n2 * sizeof (float));
-		printf("Requesting malloc for %u bytes\n",n1 * n2 * sizeof (float));
+//		printf("Requesting malloc for %u bytes\n",n1 * n2 * sizeof (float));
 		dataU = (float *) malloc (n1 * n2 * sizeof (float));
-		printf("Requesting malloc for %u bytes\n",n1 * n2 * sizeof (float));
+//		printf("Requesting malloc for %u bytes\n",n1 * n2 * sizeof (float));
 		dataV = (float *) malloc (n1 * n2 * sizeof (float));
-		printf("Requesting malloc for %u bytes\n",n1 * n2 * sizeof (float));
+//		printf("Requesting malloc for %u bytes\n",n1 * n2 * sizeof (float));
 		weight = (float *) malloc (n1 * n2 * sizeof (float));
 
 		init_header_param_list (&hpar);
@@ -637,7 +668,7 @@ static void basket_weave(FluxWappData *wappdata, FILE * chisqfile, int day_order
 		hpar.naxis[1] = n2;
 		hpar.naxis[2] = 0;
 		sprintf (hpar.ctype[0], "RA---CAR");
-		sprintf (hpar.ctype[1], "DEC---CAR");
+		sprintf (hpar.ctype[1], "DEC--CAR");
 		sprintf (hpar.ctype[2], "Iteration");
 		hpar.crval[0] = md->RAcen;          /* hours */
 		hpar.crval[1] = md->DECcen;               /* degrees */
@@ -717,7 +748,7 @@ static void basket_weave(FluxWappData *wappdata, FILE * chisqfile, int day_order
 			printf("Day iteration:%i global chisq:%g change:%g\n", count, chisqglobal, globalchange);
 			fprintf(chisqfile, "%f %f\n", chisqglobal, globalchange);
 
-		} while (globalchange > loop_epsilon && count < 20);
+		} while (fabs(globalchange) > loop_epsilon && count < 20);
 
 		//done all weaves for this order, so write a progress plane
 		if (show_progress) {
@@ -737,6 +768,7 @@ static void basket_weave(FluxWappData *wappdata, FILE * chisqfile, int day_order
 
 	fprintf(chisqfile, "#Scan weaving\n");
 	
+	chisqglobalprev = INFINITY;
 	//do the scan by scan weaving
 	for (ord=0; ord<=scan_order; ord++) 
 	//ord = scan_order;
@@ -751,12 +783,19 @@ static void basket_weave(FluxWappData *wappdata, FILE * chisqfile, int day_order
 			{ 
 				ScanDayData * daydata = &wappdata->scanDayData[r];
 				chisqday = 0.0;
-
+				int scancount =0;
 				for (i=0; i<daydata->numScans; i++) {
-					chisqtmp = scan_weave(daydata, i, ord, loop_gain, 1);
+					chisqtmp = 0.0;
+					if(daydata->numScans)
+					{
+						chisqtmp = scan_weave(daydata, i, ord, loop_gain, 1);
+						//printf("chisqtmp: %f\n",chisqtmp);
+						scancount++;
+					}
 					chisqday += chisqtmp;
 				}
-				chisqday /= daydata->numScans;
+				if(daydata->numScans)
+					chisqday /= scancount;
 				chisqglobal += chisqday;
 				//printf("weaved day:%i chisq:%f\n", r, chisqday);
 
@@ -777,7 +816,7 @@ static void basket_weave(FluxWappData *wappdata, FILE * chisqfile, int day_order
 			printf("INFO: scan iteration:%i global chisq:%g change:%g\n", count, chisqglobal, globalchange);
 			fprintf(chisqfile, "%f %f\n", chisqglobal, globalchange);
 
-		} while (globalchange > loop_epsilon && count < 20);
+		} while (globalchange > loop_epsilon && count < 10);
 
 		//done all weaves for this order, so write a progress plane
 		if (show_progress) 
@@ -878,7 +917,7 @@ void balance_data(FluxWappData * wappdata, MapMetaData *md, int day_order, int s
 	printf("Performing basket weaving\n");
 	printf("Loop_gain: %g Loop_epsilon: %g\n", loop_gain, loop_epsilon);
 
-	fprintf(chisqfile, "#day chisqmax, change, chisqglobal, globalchange\n");
+	//fprintf(chisqfile, "#day chisqmax, change, chisqglobal, globalchange\n");
 	basket_weave(wappdata, chisqfile, day_order, scan_order, loop_gain, loop_epsilon, md, show_progress);
 	//mesh_weave(wappdata);
 

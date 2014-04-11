@@ -1,0 +1,4 @@
+Usage: ./cfit order
+order = 10, 11, 12, ... are good values, depending on the complexity of data
+
+The beam_model file is changed to be able to read easily!

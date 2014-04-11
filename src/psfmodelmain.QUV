@@ -1,0 +1,217 @@
+#include "fluxdata.h"
+#include "jsd/jsd_futil.h"
+#include "psfmodel.h"
+#include <gsl/gsl_multifit.h>
+
+#undef I
+#define MODULUS 1
+#define PHASE 0
+
+int main(int argc, char * argv[])
+{
+	int linecount,j,k,counter,apcount,order,num_iter,beamno,flag,apcountsave;
+	FluxRecord * rec;
+	char filename[64+1],header[80+1];
+	FILE * beammodelfile,*errfile,*psffile;
+	dftdata *imgdata, *apdata;
+	double *mod_img,*phase_img,*mod_ap,*phase_ap,*phasen_ap,*modn_ap, *pct_err, *psf_orig;
+	double mse,mse_prev,maxerr,chisq,global_max;
+	float *x,*y,*znk,*weight,apradius,apfield,epsilon,change,begin_r,end_r,min_r,step_r;
+	gsl_matrix *x_gsl, *cov;
+	gsl_vector *y_gsl, *c;
+	
+	if (argc != 4) {
+		printf("Incorrect number of arguments\n");
+		return EXIT_FAILURE;
+	} 
+	else
+	{
+		beamno = atoi(argv[1]);
+		order = atoi(argv[2]);
+		apradius = atof(argv[3]);
+	}
+	
+	sprintf(filename, "beam%d_model/beam%d_model050.dat",beamno,beamno); ///for the time being
+	beammodelfile = fopen(filename, "r");
+        fgets(header, 80, beammodelfile);
+	linecount = jsd_line_count(beammodelfile);
+	printf("Beginning PSF modelling.\n");
+	printf("%d datapoints in the beam model.\n",linecount);
+
+
+	rec = (FluxRecord *)malloc(sizeof (FluxRecord) * linecount);
+	imgdata = (dftdata *)malloc(sizeof (dftdata) * linecount);
+	apdata = (dftdata *)malloc(sizeof (dftdata) * linecount);
+	mod_img = (double *)malloc(sizeof (double) * linecount);
+	phase_img = (double *)malloc(sizeof (double) * linecount);
+	mod_ap = (double *)malloc(sizeof (double) * linecount);
+	phase_ap = (double *)malloc(sizeof (double) * linecount);
+	phasen_ap = (double *)malloc(sizeof (double) * linecount);
+	modn_ap = (double *)malloc(sizeof (double) * linecount);
+	pct_err = (double *)malloc(sizeof (double) * linecount);
+	psf_orig = (double *)malloc(sizeof (double) * linecount);
+
+	apcount = 0;
+	global_max = 0;
+	printf("Reading beam model.\n");
+	for(j = 0;j < linecount;j++)
+	{
+		fscanf(beammodelfile,"%f %f %f %lf %lf %lf %lf",&rec[j].RA,&rec[j].DEC,&rec[j].AST,&rec[j].stokes.I,&rec[j].stokes.Q,\
+		&rec[j].stokes.U, &rec[j].stokes.V);
+
+		psf_orig[j] = rec[j].stokes.V;
+		if(global_max<fabs(psf_orig[j]))
+			global_max = fabs(psf_orig[j]);
+		//setting up aperture coord in lambdas	
+		apdata[j].x = rec[j].RA*100/0.15; 
+		apdata[j].y = rec[j].DEC*100/0.15;
+
+		//setting up modulus of aperture (1 within the aperture 0 outside), setting up random phase for gerchberg saxton algorithm
+//		if((apdata[j].x*apdata[j].x+apdata[j].y*apdata[j].y) <= apradius*apradius)
+//		{
+//			apcount++;
+//		}
+	}
+	for(j = 0;j < linecount;j++)
+	{
+		psf_orig[j]/=global_max;
+	}
+	fclose(beammodelfile);
+	free(rec);
+	
+	apcount = linecount;
+	printf("Apcount %d\n",apcount);
+	znk = (float*)malloc(sizeof(float)*apcount);
+	x = (float*)malloc(sizeof(float)*apcount);
+	y = (float*)malloc(sizeof(float)*apcount);
+	weight = (float*)malloc(sizeof(float)*order);
+	x_gsl = gsl_matrix_alloc(apcount,order);
+	y_gsl = gsl_vector_alloc(apcount);
+	c = gsl_vector_alloc(order);
+	cov = gsl_matrix_alloc(order,order);
+	gsl_multifit_linear_workspace * work = gsl_multifit_linear_alloc (apcount,order);
+
+	counter = 0;
+	
+	for(j = 0;j < linecount;j++)
+	{
+//		if((apdata[j].x*apdata[j].x+apdata[j].y*apdata[j].y) <= apradius*apradius)
+//		{
+//			printf("\ncounter:%d",counter);
+			x[j]=apdata[j].x;
+			y[j]=apdata[j].y;
+			gsl_vector_set(y_gsl,counter,psf_orig[j]);
+//			counter++;
+//		}
+	}
+
+	int n,m;
+	n=0;
+	m=0;
+	for(j = 0;j < order;j++)
+	{
+		zernike(n,m,x,y,apcount,znk,apradius);
+		for(k = 0;k < apcount;k++)
+		{
+			gsl_matrix_set(x_gsl,k,j,znk[k]);
+		}
+		if(m==n)
+		{
+			n++;
+			m = -n;
+		}
+		else
+			m+=2;
+	}
+	
+	//perform the fit
+	printf("Performing the fit.\n");
+	gsl_multifit_linear(x_gsl,y_gsl,c,cov,&chisq,work);
+
+	//store the results in the output array
+	n=0;
+	m=0;
+	for (j=0; j < order; j++)
+	{
+		weight[j]=gsl_vector_get(c,j);
+		printf("n:%d m:%d calculated weight %f\n",n,m,weight[j]);
+		if(m==n)
+		{
+			n++;
+			m = -n;
+		}
+		else
+			m+=2;
+	}
+///////////////////////////////////////////////
+
+/*	sprintf(filename,"beam%d_psfmodel_params.dat",beamno);
+	psffile = fopen(filename,"w");
+	fprintf(psffile,"# weight\n");
+	for(j = 0;j < order;j++)
+	{
+		fprintf(psffile,"%d %f\n",j,weight[j]);
+	}
+	fclose(psffile);
+
+	n=0;
+	m=0;
+*/
+	for(j = 0;j < linecount;j++)
+	{
+		phase_ap[j] = 0;
+	}
+
+	for(j = 0;j < order;j++)
+	{
+		for(k=0;k<linecount;k++)
+		{
+//			if((apdata[k].x*apdata[k].x+apdata[k].y*apdata[k].y) <= apradius*apradius)
+//			{
+				x[0] = apdata[k].x;
+				y[0] = apdata[k].y;
+				zernike(n,m,x,y,1,znk,apradius);
+				phase_ap[k] += weight[j]*znk[0];
+//			}
+//			else
+//				phase_ap[k] = 0;
+		}
+
+		if(m==n)
+		{
+			n++;
+			m = -n;
+		}
+		else
+			m+=2;
+	}
+	
+	maxerr = 0.0;
+	//retreiving phase from the fourier transform and setting up for inverse transform
+
+	sprintf(filename,"beam%d_psf_U.dat",beamno);
+	psffile = fopen(filename,"w");
+	fprintf(psffile,"#x y I(model) orig err\n");
+	mse = 0.0;
+	for(j = 0;j < linecount;j++)
+	{
+		fprintf(psffile,"%f %f %lf %lf %lf\n",apdata[j].x,apdata[j].y,phase_ap[j],psf_orig[j],psf_orig[j]-phase_ap[j]);
+		mse += fabs((psf_orig[j] - phase_ap[j])/psf_orig[j])*100;
+		if(maxerr < fabs((psf_orig[j] - phase_ap[j])/psf_orig[j]*100))
+			maxerr = fabs((psf_orig[j] - phase_ap[j])/psf_orig[j])*100;
+	}
+	printf("MaxErr in model with order %d is:%1.9f, avg error is %1.9f\n",order,maxerr,mse/linecount);
+	fclose(psffile);
+
+	free(apdata);
+//	gsl_matrix_free(x_gsl);
+//	gsl_vector_free(y_gsl);
+//	gsl_vector_free(c);
+//	gsl_matrix_free(cov);
+//	gsl_multifit_linear_free (work);
+	free(x);
+	free(y);
+	free(znk);
+	
+	return EXIT_SUCCESS;
+}

@@ -18,24 +18,40 @@ void norm_one_tcal(int lowchan,int highchan,int *badchannels,float* tcalxx,float
 	int counter = 0;
         for (i=lowchan;i<highchan; i++)
         {
-		if(!badchannels[i])
+		if(!badchannels[i] && isfinite(tcalxx[i]) && isfinite(tcalyy[i]) && !isnan(tcalxx[i]) && !isnan(tcalyy[i]))
 		{
 			avgxx+=tcalxx[i];
 			avgyy+=tcalyy[i];
 			counter++;
 		}
         }
-	
-	avgxx /= counter;
-	avgyy /= counter;
 
+	if(counter)
+	{	
+		avgxx /= counter;
+		avgyy /= counter;
+	}
+	else
+	{
+		avgxx = 1.0;
+		avgyy = 1.0;
+	}
+//	printf("avg %f %f\n",avgxx,avgyy);
+
+	if(!isfinite(avgxx) || !isfinite(avgyy) || isnan(avgxx) || isnan(avgyy))
+		printf("averages messed up \n");
         //for (i=lowchan;i<highchan; i++)
         for (i=0;i<MAX_CHANNELS; i++)
         {
-		if(!badchannels[i])
+		if(!badchannels[i] && isfinite(tcalxx[i]) && isfinite(tcalyy[i]) && !isnan(tcalxx[i]) && !isnan(tcalyy[i]))
 		{
 			tcalxx[i]/=avgxx;
 			tcalyy[i]/=avgyy;
+		}
+		else
+		{
+			tcalxx[i] = 1.0;
+			tcalyy[i] = 1.0;
 		}
         }
         for (i=0;i<MAX_CHANNELS; i++)
@@ -51,15 +67,42 @@ void norm_one_tcal(int lowchan,int highchan,int *badchannels,float* tcalxx,float
 			tcalyy[i] = tcalyy[highchan-1];
 		}*/
 		//else 
-		if(badchannels[i])
+		if(badchannels[i] || !isfinite(tcalxx[i]) || !isfinite(tcalyy[i]) || isnan(tcalxx[i]) || isnan(tcalyy[i]))
 		{
-			tcalxx[i] = tcalxx[i-1];
-			tcalyy[i] = tcalyy[i-1];
+			if(i == 0)
+			{
+				if(!isfinite(tcalxx[i]) || isnan(tcalxx[i]))
+					tcalxx[i] = 1.0;
+				if(!isfinite(tcalyy[i]) || isnan(tcalyy[i]))
+					tcalyy[i] = 1.0;
+			}
+			else
+			{
+				if(!isfinite(tcalxx[i]) || isnan(tcalxx[i]) || !isfinite(tcalyy[i]) || isnan(tcalyy[i]))
+				{
+					if(!isfinite(tcalxx[i-1]) || isnan(tcalxx[i-1]) || !isfinite(tcalyy[i-1]) || isnan(tcalyy[i-1]))
+					{
+					tcalxx[i] = tcalxx[i-1];
+					tcalyy[i] = tcalyy[i-1];
+					}
+				}
+				else
+					printf("Wrong branch\n");
+				if(!isfinite(tcalxx[i]) || !isfinite(tcalyy[i]) || isnan(tcalxx[i]) || isnan(tcalyy[i]))
+         	                	printf("NaNs found %f %f\n",tcalxx[i],tcalyy[i]);
+			}
 		}
 		else
+		{
 			continue;
+		}
 	}
-	return;
+/*        for (i=0;i<MAX_CHANNELS; i++)
+        {
+		if(!isfinite(tcalxx[i]) || !isfinite(tcalyy[i]) || !isnan(tcalxx[i]) || !isnan(tcalyy[i]))
+			printf("NaNs found\n");
+	}
+*/	return;
 }
 //--------------------------------------------------------------------------------------------------------
 void write_tcal(float* tcalxx,float* tcalyy, int r, int low, int high)

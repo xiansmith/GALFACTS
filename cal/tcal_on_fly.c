@@ -78,18 +78,18 @@ void norm_one_tcal(int lowchan,int highchan,int *badchannels,float* tcalxx,float
 			}
 			else
 			{
-				if(!isfinite(tcalxx[i]) || isnan(tcalxx[i]) || !isfinite(tcalyy[i]) || isnan(tcalyy[i]))
+				if(badchannels[i-1] || !isfinite(tcalxx[i-1]) || isnan(tcalxx[i-1]) || !isfinite(tcalyy[i-1]) || isnan(tcalyy[i-1]))
 				{
-					if(!isfinite(tcalxx[i-1]) || isnan(tcalxx[i-1]) || !isfinite(tcalyy[i-1]) || isnan(tcalyy[i-1]))
-					{
-					tcalxx[i] = tcalxx[i-1];
-					tcalyy[i] = tcalyy[i-1];
-					}
+					tcalxx[i] = 1.0;
+					tcalyy[i] = 1.0;
 				}
 				else
-					printf("Wrong branch\n");
+				{
+					tcalxx[i] = tcalxx[i-1];
+					tcalyy[i] = tcalyy[i-1];
+				}
 				if(!isfinite(tcalxx[i]) || !isfinite(tcalyy[i]) || isnan(tcalxx[i]) || isnan(tcalyy[i]))
-         	                	printf("NaNs found %f %f\n",tcalxx[i],tcalyy[i]);
+         	                	printf("Still NaNs found  :-( %f %f\n",tcalxx[i],tcalyy[i]);
 			}
 		}
 		else

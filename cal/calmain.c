@@ -268,7 +268,7 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 	if(fit_smooth == 1)
 	{	
 		printf("Compute linear cal\n"); 
-		linear_fit_cal(dataset, numRecords, 0, MAX_CHANNELS, RFIF);	
+		linear_fit_cal(dataset, numRecords, 0, MAX_CHANNELS, RFIF, fwindow);	
 	}
 	else if(fit_smooth == 2)
 	{	
@@ -372,8 +372,8 @@ int main(int argc, char *argv[])
 	int calskyfiles = atoi(argv[17]); printf("calskyfiles = %d\n", calskyfiles);
 	int annfiles = atoi(argv[18]); printf("annfiles = %d\n", annfiles);
 	int fit_smooth = atoi(argv[19]); printf("fit/smooth selection= %d\n", fit_smooth);
-	int window = atoi(argv[20]); printf("smoothing window = %d\n", window);
-        int cwindow = atoi(argv[21]); printf("rolling window for tcal= %d\n", cwindow);
+	int twindow = atoi(argv[20]); printf("smoothing window in time= %d\n", twindow);
+        int fwindow = atoi(argv[21]); printf("smoothing window in frequency or max iterations for the rolling smooth function= %d\n", fwindow);
 
 	// The imaging window. This helps reject highcal datapoints which mes up fitting
 	float RAmin = atof(argv[22]); printf("RA min = %f\n",RAmin);
@@ -515,7 +515,7 @@ int main(int argc, char *argv[])
 									RFIF, RFIT, numSigmaF, numSigmaT, freqSmoothing, \
 									uvDenoising, uvDenoisingTau, uvDenoisingLambda, \
 									hidrogenfreq, hidrogenband, calskyfiles, annfiles, fit_smooth, \
-									window, cwindow, badchannels, RAmin,RAmax,DECmin,DECmax);
+									twindow, fwindow, badchannels, RAmin,RAmax,DECmin,DECmax);
 				}
 
 				printf("---------------------------------------------------\n");

@@ -54,7 +54,7 @@ void compute_raw_cal(SpecRecord dataset[], int size, int lowchan, int highchan)
 	return;
 }
 //----------------------------------------------------------------------------------------------------------
-void linear_fit_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int RFIF)
+void linear_fit_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int RFIF,int fwindow)
 {
 	int n, chan, order = 1;
 	float C[order + 1]; 
@@ -112,10 +112,10 @@ void linear_fit_cal(SpecRecord dataset[], int size, int lowchan, int highchan, i
 	}
 	fclose(f);
 
-	diffusion_filter(Cxx, highchan - lowchan, 30);
-	diffusion_filter(Cyy, highchan - lowchan, 30);
-	diffusion_filter(Cxy, highchan - lowchan, 30);
-	diffusion_filter(Cyx, highchan - lowchan, 30);
+	diffusion_filter(Cxx, highchan - lowchan, fwindow);
+	diffusion_filter(Cyy, highchan - lowchan, fwindow);
+	diffusion_filter(Cxy, highchan - lowchan, fwindow);
+	diffusion_filter(Cyx, highchan - lowchan, fwindow);
 
 	float avgxx=0.0,avgyy=0.0,avgxy=0.0,avgyx=0.0;
 
@@ -238,6 +238,7 @@ void simple_smooth_cal(SpecRecord dataset[], int start, int end, int records, in
 	int size = end-start;
 	float mean[4], tmp;
 	static float mean_t[4] = {0};
+	float sigma[4] = {0};
 	float *XRA, *Yxx, *Yyy, *Yxy, *Yyx;
 	static float *Fxx, *Fyy, *Fxy, *Fyx, *w;
 
@@ -352,7 +353,8 @@ void simple_smooth_cal(SpecRecord dataset[], int start, int end, int records, in
 		mean_t[0] /= cnt; 
 		mean_t[1] /= cnt; 
 		mean_t[2] /= cnt; 
-		mean_t[3] /= cnt;	
+		mean_t[3] /= cnt;
+	
 	}
 
 	cnt = 0;	
@@ -372,7 +374,26 @@ void simple_smooth_cal(SpecRecord dataset[], int start, int end, int records, in
 		Yyy[cnt] /= dchan; 
 		Yxy[cnt] /= dchan; 
 		Yyx[cnt] /= dchan;
+
+		sigma[0] += (Yxx[cnt] - mean_t[0])*(Yxx[cnt] - mean_t[0]);
+		sigma[1] += (Yyy[cnt] - mean_t[1])*(Yyy[cnt] - mean_t[1]);
+		sigma[2] += (Yxy[cnt] - mean_t[2])*(Yxy[cnt] - mean_t[2]);
+		sigma[3] += (Yyx[cnt] - mean_t[3])*(Yyx[cnt] - mean_t[3]);
+
 		cnt++;
+	}
+
+	sigma[0] = sqrt(sigma[0]/cnt);
+	sigma[1] = sqrt(sigma[1]/cnt);
+	sigma[2] = sqrt(sigma[2]/cnt);
+	sigma[3] = sqrt(sigma[3]/cnt);
+
+	for(n=0; n<cnt; n++)
+	{
+		if(fabs(Yxx[n] - mean_t[0]) > 3.0*sigma[0]) Yxx[n] = mean_t[0];
+		if(fabs(Yyy[n] - mean_t[1]) > 3.0*sigma[1]) Yyy[n] = mean_t[1];
+		if(fabs(Yxy[n] - mean_t[2]) > 3.0*sigma[2]) Yxy[n] = mean_t[2];
+		if(fabs(Yyx[n] - mean_t[3]) > 3.0*sigma[3]) Yyx[n] = mean_t[3];
 	}
 
 	for(n=0; n<cnt; n++) 
@@ -382,6 +403,10 @@ void simple_smooth_cal(SpecRecord dataset[], int start, int end, int records, in
 		Yxy[n] /= mean_t[2];
 		Yyx[n] /= mean_t[3];
 	}
+
+	//To avoid window parameter from overflowing
+	if(twindow > (cnt/2 - 1))
+		twindow = cnt/2 -1;
 
 	//apply the moving average filter to reduce noise
 	moving_average_filter(Yxx, cnt, twindow);
@@ -447,7 +472,6 @@ void simple_smooth_cal(SpecRecord dataset[], int start, int end, int records, in
         if(outfile2 == NULL)
         {
                 printf("Can't open avgbandcal.dat\n");
-                exit(0);
         }
 	cnt = 0;
         for(n=start; n<end; n++)
@@ -480,7 +504,7 @@ void simple_smooth_cal(SpecRecord dataset[], int start, int end, int records, in
 	return;
 }
 //----------------------------------------------------------------------------------------------------------
-void rolling_smooth_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int window, int cwindow)
+void rolling_smooth_cal(SpecRecord dataset[], int size, int lowchan, int highchan, int twindow, int maxiter)
 {
 	//fix this loop need to run for all 4096 channels
 	lowchan = 0; highchan = MAX_CHANNELS;
@@ -671,10 +695,10 @@ void rolling_smooth_cal(SpecRecord dataset[], int size, int lowchan, int highcha
 	//In this case window is actually the number of iterations for diffusion smoothing
 	//Carried over the variable name from the other fitting routines that actually 
 	//used a smoothing window.
-        diffusion_filter(Yxx, size, window);
-        diffusion_filter(Yyy, size, window);
-        diffusion_filter(Yxy, size, window);
-        diffusion_filter(Yyx, size, window);
+        diffusion_filter(Yxx, size, maxiter);
+        diffusion_filter(Yyy, size, maxiter);
+        diffusion_filter(Yxy, size, maxiter);
+        diffusion_filter(Yyx, size, maxiter);
 
 	//apply the moving average filter to reduce noise
 	//moving_average_filter(Yxx, size, 500);
@@ -700,7 +724,7 @@ void rolling_smooth_cal(SpecRecord dataset[], int size, int lowchan, int highcha
 			{
 				cc[chan] = 0;
 				int nn;
-				for(nn=0; nn<cwindow; nn++) 
+				for(nn=0; nn<twindow; nn++) 
 				{
 					//if(!dataset[nn].flagBAD && dataset[nn].flagRFI[chan] == RFI_NONE)
 					{
@@ -728,14 +752,14 @@ void rolling_smooth_cal(SpecRecord dataset[], int size, int lowchan, int highcha
 					Fyx[chan - lowchan] = Fyx[chan-lowchan-1];
 				}
 			}
-			else if(n < cwindow/2 && n > 0)
+			else if(n < twindow/2 && n > 0)
 			{
 				;
 			}
-			else if(n >= cwindow/2 && n < size - cwindow/2)
+			else if(n >= twindow/2 && n < size - twindow/2)
 			{
-				int a = n - cwindow/2;
-				int b = n + cwindow/2;
+				int a = n - twindow/2;
+				int b = n + twindow/2;
 				Fxx[chan - lowchan] = Fxx[chan - lowchan]*cc[chan] - dataset[a].cal.xx[chan] + dataset[b].cal.xx[chan];
 				Fyy[chan - lowchan] = Fyy[chan - lowchan]*cc[chan] - dataset[a].cal.yy[chan] + dataset[b].cal.yy[chan];
 				Fxy[chan - lowchan] = Fxy[chan - lowchan]*cc[chan] - dataset[a].cal.xy[chan] + dataset[b].cal.xy[chan];

@@ -129,7 +129,7 @@ static void create_annotations(SpecRecord dataset[], int size)
 //--------------------------------------------------------------------------------------------------------
 static void process_dataset(const char *field, const char *datadirname, const char *datedir, const char *subdir, int beam, int band, int lowchan, int highchan, \
 int RFIF, int RFIT, float numSigmaF, float numSigmaT, int freqSmoothing, \
-int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfreq, float hidrogenband, int calskyfiles, int annfiles, int fit_smooth, int window, int cwindow, int *badchannels, float RAmin,float RAmax,float DECmin,float DECmax)
+int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfreq, float hidrogenband, int calskyfiles, int annfiles, int fit_smooth, int twindow, int fwindow, int *badchannels, float RAmin,float RAmax,float DECmin,float DECmax)
 {
 	FILE * datafile, *cfgfile;
 	glob_t globbuf;
@@ -187,10 +187,6 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 	printf("Read %i records\n", numRecords);
 	if (numRecords <= 0){printf("ERROR: Skipping %s %s: there are no records!\n", datedir, subdir); return;}
 	read_clock(); start_clock();
-	
-
-
-
 
 	printf("Marking bad data points\n");
 	char badfilename[128+1]; 
@@ -254,67 +250,85 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 	compute_raw_cal(dataset, numRecords, lowchan, highchan);
 	read_clock(); start_clock();
 	
-    float Tcalx[MAX_CHANNELS];
-    float Tcaly[MAX_CHANNELS];
+	float Tcalx[MAX_CHANNELS];
+	float Tcaly[MAX_CHANNELS];
 
-    float Tcalx_s[MAX_CHANNELS];
-    float Tcaly_s[MAX_CHANNELS];
+	float Tcalx_s[MAX_CHANNELS];
+	float Tcaly_s[MAX_CHANNELS];
 
         int i;
         for(i = 0;i < MAX_CHANNELS;i++)
         {
-                Tcalx[i] = 0.0;
-                Tcaly[i] = 0.0;
-                Tcalx_s[i] = 0.0;
-                Tcaly_s[i] = 0.0;
+                Tcalx[i] = 1.0;
+                Tcaly[i] = 1.0;
+                Tcalx_s[i] = 1.0;
+                Tcaly_s[i] = 1.0;
         }
 
-
-	if(fit_smooth)
-		{	
+	if(fit_smooth == 1)
+	{	
 		printf("Compute linear cal\n"); 
-		linear_fit_cal(dataset, numRecords, lowchan, highchan, RFIF);	
-		}
-	else
-		{
-		printf("Compute smooth cal\n"); 
-		smooth_cal(dataset, numRecords, lowchan, highchan, window,cwindow);
-		}
+		linear_fit_cal(dataset, numRecords, 0, MAX_CHANNELS, RFIF);	
+	}
+	else if(fit_smooth == 2)
+	{	
+		printf("Compute simple smooth cal\n");
+
+		//Change according to some days to deal with  jumps
+		simple_smooth_cal(dataset, 0, numRecords ,numRecords, lowchan, highchan, twindow,fwindow);
+	}
+	else if(fit_smooth == 0)
+	{
+		printf("Compute rolling smooth cal\n"); 
+		rolling_smooth_cal(dataset, numRecords, lowchan, highchan, twindow,fwindow);
+	}
 	read_clock(); start_clock();
 	printf("Calculating Stokes parameters\n");
-
 	int r;
-	for(r = 0;r < numRecords;r++ )
-	{
-
-	        compute_tcal(dataset, numRecords,  lowchan, highchan, hidrogenfreq, hidrogenband,freq, badchannels, Tcalx, Tcaly, r, cwindow);
-	        for(k=0;k<MAX_CHANNELS;k++)
-	        {
-	        	Tcalx_s[k] = Tcalx[k];
-	        	Tcaly_s[k] = Tcaly[k];
-	    	}
-
-		norm_one_tcal(0,MAX_CHANNELS,badchannels,Tcalx_s,Tcaly_s);
-		moving_average_filter(Tcalx_s, MAX_CHANNELS, 20);
-		moving_average_filter(Tcaly_s, MAX_CHANNELS, 20);
-
-	        if(!(r%1000))
-        	        write_tcal(Tcalx_s,Tcaly_s,r,0,MAX_CHANNELS);
-
-		calculate_stokes(dataset, numRecords, lowchan, highchan, RFIF, calskyfiles, Tcalx_s, Tcaly_s, uvDenoising, uvDenoisingTau, uvDenoisingLambda,r,r+1);
+	
+	if(fit_smooth)
+	{	
+		compute_tcal(dataset, numRecords,  0, highchan, hidrogenfreq, hidrogenband,freq, badchannels, Tcalx, Tcaly, 0, numRecords);
+		norm_one_tcal(0,MAX_CHANNELS,badchannels,Tcalx,Tcaly);
+		read_clock(); start_clock();
+		calculate_stokes(dataset, numRecords, 0, MAX_CHANNELS, RFIF, calskyfiles, Tcalx, Tcaly, uvDenoising, uvDenoisingTau, uvDenoisingLambda,0,numRecords);
+		write_tcal(Tcalx,Tcaly,numRecords,0,MAX_CHANNELS);
 	}
-		read_clock(); start_clock();
-		printf("Writing channel data to single file\n");
-		write_binary_channel_data_single_file(dataset, numRecords, lowchan, highchan);
-		// old method: write_binary_channel_data(dataset, numRecords, lowchan, highchan);
+	else
+	{
+		for(r = 0;r < numRecords;r++ )
+		{
 
-		read_clock(); start_clock();
-		printf("Writing average data\n");
-		average_stokes(dataset, numRecords, lowchan, highchan, hidrogenfreq, hidrogenband, freq);
+		        compute_tcal(dataset, numRecords,  lowchan, highchan, hidrogenfreq, hidrogenband,freq, badchannels, Tcalx, Tcaly, r, twindow);
+		        for(k=0;k<MAX_CHANNELS;k++)
+		        {
+		        	Tcalx_s[k] = Tcalx[k];
+		        	Tcalx_s[k] = Tcalx[k];
+	    		}
+
+			norm_one_tcal(0,MAX_CHANNELS,badchannels,Tcalx_s,Tcaly_s);
+			diffusion_filter(Tcalx_s, MAX_CHANNELS, fwindow);
+			diffusion_filter(Tcaly_s, MAX_CHANNELS, fwindow);
+
+		        if(!(r%10000))
+        		        write_tcal(Tcalx_s,Tcaly_s,r,0,MAX_CHANNELS);
+
+			calculate_stokes(dataset, numRecords, lowchan, highchan, RFIF, calskyfiles, Tcalx_s, Tcaly_s, uvDenoising, uvDenoisingTau, uvDenoisingLambda,r,r+1);
+		}
+	}
+	printf("Writing channel data to single file\n");
+	write_binary_channel_data_single_file(dataset, numRecords, lowchan, highchan);
+	//write_channel_data(dataset, numRecords, lowchan, highchan);
+	// old method: write_binary_channel_data(dataset, numRecords, lowchan, highchan);
+
+	read_clock(); start_clock();
+	printf("Writing average data\n");
+	average_stokes(dataset, numRecords, lowchan, highchan, hidrogenfreq, hidrogenband, freq);
 
 	// new method, new filename but old format
 	// average data is still in channel 0, but no longer overwrite the real channel 0
 	write_binary_channel_data(dataset, numRecords, 0, 1);
+	write_channel_data(dataset, numRecords, 0, 1);
 
 	read_clock();	
 	free(dataset);

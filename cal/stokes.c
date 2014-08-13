@@ -42,15 +42,26 @@ static void compute_gains(const SpecRecord * pRec, GainSet * pGain, int lowchan,
 //----------------------------------------------------------------------------------------------------------------------------------------
 static void compute_phases(const SpecRecord * pRec, GainSet * pGain, int lowchan, int highchan, float Tcalx[], float Tcaly[])
 {
-        int i;
-        double calU, calV;
+	int i;
+	double calU, calV;
 
-        for (i=lowchan; i<highchan; i++)
-                {
-                calU = pRec->cal.xy[i] + pRec->cal.yx[i];
-                calV = pRec->cal.xy[i] - pRec->cal.yx[i];
-                pGain->phi[i] = atan2(calV, calU);
-                }
+	for (i=lowchan; i<highchan; i++)
+	{
+		calU = pRec->cal.xy[i] + pRec->cal.yx[i];
+		calV = pRec->cal.xy[i] - pRec->cal.yx[i];
+		pGain->phi[i] = atan2(calV, calU);
+		if(i >= lowchan+1 && pGain->phi[i-1] > M_PI/2.0 && pGain->phi[i] < -0.0)
+		{
+			//printf("inside if i is %d\n",i); 
+			pGain->phi[i] += 2*M_PI;
+		}
+		else if(i >= lowchan+1 && pGain->phi[i-1] < -M_PI/2.0 && pGain->phi[i] > 0.0)
+		{
+			//printf("inside else if i is %d\n",i); 
+			pGain->phi[i] -= 2*M_PI;
+		}
+
+	}
 }
 
 // Uses obsStokes to calibrate the calStokes
@@ -87,7 +98,7 @@ static void print_stokes(FILE * file, const StokesSet * obs, const StokesSet * c
 				obs->I[i], obs->Q[i], obs->U[i], obs->V[i], cal->I[i], cal->Q[i], cal->U[i], cal->V[i],
 				gain->x[i], gain->y[i], gain->phi[i]);
 		}
-	fprintf(file, "\n");
+	//fprintf(file, "\n");
 }
 //----------------------------------------------------------------------------------------------------------------------------------------
 static void print_gain(FILE * filex, FILE * filey, FILE * filep, const SpecRecord * pRec, const GainSet * gain, int lowchan, int highchan)
@@ -144,7 +155,11 @@ static void compute_observed_stokes(const SpecRecord * pRec, StokesSet * ObsCal,
 		ObsSky->Q[i] = data.xx - data.yy;
 		ObsSky->U[i] = data.xy + data.yx;
 		ObsSky->V[i] = data.xy - data.yx;
-
+		/*ObsSky->I[i] = data.xx;
+		ObsSky->Q[i] = data.yy;
+		ObsSky->U[i] = data.xy;
+		ObsSky->V[i] = data.yx;
+*/
 		}
 
 }
@@ -159,23 +174,29 @@ static void compute_final_stokes(SpecRecord * pRec, StokesSet * TrueSky, int RFI
 {
 	int i;
 
+//	FILE *f = fopen("linfitphase.dat","w");
+	//FILE *f = fopen("smoothphase.dat","w");
+
 	for(i=lowchan; i<=highchan; i++)
-		{
+	{
 		if((!RFIF || pRec->flagRFI[i] == RFI_NONE) && isfinite(TrueSky->I[i]))
-			{
+		{
 			pRec->stokes.I[i] = TrueSky->I[i];
 			pRec->stokes.Q[i] = TrueSky->Q[i];
 			pRec->stokes.U[i] = TrueSky->U[i];
 			pRec->stokes.V[i] = TrueSky->V[i];
-			}
+		}
 		else
-			{
+		{
 			pRec->stokes.I[i] = NAN;
 			pRec->stokes.Q[i] = NAN;
 			pRec->stokes.U[i] = NAN;
 			pRec->stokes.V[i] = NAN;
-			}
 		}
+//		fprintf(f,"%04i %2.6f %2.6f %2.6f %2.6f\n",i,pRec->stokes.I[i],pRec->stokes.Q[i],pRec->stokes.U[i],pRec->stokes.V[i]);
+	}
+//	fclose(f);
+	//exit(0);
 	//printf("Chan 1000 Stokes I %f\n",pRec->stokes.I[1000]);
 }
 //----------------------------------------------------------------------------------------------------------------------------------------
@@ -259,11 +280,12 @@ void calculate_stokes(SpecRecord dataset[], int size, int lowchan, int highchan,
 		}
 
 	//Uses average phases over all time datapoints for better S/N
-/*        float av_phi[MAX_CHANNELS];
+        float av_phi[MAX_CHANNELS];
         for(n=lowchan; n<highchan; n++) av_phi[n] = 0.0;
 
 	int count = 0;
         for (i=0; i<size; i++)
+        //for (i=1000; i<1001; i++)
                 {
                 pRec = &(dataset[i]);
                 if (pRec->flagBAD) continue;
@@ -273,89 +295,138 @@ void calculate_stokes(SpecRecord dataset[], int size, int lowchan, int highchan,
                 for(n=lowchan; n<highchan; n++) av_phi[n] += gain.phi[n];
 		count++;
                 }
-
+	//printf("Count is %d\n",count);
         for(n=lowchan; n<highchan; n++)
         {
                 av_phi[n] /= count;
                 gain.phi[n] = av_phi[n];
         }
 
-        if(uvDenoising)
-                {
-                float min,max;
-                float C[2];
-                float *x; x = (float*)malloc((highchan - lowchan)*sizeof(float));
-                float *chans; chans = (float*)malloc((highchan - lowchan)*sizeof(float));
-                for(n=lowchan; n<highchan; n++) x[n-lowchan] = gain.phi[n];
-                for(n=lowchan; n<highchan; n++) chans[n-lowchan] = n;
+	FILE *err = fopen("phase.dat","w");
+
+	if(uvDenoising)
+	{
+		/*                float min,max;
+				  float C[2];
+				  float *x; x = (float*)malloc((highchan - lowchan)*sizeof(float));
+				  float *chans; chans = (float*)malloc((highchan - lowchan)*sizeof(float));
+				  for(n=lowchan; n<highchan; n++) x[n-lowchan] = gain.phi[n];
+		//for(n=lowchan; n<highchan; n++) chans[n-lowchan] = n;
+		diffusion_filter(x, highchan - lowchan, 1000);
+		for(n=lowchan; n<highchan; n++) gain.phi[n] = x[n-lowchan];
 
 		//linear fit
-                chebyshev_minmax(chans, highchan-lowchan, &min, &max);
-                chebyshev_normalize(chans, highchan-lowchan, min, max);
-                chebyshev_fit_bw(chans, x, highchan-lowchan, 2.5, C, 1);
-                for(n=lowchan; n<highchan; n++)
-                {
-                         gain.phi[n] = chebyshev_eval(CNORMALIZE(n,min,max),C,1);
-                }
-                free(x);
-                }
-*/
-	
+		//chebyshev_minmax(chans, highchan-lowchan, &min, &max);
+		//chebyshev_normalize(chans, highchan-lowchan, min, max);
+		//chebyshev_fit_bw(chans, x, highchan-lowchan, 2.5, C, 1);
+*/              for(n=lowchan; n<highchan; n++)
+		{
+			//gain.phi[n] = chebyshev_eval(CNORMALIZE(n,min,max),C,1);
+			//fprintf(err,"%04i %2.6f %2.6f %2.6f %2.6f\n",n,av_phi[n],gain.phi[n],(av_phi[n]-gain.phi[n]),0.5*(av_phi[n]-gain.phi[n])*(av_phi[n]-gain.phi[n]));
+			fprintf(err,"%04i %2.6f\n",n,gain.phi[n]);
+		}
+		//free(x);
+	}
+	fclose(err);
+//	exit(0);	
 	//iterate over each time step
 	//for (i=0; i<size; i++) 
         for(i=start; i<end; i++)
 		{
 		pRec = &(dataset[i]);
-		if (pRec->flagBAD) continue;
-		
+		if (pRec->flagBAD){
+		//	printf("i %d\n",i);
+			 continue;
+		}
 		compute_observed_stokes(pRec, &ObsCal, &ObsSky, lowchan, highchan);
 
 		//Better to calculate phases for individual time stamps
 		//Also better to use diffusion smoothing instead of a linear fit.
-                compute_phases(pRec, &gain, lowchan, highchan, Tcalx, Tcaly);
+                //compute_phases(pRec, &gain, lowchan, highchan, Tcalx, Tcaly);
 
-                if(uvDenoising)
+
+/*		char phfname[100];
+		FILE *phf;
+		if(!(i%1000))
+		{
+			sprintf(phfname,"gains%04i.dat",i);
+			phf = fopen(phfname,"w");
+		}*/
+/*                if(uvDenoising)
                 {
                          float *x; x = (float*)malloc((highchan - lowchan)*sizeof(float));
                          for(n=lowchan; n<highchan; n++) x[n-lowchan] = gain.phi[n];
                          diffusion_filter(x, highchan - lowchan, 100);
                          for(n=lowchan; n<highchan; n++) gain.phi[n] = x[n-lowchan];
                          free(x);
-                }
-
-		compute_gains(pRec, &gain, lowchan, highchan, Tcalx, Tcaly);
-		
-		/*if(uvDenoising)
+			if(!(i%1000))
 			{
-			float *x; x = (float*)malloc((highchan - lowchan)*sizeof(float));
-			for(n=lowchan; n<highchan; n++) x[n-lowchan] = gain.phi[n];
-			diffusion_filter(x, highchan - lowchan, 100);
-			for(n=lowchan; n<highchan; n++) gain.phi[n] = x[n-lowchan];
-			free(x);
+                         for(n=lowchan; n<highchan; n++) fprintf(phf,"%2.4f\n",gain.phi[n]);
 			}
-		*/
-		calibrate_stokes(&CalCal, &gain, &ObsCal, lowchan, highchan);
-
+                }
+		if(!(i%1000))
+		{
+		fclose(phf);
+		}
+*/		compute_gains(pRec, &gain, lowchan, highchan, Tcalx, Tcaly);
+/*		if(!(i%1000))
+		{
+                	for(n=lowchan; n<highchan; n++) fprintf(phf,"%2.4f %2.4f\n",gain.x[n],gain.y[n]);
+		}
+		if(!(i%1000))
+		{
+			fclose(phf);
+		}
+*/		
+		//calibrate_stokes(&CalCal, &gain, &ObsCal, lowchan, highchan);
 		calibrate_stokes(&TrueSky, &gain, &ObsSky, lowchan, highchan);
 
+//		if(300 == i)
+//		{
+//			printf("300 rec\n");
+//			fflush(stdout);
 		compute_final_stokes(pRec, &TrueSky, RFIF, lowchan, highchan);
+		//compute_final_stokes(pRec, &ObsSky, RFIF, lowchan, highchan);
+//		}
 
-		if(calskyfiles)
+/*		if(i == 1500)
+			phf = fopen("spectra1500.dat","w");
+		if(i == 1850)
+			phf = fopen("spectra1850.dat","w");
+
+		int j;
+		if(i == 1500 || i == 1850)
+		{
+			for(j = lowchan;j<highchan;j++)
 			{
+				fprintf(phf,"%d %f %f %f %f\n",j,pRec->stokes.I[j],pRec->stokes.Q[j],pRec->stokes.U[j],pRec->stokes.V[j]);
+			}
+		}
+
+
+		if(i == 1500)
+			fclose(phf);
+		if(i == 1850)
+		{
+			fclose(phf);
+			exit(0);
+		}
+*/
+		if(calskyfiles)
+		{
 			print_stokes(calfile, &ObsCal, &CalCal, &gain, lowchan, highchan);
 			print_stokes(skyfile, &ObsSky, &TrueSky, &gain, lowchan, highchan);
 			
 			//print_gain(gainx, gainy, gainp, pRec, &gain, lowchan, highchan); 
-			}
-		}		
+		}
+	}		
 
 
 	if(calskyfiles)
-		{
+	{
 		fclose(calfile); fclose(skyfile);
 		//fclose(gainx); fclose(gainy); fclose(gainp);
-		}
-
+	}
 }
 //----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -659,10 +730,11 @@ void write_rfi_data( SpecRecord dataset[], int numRecords, int lowchan, int high
 
 		for(chan=lowchan; chan<highchan; chan++)
 		{
-			if( dataset[n].flagRFI[chan] ==  RFI_CALOFF_XX ||
-					dataset[n].flagRFI[chan] ==  RFI_CALOFF_XY ||
-					dataset[n].flagRFI[chan] ==  RFI_CALOFF_YX  ||
-					dataset[n].flagRFI[chan] ==  RFI_CALOFF_YY )
+//			if( dataset[n].flagRFI[chan] ==  RFI_CALOFF_XX ||
+//					dataset[n].flagRFI[chan] ==  RFI_CALOFF_XY ||
+//					dataset[n].flagRFI[chan] ==  RFI_CALOFF_YX  ||
+//					dataset[n].flagRFI[chan] ==  RFI_CALOFF_YY )
+			if( dataset[n].flagRFI[chan] != RFI_NONE)
 			{
 				fprintf( freqRFI, "%d %d %f %f\n", n, chan, dataset[n].RA, dataset[n].DEC );
 				freqCount++;

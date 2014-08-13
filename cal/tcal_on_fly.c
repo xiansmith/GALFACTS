@@ -18,7 +18,8 @@ void norm_one_tcal(int lowchan,int highchan,int *badchannels,float* tcalxx,float
 	int counter = 0;
         for (i=lowchan;i<highchan; i++)
         {
-		if(!badchannels[i] && isfinite(tcalxx[i]) && isfinite(tcalyy[i]) && !isnan(tcalxx[i]) && !isnan(tcalyy[i]))
+		//if(!badchannels[i] && isfinite(tcalxx[i]) && isfinite(tcalyy[i]) && !isnan(tcalxx[i]) && !isnan(tcalyy[i]))
+		if(isfinite(tcalxx[i]) && isfinite(tcalyy[i]) && !isnan(tcalxx[i]) && !isnan(tcalyy[i]))
 		{
 			avgxx+=tcalxx[i];
 			avgyy+=tcalyy[i];
@@ -43,15 +44,18 @@ void norm_one_tcal(int lowchan,int highchan,int *badchannels,float* tcalxx,float
         //for (i=lowchan;i<highchan; i++)
         for (i=0;i<MAX_CHANNELS; i++)
         {
-		if(!badchannels[i] && isfinite(tcalxx[i]) && isfinite(tcalyy[i]) && !isnan(tcalxx[i]) && !isnan(tcalyy[i]))
+		//if(!badchannels[i] && isfinite(tcalxx[i]) && isfinite(tcalyy[i]) && !isnan(tcalxx[i]) && !isnan(tcalyy[i]))
+		if(isfinite(tcalxx[i]) && isfinite(tcalyy[i]) && !isnan(tcalxx[i]) && !isnan(tcalyy[i]))
 		{
 			tcalxx[i]/=avgxx;
 			tcalyy[i]/=avgyy;
 		}
 		else
 		{
-			tcalxx[i] = 1.0;
-			tcalyy[i] = 1.0;
+			//tcalxx[i] = 1.0;
+			//tcalyy[i] = 1.0;
+			tcalxx[i] = tcalxx[i-1];
+			tcalyy[i] = tcalyy[i-1];
 		}
         }
         for (i=0;i<MAX_CHANNELS; i++)
@@ -67,7 +71,8 @@ void norm_one_tcal(int lowchan,int highchan,int *badchannels,float* tcalxx,float
 			tcalyy[i] = tcalyy[highchan-1];
 		}*/
 		//else 
-		if(badchannels[i] || !isfinite(tcalxx[i]) || !isfinite(tcalyy[i]) || isnan(tcalxx[i]) || isnan(tcalyy[i]))
+		//if(badchannels[i] || !isfinite(tcalxx[i]) || !isfinite(tcalyy[i]) || isnan(tcalxx[i]) || isnan(tcalyy[i]))
+		if(!isfinite(tcalxx[i]) || !isfinite(tcalyy[i]) || isnan(tcalxx[i]) || isnan(tcalyy[i]))
 		{
 			if(i == 0)
 			{
@@ -78,7 +83,8 @@ void norm_one_tcal(int lowchan,int highchan,int *badchannels,float* tcalxx,float
 			}
 			else
 			{
-				if(badchannels[i-1] || !isfinite(tcalxx[i-1]) || isnan(tcalxx[i-1]) || !isfinite(tcalyy[i-1]) || isnan(tcalyy[i-1]))
+				//if(badchannels[i-1] || !isfinite(tcalxx[i-1]) || isnan(tcalxx[i-1]) || !isfinite(tcalyy[i-1]) || isnan(tcalyy[i-1]))
+				if(!isfinite(tcalxx[i-1]) || isnan(tcalxx[i-1]) || !isfinite(tcalyy[i-1]) || isnan(tcalyy[i-1]))
 				{
 					tcalxx[i] = 1.0;
 					tcalyy[i] = 1.0;
@@ -109,18 +115,16 @@ void write_tcal(float* tcalxx,float* tcalyy, int r, int low, int high)
 {
 	char filename[64];
 	int i;
-	sprintf(filename,"Tcalw_%04i.new",r);
+	sprintf(filename,"Tcal_%04i.dat",r);
         FILE * tcalfile = fopen(filename,"w");
         if(tcalfile == NULL)
         {
                 printf("Can't open Tcal.dat\n");
                 exit(1);
         }
-        //for (i=0;i<MAX_CHANNELS;i++)
         for (i=low;i<high;i++)
         {
-			fprintf(tcalfile,"%2.6f %2.6f\n",tcalxx[i],tcalyy[i]);
-			//printf("%2.6f %2.6f\n",tcalxx[i],tcalyy[i]);
+		fprintf(tcalfile,"%2.6f %2.6f\n",tcalxx[i],tcalyy[i]);
 	}
 
         fclose(tcalfile);
@@ -150,44 +154,56 @@ void compute_tcal(SpecRecord dataset[], int size, int lowchan, int highchan, flo
 	{
                 memset(&avgcal, 0,MAX_CHANNELS*sizeof(PolAvg));
 	        memset(&avgdata, 0, MAX_CHANNELS*sizeof(PolAvg));
-	        for(n=0; n<window; n++)
-       	        {
-	       	 	if(dataset[n].flagBAD)
+		for(n=0; n<window; n++)
+		{
+			if(dataset[n].flagBAD)
 			{
-			continue;
+				continue;
 			}
-        		for (i=0;i<MAX_CHANNELS; i++)
-                        {
+			for (i=0;i<MAX_CHANNELS; i++)
+			{
 
-                              if(dataset[n].flagRFI[i] == RFI_NONE && !badchannels[i])
-                              {
-                                        avgcal[i].xx += dataset[n].cal.xx[i];
-                                        avgcal[i].yy += dataset[n].cal.yy[i];
-                                        avgdata[i].xx += dataset[n].caloff.xx[i];
-                                        avgdata[i].yy += dataset[n].caloff.yy[i];
+				//if(dataset[n].flagRFI[i] == RFI_NONE && !badchannels[i])
+				{
+					avgcal[i].xx += dataset[n].cal.xx[i];
+					avgcal[i].yy += dataset[n].cal.yy[i];
+					avgdata[i].xx += dataset[n].caloff.xx[i];
+					avgdata[i].yy += dataset[n].caloff.yy[i];
 					count[i]++;	
-                              }
-                        }
+				}
+				//else
+				//	printf("Channel %d\n",i);
+				//if(i == 1028)
+				//	printf("%d %2.6f %2.6f %2.6f %2.6f\n",count[i],avgcal[i].xx,avgcal[i].yy,avgdata[i].xx,avgdata[i].yy);
+			}
                 }
 
                 //for(i=lowchan; i<highchan; i++)
+		FILE *f = fopen("tcalfit.dat","w");
+
         	for (i=0;i<MAX_CHANNELS; i++)
                 {
 			//if(i >= 3400 && i < 3800)
 			//printf("Chan %d count %d dataxx %f\n",i,count[i],avgcal[i].xx/avgdata[i].xx);
 
-                        if(dataset[n].flagRFI[i] == RFI_NONE && !badchannels[i])
-                        {
+			//if(dataset[n].flagRFI[i] == RFI_NONE && !badchannels[i])
+			//{
 				if(count[i])
 				{
-                                avgcal[i].xx /=count[i];
-                                avgcal[i].yy /=count[i];
-                                avgdata[i].xx /=count[i];
-                                avgdata[i].yy /=count[i];
+					
+					avgcal[i].xx /=count[i];
+					avgcal[i].yy /=count[i];
+					avgdata[i].xx /=count[i];
+					avgdata[i].yy /=count[i];
 				}
-                        }
+				//else
+				//	printf("Channel %d\n",i);
+			//}
+			//else
+			//	printf("Channel %d\n",i);
+			fprintf(f,"%d %d %2.6f %2.6f %2.6f %2.6f\n",i,count[i],avgcal[i].xx,avgcal[i].yy,avgdata[i].xx,avgdata[i].yy);
                 }
-
+		fclose(f);
 	        //for (i=lowchan;i<highchan; i++)
         	for (i=0;i<MAX_CHANNELS; i++)
 	        {
@@ -331,6 +347,21 @@ void compute_tcal(SpecRecord dataset[], int size, int lowchan, int highchan, flo
 	{
 		return;
 	}
-	return;
+
+/*	float tmpxx[MAX_CHANNELS],tmpyy[MAX_CHANNELS];
+        for (i=0;i<MAX_CHANNELS; i++)
+	{
+		tmpxx[i] = tcalxx[i];
+		tmpyy[i] = tcalyy[i];
+	}
+*/
+	diffusion_filter(tcalxx,MAX_CHANNELS,10);
+	diffusion_filter(tcalyy,MAX_CHANNELS,10);
+/*        for (i=0;i<MAX_CHANNELS; i++)
+	{
+		tcalxx[i] = tmpxx[i];
+		tcalyy[i] = tmpyy[i];
+	}
+*/	return;
 }
 //--------------------------------------------------------------------------------------------------------

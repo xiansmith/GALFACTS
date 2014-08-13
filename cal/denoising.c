@@ -6,177 +6,205 @@
 //----------------------------------------------------------------------------------------------------------------------------------------
 void andtv_filter(float *x, int N, float tau, float lambda)
 {
-// Denoising filter:
-// Adaptive nonlinear diffusion with total variation regularization
-// x = the signal to be filtered, returns filtered signal
-// N = length of the signal
-// tau = time step (recommended values: 0.001 <= tau <= 0.1)
-// lambda = regularization (recommended values: 0<=tau<=3)
+	// Denoising filter:
+	// Adaptive nonlinear diffusion with total variation regularization
+	// x = the signal to be filtered, returns filtered signal
+	// N = length of the signal
+	// tau = time step (recommended values: 0.001 <= tau <= 0.1)
+	//nigger tau leads to smoother results.
+	// lambda = regularization (recommended values: 0<=lambda<=3)
+	//lambda seems to have no effect
 
-int n, i, i_max=1000;
-float ss, ss_max, q=tau, hh, hr, hl, D, R;
+	int n, i, i_max=1000;
+	float ss, ss_max, q=tau, hh, hr, hl, D, R;
 
-float *y; y = (float*)malloc(N*sizeof(float));
-float *z; z = (float*)malloc(N*sizeof(float));
+	float *y; y = (float*)malloc(N*sizeof(float));
+	float *z; z = (float*)malloc(N*sizeof(float));
 
-for(n=0; n<N; n++) z[n] = x[n];
-ss_max = 0; 
-for(n=0; n<N-1; n++) 
-	{
-	ss_max += x[n]*x[n] + 0.25*fabs(x[n+1] - x[n]); 
-	}
-ss_max += x[N-1]*x[N-1];
-i = 0;
-while(i < i_max)
-	{
-	i++;				
-	for(n=2; n<N-2; n++) 
-		{
-		hr = 1.0/(0.5*fabs(x[n+2] - x[n]) + q); 
-		hh = 1.0/(0.5*fabs(x[n+1] - x[n-1]) + q);
-		hl = 1.0/(0.5*fabs(x[n] - x[n-2]) + q);
-		D = 0.25*(hr + hh)*(x[n+1] - x[n]) - 0.25*(hh + hl)*(x[n] - x[n-1]);
-		R = lambda*(x[n] - z[n]);
-		y[n] = x[n] + tau*(D - R);
-		}
-	hr = 1.0/(0.5*fabs(x[2] - x[1]) + q); 
-	hh = 1.0/(0.5*fabs(x[1] - x[0]) + q);
-	hl = hh;  
-	D = 0.25*(hr + hh)*(x[2] - x[1]) - 0.25*(hh + hl)*(x[1] - x[0]);
-	R = lambda*(x[1] - z[1]);
-	y[1] = x[1] + tau*(D - R);
-	hh = 1.0/(0.5*fabs(x[N-1] - x[N-3]) + q);
-	hr = hh; 
-	hl = 1.0/(0.5*fabs(x[N-2] - x[N-4]) + q);  ;  
-	D = 0.25*(hr + hh)*(x[N-1] - x[N-2]) - 0.25*(hh + hl)*(x[N-2] - x[N-3]);
-	R = lambda*(x[N-2] - z[N-2]);
-	y[N-2] = x[N-2] + tau*(D - R);
-	D = 0.5*(x[1] - x[0]);
-	R = lambda*(x[0] - z[0]);
-	y[0] = x[0] + tau*(D - R);
-	D = 0.5*(x[N-2] - x[N-1]);
-	R = lambda*(x[N-1] - z[N-1]);
-	y[N-1] = x[N-1] + tau*(D - R);							
-	ss = 0; 
+	for(n=0; n<N; n++) z[n] = x[n];
+	ss_max = 0; 
 	for(n=0; n<N-1; n++) 
-		{
-		ss += (z[n] - y[n])*(z[n] - y[n]) + 0.25*fabs(y[n+1] - y[n]);
-		} 
-	ss += (z[N-1] - y[N-1])*(z[N-1] - y[N-1]);
-	if(ss<ss_max)
-		{
-		ss_max = ss; 
-		for(n=0; n<N; n++) x[n] = y[n]; 
-		} 
-	else break;
+	{
+		ss_max += x[n]*x[n] + 0.25*fabs(x[n+1] - x[n]); 
 	}
+	ss_max += x[N-1]*x[N-1];
+	float e_max = ss_max/1000000.0;
+	float epsilon;
+	i = 0;
+	//while(i < i_max)
+	do
+	{
+		i++;				
+		for(n=2; n<N-2; n++) 
+		{
+			hr = 1.0/(0.5*fabs(x[n+2] - x[n]) + q); 
+			hh = 1.0/(0.5*fabs(x[n+1] - x[n-1]) + q);
+			hl = 1.0/(0.5*fabs(x[n] - x[n-2]) + q);
+			D = 0.25*(hr + hh)*(x[n+1] - x[n]) - 0.25*(hh + hl)*(x[n] - x[n-1]);
+			R = lambda*(x[n] - z[n]);
+			y[n] = x[n] + tau*(D - R);
+		}
+		hr = 1.0/(0.5*fabs(x[2] - x[1]) + q); 
+		hh = 1.0/(0.5*fabs(x[1] - x[0]) + q);
+		hl = hh;  
+		D = 0.25*(hr + hh)*(x[2] - x[1]) - 0.25*(hh + hl)*(x[1] - x[0]);
+		R = lambda*(x[1] - z[1]);
+		y[1] = x[1] + tau*(D - R);
+		hh = 1.0/(0.5*fabs(x[N-1] - x[N-3]) + q);
+		hr = hh; 
+		hl = 1.0/(0.5*fabs(x[N-2] - x[N-4]) + q);  ;  
+		D = 0.25*(hr + hh)*(x[N-1] - x[N-2]) - 0.25*(hh + hl)*(x[N-2] - x[N-3]);
+		R = lambda*(x[N-2] - z[N-2]);
+		y[N-2] = x[N-2] + tau*(D - R);
+		D = 0.5*(x[1] - x[0]);
+		R = lambda*(x[0] - z[0]);
+		y[0] = x[0] + tau*(D - R);
+		D = 0.5*(x[N-2] - x[N-1]);
+		R = lambda*(x[N-1] - z[N-1]);
+		y[N-1] = x[N-1] + tau*(D - R);							
+		ss = 0; 
+		for(n=0; n<N-1; n++) 
+		{
+			ss += (z[n] - y[n])*(z[n] - y[n]) + 0.25*fabs(y[n+1] - y[n]);
+		} 
+		ss += (z[N-1] - y[N-1])*(z[N-1] - y[N-1]);
+		if(ss<ss_max)
+		{
+			printf("if i %d imax %d ss %f ss_max %f\n", i,i_max,ss,ss_max);
+			epsilon = ss_max - ss;
+			ss_max = ss; 
+			for(n=0; n<N; n++) x[n] = y[n]; 
+			for(n=0; n<N; n++) z[n] = x[n];//this bug is present in all algos
+		} 
+		else
+		{
+			printf("else i %d imax %d ss %f ss_max %f\n", i,i_max,ss,ss_max);
+			break;
+		}
+	}while(epsilon > e_max);
 
-free(y); free(z);
+	free(y); free(z);
 }
 //----------------------------------------------------------------------------------------------------------------------------------------
 void aldtv_filter(float *x, int N, float tau, float lambda)
 {
-// Denoising filter:
-// Adaptive linear diffusion with total variation regularization
-// x = the signal to be filtered, returns filtered signal
-// N = length of the signal
-// tau = time step (recommended values: 0.01 <= tau <= 1)
-// lambda = regularization (recommended values: 0<=tau<=5)
+	// Denoising filter:
+	// Adaptive linear diffusion with total variation regularization
+	// x = the signal to be filtered, returns filtered signal
+	// N = length of the signal
+	// tau = time step (recommended values: 0.01 <= tau <= 1)
+	// lambda = regularization (recommended values: 0<=lambda<=5)
 
-int n, i, i_max=100;
-float ss, ss_max;
+	int n, i, i_max=100;
+	float ss, ss_max;
 
-float *y; y = (float*)malloc(N*sizeof(float));
-float *z; z = (float*)malloc(N*sizeof(float));
+	float *y; y = (float*)malloc(N*sizeof(float));
+	float *z; z = (float*)malloc(N*sizeof(float));
 
-for(n=0; n<N; n++) z[n] = x[n];
-ss_max = 0; 
-for(n=0; n<N-1; n++) 
-	{
-	ss_max += x[n]*x[n] + 0.25*fabs(x[n+1] - x[n]); 
-	}
-ss_max += x[N-1]*x[N-1];
-
-i = 0;
-while(i < i_max)
-	{
-	i++;	
-	for(n=1; n<N-1; n++) 
-		{
-		y[n] = x[n] + 0.25*tau*(x[n-1] + x[n+1] - 2.0*x[n] - lambda*(x[n] - z[n]));
-		}
-	y[0] = x[0] + tau*(0.5*(x[1] - x[0]) - lambda*(x[0] - z[0]));
-	y[N-1] = x[N-1] + tau*(0.5*(x[N-2] - x[N-1]) - lambda*(x[N-1] - z[N-1]));			
-	ss = 0; 
+	for(n=0; n<N; n++) z[n] = x[n];
+	ss_max = 0; 
 	for(n=0; n<N-1; n++) 
-		{
-		ss += (z[n] - y[n])*(z[n] - y[n]) + 0.25*fabs(y[n+1] - y[n]); 
-		}
-	ss += (z[N-1] - y[N-1])*(z[N-1] - y[N-1]);
-	if(ss<ss_max)
-		{
-		ss_max = ss; 
-		for(n=0; n<N; n++) x[n] = y[n]; 
-		} 
-	else 
-		{
-		break;
-		}
+	{
+		ss_max += x[n]*x[n] + 0.25*fabs(x[n+1] - x[n]); 
 	}
-free(y); free(z);
+	ss_max += x[N-1]*x[N-1];
+	float e_max = ss_max/1000000000.0;
+	float epsilon;
+
+	i = 0;
+	//while(i < i_max)
+	do	
+	{
+		i++;	
+		for(n=1; n<N-1; n++) 
+		{
+			y[n] = x[n] + 0.25*tau*(x[n-1] + x[n+1] - 2.0*x[n] - lambda*(x[n] - z[n]));
+		}
+		y[0] = x[0] + tau*(0.5*(x[1] - x[0]) - lambda*(x[0] - z[0]));
+		y[N-1] = x[N-1] + tau*(0.5*(x[N-2] - x[N-1]) - lambda*(x[N-1] - z[N-1]));			
+		ss = 0; 
+		for(n=0; n<N-1; n++) 
+		{
+			ss += (z[n] - y[n])*(z[n] - y[n]) + 0.25*fabs(y[n+1] - y[n]); 
+		}
+		ss += (z[N-1] - y[N-1])*(z[N-1] - y[N-1]);
+		if(ss<ss_max)
+		{
+			printf("if i %d imax %d ss %f ss_max %f\n", i,i_max,ss,ss_max);
+			epsilon = ss_max - ss;
+			ss_max = ss; 
+			for(n=0; n<N; n++) x[n] = y[n]; 
+			for(n=0; n<N; n++) z[n] = x[n];//this bug is present in all algos
+		} 
+		else 
+		{
+			printf("else i %d imax %d ss %f ss_max %f\n", i,i_max,ss,ss_max);
+			break;
+		}
+	}while(epsilon > e_max);
+	free(y); free(z);
 }
 //----------------------------------------------------------------------------------------------------------------------------------------
 void diffusion_filter(float *x, int N, int T)
 {
-// Denoising filter:
-// Adaptive linear diffusion with total variation regularization
-// x = the signal to be filtered, returns filtered signal
-// N = length of the signal
+	// Denoising filter:
+	// Adaptive linear diffusion with total variation regularization
+	// x = the signal to be filtered, returns filtered signal
+	// N = length of the signal
 
-int n, i, i_max = T;
-float ss, ss_max;
+	int n, i, i_max = T;
+	float ss, ss_max;
 
-float *y; y = (float*)malloc(N*sizeof(float));
-float *z; z = (float*)malloc(N*sizeof(float));
+	float *y; y = (float*)malloc(N*sizeof(float));
+	float *z; z = (float*)malloc(N*sizeof(float));
 
-for(n=0; n<N; n++) z[n] = x[n];
+	for(n=0; n<N; n++) z[n] = x[n];
 
-ss_max = 0; 
-for(n=0; n<N-1; n++) 
-	{
-	ss_max += x[n]*x[n] + 0.25*fabs(x[n+1] - x[n]); 
-	}
-ss_max += x[N-1]*x[N-1];
-
-i = 0;
-while(i < i_max)
-	{
-	i++;	
-	for(n=1; n<N-1; n++) 
-		{
-		y[n] = 0.5*x[n] + 0.25*(x[n-1] + x[n+1]);
-		}
-	y[0] = 0.5*(x[1] + x[0]);
-	y[N-1] = 0.5*(x[N-2] + x[N-1]);			
-	ss = 0; 
+	ss_max = 0; 
 	for(n=0; n<N-1; n++) 
-		{
-		ss += (z[n] - y[n])*(z[n] - y[n]) + 0.25*fabs(y[n+1] - y[n]); 
-		}
-	ss += (z[N-1] - y[N-1])*(z[N-1] - y[N-1]);
-	if(ss<ss_max)
-		{
-		ss_max = ss; 
-		for(n=0; n<N; n++) x[n] = y[n]; 
-		} 
-	else 
-		{
-		//printf("%d\n", i);
-		break;
-		}
+	{
+		ss_max += x[n]*x[n] + 0.25*fabs(x[n+1] - x[n]); 
 	}
-free(y); 
-free(z);
+	ss_max += x[N-1]*x[N-1];
+
+	i = 0;
+	float e_max = ss_max/10000000.0;
+	float epsilon;
+	//while(i < i_max)
+	do
+	{
+		i++;	
+		for(n=1; n<N-1; n++) 
+		{
+			y[n] = 0.5*x[n] + 0.25*(x[n-1] + x[n+1]);
+		}
+		y[0] = 0.5*(x[1] + x[0]);
+		y[N-1] = 0.5*(x[N-2] + x[N-1]);			
+		//y[0] = y[1];
+		//y[N-1] = 0.5*y[N-2];			
+		ss = 0; 
+		for(n=0; n<N-1; n++) 
+		{
+			ss += (z[n] - y[n])*(z[n] - y[n]) + 0.25*fabs(y[n+1] - y[n]); 
+		}
+		ss += (z[N-1] - y[N-1])*(z[N-1] - y[N-1]);
+		if(ss<ss_max)
+		{
+			//printf("if i %d imax %d ss %f ss_max %f\n", i,i_max,ss,ss_max);
+			epsilon = ss_max - ss;
+			ss_max = ss; 
+			for(n=0; n<N; n++) x[n] = y[n]; 
+			for(n=0; n<N; n++) z[n] = x[n];//This was the bug in code.
+		} 
+		else 
+		{
+			//printf("else i %d imax %d ss %f ss_max %f\n", i,i_max,ss,ss_max);
+			break;
+		}
+	}while(epsilon > e_max);
+	//printf("outside i %d imax %d ss %f ss_max %f e_max %f epsilon %f\n", i,i_max,ss,ss_max,e_max,epsilon);
+	free(y); 
+	free(z);
 }
 //----------------------------------------------------------------------------------------------------------------------------------------
 void moving_average_filter(float *x, int N, int L)

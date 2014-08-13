@@ -352,6 +352,9 @@ void chebyshev_qrgsm(int n, float *c, int N, float *x, float *y)
 	float *q = (float*)malloc(N*nn*sizeof(float));
 	float *r = (float*)malloc(nn*nn*sizeof(float));
 
+	if(q == NULL || r == NULL)
+		printf("ERROR: malloc failed in chebyshev_cholesky()\n");
+
 	for(i=0; i<N; i++) 
 		{
 		for(j=0; j<=n; j++) 
@@ -418,6 +421,7 @@ void chebyshev_qrgsm(int n, float *c, int N, float *x, float *y)
 			c[k] = 0;
 			}
 		}
+
 	free(q);
 	free(r);
 }
@@ -435,6 +439,7 @@ void chebyshev_cholesky(int n, float *c, int N, float *x, float *y)
 	int i, j, k, nn = n + 1;
 	float *q = (float*)malloc(N*nn*sizeof(float));
 	float *a = (float*)malloc(nn*nn*sizeof(float));
+
 
 	for(i=0; i<N; i++) 
 		{
@@ -512,38 +517,49 @@ void chebyshev_fit_bw(float *X, float *Y, int size, float nsigma, float *C, int 
 	float *y = (float*)malloc(size * sizeof(float));
 	float *p = (float*)malloc(size * sizeof(float));
 	float *diff = (float*)malloc(size * sizeof(float));
+
+	if(x == NULL || y == NULL || p == NULL || diff == NULL)
+		printf("ERROR: malloc failed in chebyshev_fit_bw()\n");
+
 	for(i=0; i<size; i++){x[i] = X[i]; y[i] = Y[i];}
+
+	int iter=0;
 	do 
-		{
+	{
 		//chebyshev_cholesky(order, C, size, x, y);
 		chebyshev_qrgsm(order, C, size, x, y);
 		mean = 0.0;
 		for(i=0; i<size; i++) 
-			{
+		{
 			p[i] = chebyshev_eval(x[i], C, order);
 			diff[i] = y[i] - p[i];
 			mean += diff[i];
-			}
+		}
 		mean = mean/size;
 		sigma = 0.0;
 		for(i=0; i<size; i++) 
-			{
+		{
 			diff[i] = diff[i] - mean;
 			sigma += diff[i]*diff[i];
-			}
+		}
 		sigma = nsigma*sqrt(sigma/size);
 		outlier = 0;
 		for(i=0; i<size; i++) 
-			{
+		{
 			if(fabs(diff[i]) > sigma) 
-				{
+			{
 				outlier = 1;
 				size --; 
 				x[i] = x[size]; 
 				y[i] = y[size];
-				}
 			}
-		}while(outlier && size > order);
+		}
+		iter++;
+	}while(outlier && size > order);
+
+	if(size <= order)
+		printf("WARNING: size is %d order is %d\n",size,order);
+
 	free(x); 
 	free(y); 
 	free(diff); 
@@ -688,5 +704,3 @@ void chebyshev_fit_sat(float *X, float *Y, int size, float nsigma, float *C, int
 
 	//printf("Chevy outlier = %d\n", outliercount );
 }
-
-

@@ -136,7 +136,7 @@ void rfi_detection_frequency_domain(SpecRecord dataset[], int size, int lowchan,
 					//}
 				}
 
-				if (fabs(dataset[i].RA - 71.390589) < 0.001) {
+/*				if (fabs(dataset[i].RA - 71.390589) < 0.001) {
 					sprintf(filename, "diff_%f_%f.dat%d", dataset[i].RA, dataset[i].DEC, diffcounter++);
 					diffoutput = fopen(filename, "w");
 
@@ -153,7 +153,7 @@ void rfi_detection_frequency_domain(SpecRecord dataset[], int size, int lowchan,
 					}
 					fclose(diffoutput);
 				}
-
+*/
 
 				outlierFound = 0;
 				for (k = lowchan; k < highchan - 1; k++) {
@@ -258,7 +258,7 @@ void rfi_detection_frequency_domain(SpecRecord dataset[], int size, int lowchan,
 		chebyshev_fit_sat( xaxis, satregionxx, arraysize, nsigma, cI, order, RFI, dataset[i].RA);
 
 
-		if (fabs(dataset[i].RA - 71.390589) < 0.001) {
+/*		if (fabs(dataset[i].RA - 71.390589) < 0.001) {
 			sprintf(filename, "fit_%f_%f.dat", dataset[i].RA, dataset[i].DEC);
 			diffoutput = fopen(filename, "w");
 
@@ -278,7 +278,7 @@ void rfi_detection_frequency_domain(SpecRecord dataset[], int size, int lowchan,
 			}
 			fclose(diffoutput);
 		}
-
+*/
 		for (m = 0; m < 400; m++) {
 
 			// apply RFI flags
@@ -354,7 +354,7 @@ void rfi_detection_frequency_domain_gobble(SpecRecord dataset[], int size, int l
 				printf("RFI iteration %d\n", diffcounter);
 
 				//if( i % 5000 == 0 ) {
-				if( fabs(dataset[i].RA - 71.390589) < 0.001 )
+/*				if( fabs(dataset[i].RA - 71.390589) < 0.001 )
 				{
 					//if( dataset[i].RA > 70.5 && dataset[i].RA < 71.5) {
 				sprintf( filename, "diff_%f_%f.dat%d", dataset[i].RA, dataset[i].DEC, diffcounter );
@@ -371,7 +371,7 @@ void rfi_detection_frequency_domain_gobble(SpecRecord dataset[], int size, int l
 
 				fclose( diffoutput);
 				}
-
+*/
 
 				N = 0;
 				for (j = 0; j < 4; j++) {
@@ -1113,7 +1113,7 @@ void rfi_ann(SpecRecord dataset[], int size, int lowchan, int highchan, float fr
 
 	fclose(file);
 
-	for (i = 0; i < size; i++) {
+/*	for (i = 0; i < size; i++) {
 	                FILE *diffoutput; // = fopen("rfi_signal.ann", "w");
 	                char filename[50];
 
@@ -1131,12 +1131,12 @@ void rfi_ann(SpecRecord dataset[], int size, int lowchan, int highchan, float fr
 	                                if( dataset[i].flagRFI[k] == RFI_NONE ) {
 	                                	fprintf(diffoutput, "%d %f %f %f %f %f %f %f %f ", k, dataset[i].calon.xx[k], dataset[i].calon.xy[k], dataset[i].calon.yx[k], dataset[i].calon.yy[k], dataset[i].caloff.xx[k], dataset[i].calon.xy[k], dataset[i].calon.yx[k], dataset[i].calon.yy[k] );
 					}
-	                                /*if( dataset[i].flagRFI[k] != RFI_NONE ) {
+*/	                                /*if( dataset[i].flagRFI[k] != RFI_NONE ) {
 	                                        fprintf( diffoutput, "1 " );
 	                                }
 	                                else {
 	                                        fprintf(diffoutput, "0 " );
-	                                }*/
+	                                }*//*
 
 	                                fprintf(diffoutput, "\n");
 
@@ -1145,5 +1145,5 @@ void rfi_ann(SpecRecord dataset[], int size, int lowchan, int highchan, float fr
 
 	                }
 
-	        }
+	        }*/
 }

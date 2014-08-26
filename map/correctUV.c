@@ -26,7 +26,6 @@ void correct_UV(FluxWappData * wappdata, int chan, MapMetaData *md)
 
 		for(i=0;i<r;i++)
 		{
-			if( daydata->records[i].RA < 202.70 || daydata->records[i].RA > 202.80 || daydata->records[i].DEC < 30.42 ||  daydata->records[i].DEC > 30.58)
 			{
 			Ulk =  Ulk + daydata->records[i].stokes.U/daydata->records[i].stokes.I;
 			Vlk =  Vlk + daydata->records[i].stokes.V/daydata->records[i].stokes.I;

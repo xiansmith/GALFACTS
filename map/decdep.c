@@ -5,7 +5,7 @@
 #include "decdep.h"
 #include "chebyshev.h"
 //----------------------------------------------------------------------------------------------------------------------------------------
-static void day_dec_dependence(FluxWappData * wappdata, int day, int beam, int order, int chan, float *cIc, float *cQc, float *cUc, float *cVc, int avg)
+static void day_dec_dependence(FluxWappData * wappdata, int day, int beam, int order, int chan, float *cIc, float *cQc, float *cUc, float *cVc, int avg, const char *field )
 {
 	int Hchan = 2752; // hard wired!!!
 	int r, N, R, n, navg;
@@ -160,8 +160,30 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int beam, int o
 			if (isfinite(daydata->records[r].stokes.I) && isfinite(daydata->records[r].stokes.Q) && isfinite(daydata->records[r].stokes.U)
 					&& isfinite(daydata->records[r].stokes.V)) {
 				DEC = CNORMALIZE(daydata->records[r].DEC, min, max);
-	            // XXX temporary magic number    
-				daydata->records[r].stokes.I = daydata->records[r].stokes.I  - chebyshev_eval(DEC, cI, order) + 0.75;
+			        
+				// XXX temporary magic number    
+				if(field[0] == 'N' && field[1] == '1')
+                        	{
+					daydata->records[r].stokes.I = daydata->records[r].stokes.I  - chebyshev_eval(DEC, cI, order) + 0.75;	
+				}		
+				else if(field[0] == 'S' && field[1] == '1')
+				{
+					daydata->records[r].stokes.I = daydata->records[r].stokes.I  - chebyshev_eval(DEC, cI, order) + 1.25;	
+				}
+				else if(field[0] == 'S' && field[1] == '2')
+				{
+					daydata->records[r].stokes.I = daydata->records[r].stokes.I  - chebyshev_eval(DEC, cI, order) + 0.75;	
+				}
+				else if(field[0] == 'N' && field[1] == '4')
+				{
+					daydata->records[r].stokes.I = daydata->records[r].stokes.I  - chebyshev_eval(DEC, cI, order) + 1.25;	
+				}
+				else
+				{
+					daydata->records[r].stokes.I = daydata->records[r].stokes.I  - chebyshev_eval(DEC, cI, order) + 0.75;
+				}	
+	
+				// original, no constant added
 				//daydata->records[r].stokes.I -= chebyshev_eval(DEC, cI, order);
 				daydata->records[r].stokes.Q -= chebyshev_eval(DEC, cQ, order);
 				daydata->records[r].stokes.U -= chebyshev_eval(DEC, cU, order);
@@ -215,8 +237,31 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int beam, int o
 			if (isfinite(daydata->records[r].stokes.I) && isfinite(daydata->records[r].stokes.Q) && isfinite(daydata->records[r].stokes.U)
 					&& isfinite(daydata->records[r].stokes.V)) {
 				DEC = CNORMALIZE(daydata->records[r].DEC, min, max);
-                // XXX temporary magic number 
-				daydata->records[r].stokes.I = daydata->records[r].stokes.I  - chebyshev_eval(DEC, cI, order) + 0.75;
+                		
+				// XXX temporary magic number 
+				if(field[0] == 'N' && field[1] == '1')
+                        	{
+					daydata->records[r].stokes.I = daydata->records[r].stokes.I  - chebyshev_eval(DEC, cI, order) + 0.75;	
+				}		
+				else if(field[0] == 'S' && field[1] == '1')
+				{
+					daydata->records[r].stokes.I = daydata->records[r].stokes.I  - chebyshev_eval(DEC, cI, order) + 1.25;	
+				}
+				else if(field[0] == 'S' && field[1] == '2')
+				{
+					daydata->records[r].stokes.I = daydata->records[r].stokes.I  - chebyshev_eval(DEC, cI, order) + 0.75;	
+				}
+				else if(field[0] == 'N' && field[1] == '4')
+				{
+					daydata->records[r].stokes.I = daydata->records[r].stokes.I  - chebyshev_eval(DEC, cI, order) + 1.25;	
+				}
+				else
+				{
+					daydata->records[r].stokes.I = daydata->records[r].stokes.I  - chebyshev_eval(DEC, cI, order) + 0.75;
+				}		
+				
+				
+				// original, no constant added
 				//daydata->records[r].stokes.I -= chebyshev_eval(DEC, cI, order);
 				daydata->records[r].stokes.Q -= chebyshev_eval(DEC, cQ, order);
 				daydata->records[r].stokes.U -= chebyshev_eval(DEC, cU, order);
@@ -403,7 +448,7 @@ else if(chan >= cal_low && chan <= cal_high)
 
 }
 //-------------------------------------------------------------------------------
-void calculate_dec_dependence(FluxWappData * wappdata, int order, int chan, float *cIc, float *cQc, float *cUc, float *cVc, int avg)
+void calculate_dec_dependence(FluxWappData * wappdata, int order, int chan, float *cIc, float *cQc, float *cUc, float *cVc, int avg, const char* field)
 {
 int d,beam;
 for(d=0; d<wappdata->numDays; d++) 
@@ -416,7 +461,7 @@ for(d=0; d<wappdata->numDays; d++)
 	else
 		beam = atoi(&wappdata->wapp[4]);
 
-	day_dec_dependence(wappdata, d, beam, order, chan, cIc, cQc, cUc, cVc, avg);
+	day_dec_dependence(wappdata, d, beam, order, chan, cIc, cQc, cUc, cVc, avg, field);
 	}
 }
 //-------------------------------------------------------------------------------

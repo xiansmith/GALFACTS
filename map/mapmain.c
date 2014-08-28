@@ -153,7 +153,7 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 			correct_UV(wappdata,chan,md);
 			
 			printf("Removing DEC dependence...\n"); 
-			calculate_dec_dependence(wappdata, md->dec_order, chan, cIc, cQc, cUc, cVc, md->avg);
+			calculate_dec_dependence(wappdata, md->dec_order, chan, cIc, cQc, cUc, cVc, md->avg, md->field);
 			
 			printf("Apply the calibrator correction tables...\n");
 			corrections(wappdata,chan,md);

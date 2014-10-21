@@ -947,14 +947,9 @@ void rfi_detection_time_domain2(const char *field, SpecRecord dataset[], int siz
 							// circle radius
 							//if( sqrt( powf(dataset[i].RA - s[k][0],2) + powf(dataset[i].DEC - s[k][1],2) ) < s[k][2]  )
 							// square 
-							
-							// when we wrap around RA=24hours we need the RAs to match 
-							double RA = dataset[i].RA;
-							if ( dataset[i].RA > 360 ) RA = RA - 360.0;
- 	
-							if ((fabs(RA - s[k][0]) < s[k][2]) && (fabs(dataset[i].DEC - s[k][1]) < s[k][2])) {
+							if ((fabs(dataset[i].RA - s[k][0]) < s[k][2]) && (fabs(dataset[i].DEC - s[k][1]) < s[k][2])) {
 								// GOT A HIT, remove the RFI flag
-								fprintf(AnnotationFile, "CROSS %f %f 0.2 0.2\n", RA, dataset[i].DEC);
+								fprintf(AnnotationFile, "CROSS %f %f 0.2 0.2\n", dataset[i].RA, dataset[i].DEC);
 								exception = 1;
 								exceptionCount++;
 								break;

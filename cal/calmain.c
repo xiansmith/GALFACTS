@@ -288,15 +288,15 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 	
 	if(fit_smooth)
 	{	
-		compute_tcal(dataset, numRecords,  0, highchan, hidrogenfreq, hidrogenband,freq, badchannels, Tcalx, Tcaly, 0, numRecords);
-		norm_one_tcal(0,MAX_CHANNELS,badchannels,Tcalx,Tcaly);
-		read_clock(); start_clock();
+		//compute_tcal(dataset, numRecords,  0, highchan, hidrogenfreq, hidrogenband,freq, badchannels, Tcalx, Tcaly, 0, numRecords);
+		//norm_one_tcal(0,MAX_CHANNELS,badchannels,Tcalx,Tcaly);
+		//read_clock(); start_clock();
 		calculate_stokes(dataset, numRecords, 0, MAX_CHANNELS, RFIF, calskyfiles, Tcalx, Tcaly, uvDenoising, uvDenoisingTau, uvDenoisingLambda,0,numRecords);
-		write_tcal(Tcalx,Tcaly,numRecords,0,MAX_CHANNELS);
+		//write_tcal(Tcalx,Tcaly,numRecords,0,MAX_CHANNELS);
 	}
 	else
 	{
-		for(r = 0;r < numRecords;r++ )
+/*		for(r = 0;r < numRecords;r++ )
 		{
 
 		        compute_tcal(dataset, numRecords,  lowchan, highchan, hidrogenfreq, hidrogenband,freq, badchannels, Tcalx, Tcaly, r, twindow);
@@ -314,8 +314,13 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
         		        write_tcal(Tcalx_s,Tcaly_s,r,0,MAX_CHANNELS);
 
 			calculate_stokes(dataset, numRecords, lowchan, highchan, RFIF, calskyfiles, Tcalx_s, Tcaly_s, uvDenoising, uvDenoisingTau, uvDenoisingLambda,r,r+1);
+
 		}
+*/
+		calculate_stokes(dataset, numRecords, lowchan, highchan, RFIF, calskyfiles, Tcalx_s, Tcaly_s, uvDenoising, uvDenoisingTau, uvDenoisingLambda,0,numRecords);
 	}
+
+	read_clock(); start_clock();
 	printf("Writing channel data to single file\n");
 	write_binary_channel_data_single_file(dataset, numRecords, lowchan, highchan);
 	//write_channel_data(dataset, numRecords, lowchan, highchan);

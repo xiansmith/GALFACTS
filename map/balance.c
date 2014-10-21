@@ -132,7 +132,7 @@ for(r=0; r<numDays; r++)
 					CrossingPoint *crossPoint;
 					if(refscan->num_cross_points > MAX_NUM_DAYS) 
 						{
-						printf("WARN: maximum number of crossing points breached\n");
+						//printf("WARN: maximum number of crossing points breached\n");
 						break;
 						}
 					if(refscan->records[refpos].stokes.I == 0.0 || currscan->records[crosspos].stokes.I == 0.0) break;
@@ -409,7 +409,7 @@ void write_balance_data(FluxWappData * wappdata, int day_order, int scan_order, 
 		if (wappdata->numDays) chisqglobal /= wappdata->numDays;
 		count++;
 		globalchange = chisqglobalprev - chisqglobal;
-		printf("Day iteration:%i global:%f change:%f prev:%f\n", count, chisqglobal, globalchange, chisqglobalprev);
+		//printf("Day iteration:%i global:%f change:%f prev:%f\n", count, chisqglobal, globalchange, chisqglobalprev);
 		//printf("I: %f %f %f\n", days[0]->coeffsI[0], days[0]->coeffsI[1], days[0]->coeffsI[2]);
 		//printf("Q: %f %f %f\n", days->coeffsQ[0], days->coeffsQ[1], days->coeffsQ[2]);
 		//printf("U: %f %f %f\n", days->coeffsU[0], days->coeffsU[1], days->coeffsU[2]);
@@ -420,11 +420,24 @@ void write_balance_data(FluxWappData * wappdata, int day_order, int scan_order, 
 	while (globalchange > loop_epsilon && count < day_order);
 
 	// write coefficients to disk
-	if( ! mkdir("bw", 0777) ) printf("Error making directory in balance.c\n");
+	//if( ! mkdir("bw", 0777) ) printf("Error making directory in balance.c\n");
 
 	for (i = 0; i < wappdata->numDays; i++) {
 		char bwdayfilename[20];
-		sprintf(bwdayfilename, "bw/day%d.dat", i);
+		//sprintf(bwdayfilename, "bw/day%d.dat", i);
+
+                int beam;
+                if(!strcmp(wappdata->wapp,"multibeam"))
+                {
+                        beam = i%7;
+                }
+                else
+                {
+                        beam = atoi(&wappdata->wapp[4]);
+                }
+		
+		sprintf(bwdayfilename, "%s/beam%d/day.dat",&wappdata->daydata[i].mjd,beam);
+		//printf("Writing to %s\n",bwdayfilename);
 		FILE* daybwfile = fopen(bwdayfilename, "w");
 
 		if (daybwfile != NULL) {
@@ -456,7 +469,8 @@ void write_balance_data(FluxWappData * wappdata, int day_order, int scan_order, 
 		else {
 			// can not recover
 			printf("couldn't write basket weaving coefficient file\n");
-			exit(1);
+			//exit(1);
+			continue;
 		}
 
 	}
@@ -489,7 +503,7 @@ void write_balance_data(FluxWappData * wappdata, int day_order, int scan_order, 
 		if (wappdata->numDays) chisqglobal /= wappdata->numDays;
 		count++;
 		globalchange = chisqglobalprev - chisqglobal;
-		printf("Scan iteration:%i global:%f change:%f prev:%f\n", count, chisqglobal, globalchange, chisqglobalprev);
+		//printf("Scan iteration:%i global:%f change:%f prev:%f\n", count, chisqglobal, globalchange, chisqglobalprev);
 
 		//printf("I: %f %f %f\n", scans[50].coeffsI[0], scans[50].coeffsI[1], scans[50].coeffsI[2]);
 		//printf("Q: %f %f %f\n", scans[50].coeffsQ[0], scans[50].coeffsQ[1], scans[50].coeffsQ[2]);
@@ -501,46 +515,64 @@ void write_balance_data(FluxWappData * wappdata, int day_order, int scan_order, 
 	while (globalchange > loop_epsilon && count < scan_order);
 
 	// write coefficients to disk
-	mkdir("bw", 0777);
+	//mkdir("bw", 0777);
 
-	for (int i = 0; i < numScans; i++) {
-		char bwscanfilename[30];
-		sprintf(bwscanfilename, "bw/scan%d.dat", i);
-		FILE* scanbwfile = fopen(bwscanfilename, "w");
+	int totScans = 0;
+	for (i = 0; i < wappdata->numDays; i++) {
 
-		if (scanbwfile != NULL) {
-			for (int j = 0; j < order + 1; j++) {
-				fprintf(scanbwfile, "%.8f", scans[i].coeffsI[j]);
-				if (j != order) fprintf(scanbwfile, " ");
-			}
-			fprintf(scanbwfile, "\n");
 
-			for (int j = 0; j < order + 1; j++) {
-				fprintf(scanbwfile, "%.8f", scans[i].coeffsQ[j]);
-				if (j != order) fprintf(scanbwfile, " ");
+		for (int j = 0; j < wappdata->scanDayData[i].numScans; j++) {
+			char bwscanfilename[30];
+			//sprintf(bwscanfilename, "bw/scan%d.dat", i);
+			int beam;
+			if(!strcmp(wappdata->wapp,"multibeam"))
+			{
+				beam = i%7;
 			}
-			fprintf(scanbwfile, "\n");
-			for (int j = 0; j < order + 1; j++) {
-				fprintf(scanbwfile, "%.8f", scans[i].coeffsU[j]);
-				if (j != order) fprintf(scanbwfile, " ");
+			else
+			{
+				beam = atoi(&wappdata->wapp[4]);
 			}
-			fprintf(scanbwfile, "\n");
-			for (int j = 0; j < order + 1; j++) {
-				fprintf(scanbwfile, "%.8f", scans[i].coeffsV[j]);
-				if (j != order) fprintf(scanbwfile, " ");
-			}
-			fprintf(scanbwfile, "\n");
+			sprintf(bwscanfilename, "%s/beam%d/scan%d.dat",&wappdata->daydata[i].mjd,beam,j);
+			//printf("Writing to %s\n",bwscanfilename);
+			FILE* scanbwfile = fopen(bwscanfilename, "w");
 
-			fclose(scanbwfile);
+			if (scanbwfile != NULL) {
+				for (int k = 0; k < order + 1; k++) {
+					fprintf(scanbwfile, "%.8f", scans[totScans+j].coeffsI[k]);
+					if (k != order) fprintf(scanbwfile, " ");
+				}
+				fprintf(scanbwfile, "\n");
+
+				for (int k = 0; k < order + 1; k++) {
+					fprintf(scanbwfile, "%.8f", scans[totScans+j].coeffsQ[k]);
+					if (k != order) fprintf(scanbwfile, " ");
+				}
+				fprintf(scanbwfile, "\n");
+				for (int k = 0; k < order + 1; k++) {
+					fprintf(scanbwfile, "%.8f", scans[totScans+j].coeffsU[k]);
+					if (k != order) fprintf(scanbwfile, " ");
+				}
+				fprintf(scanbwfile, "\n");
+				for (int k = 0; k < order + 1; k++) {
+					fprintf(scanbwfile, "%.8f", scans[totScans+j].coeffsV[k]);
+					if (k != order) fprintf(scanbwfile, " ");
+				}
+				fprintf(scanbwfile, "\n");
+
+				fclose(scanbwfile);
+
+			}
+			else {
+				// can not recover
+				printf("couldn't write basket weaving coefficient file\n");
+				//exit(1)
+				continue;;
+			}
 
 		}
-		else {
-			// can not recover
-			printf("couldn't write basket weaving coefficient file\n");
-			exit(1);
-		}
-
-	}
+		totScans+= wappdata->scanDayData[i].numScans;
+	}	
 
 
 	for (int i = 0; i < wappdata->numDays; i++) {
@@ -565,19 +597,30 @@ void read_apply_balance_data( FluxWappData * wappdata, int day_order, int scan_o
 	char bwdayfilename[40], scandayfilename[40], line[500];
 	char *result;
 
-	printf("Reading day basket weaving coefficients from file\n");
+//	printf("Reading day basket weaving coefficients from file\n");
 
-        FluxDayData *cur = &wappdata->daydata[0];
-	for( int i=0; i< 50; i++ ) {
-                printf( "%f %f %f\n", cur->records[i].stokes.I, cur->records[i].RA, cur->records[i].DEC );
-        }
+//        FluxDayData *cur = &wappdata->daydata[0];
+//	for( int i=0; i< 50; i++ ) {
+                //printf( "%f %f %f\n", cur->records[i].stokes.I, cur->records[i].RA, cur->records[i].DEC );
+//        }
 
 
 
 	// first read day solution
 	for (int i = 0; i < wappdata->numDays; i++) {
 
-		sprintf(bwdayfilename, "bw/day%d.dat", i);
+		//sprintf(bwdayfilename, "bw/day%d.dat", i);
+                int beam;
+                if(!strcmp(wappdata->wapp,"multibeam"))
+                {
+                        beam = i%7;
+                }
+                else
+                {
+                        beam = atoi(&wappdata->wapp[4]);
+                }
+		sprintf(bwdayfilename, "%s/beam%d/day.dat",&wappdata->daydata[i].mjd,beam);
+		//printf("Reading from %s\n",bwdayfilename);
 		FILE *daybw = fopen(bwdayfilename, "r");
 
 		numScans += wappdata->scanDayData[i].numScans;  // this assumes the number of scans is the same
@@ -587,16 +630,22 @@ void read_apply_balance_data( FluxWappData * wappdata, int day_order, int scan_o
 		days[i].coeffsU = malloc(sizeof(float) * (order + 1));
 		days[i].coeffsV = malloc(sizeof(float) * (order + 1));
 
-		if (daybw != NULL && days[i].coeffsI != NULL && days[i].coeffsQ != NULL && days[i].coeffsU != NULL && days[i].coeffsV != NULL) {
+		if (daybw == NULL)
+		{
+			printf("Could not read file %s\n",bwdayfilename);
+			continue;
+		}
+
+		if (days[i].coeffsI != NULL && days[i].coeffsQ != NULL && days[i].coeffsU != NULL && days[i].coeffsV != NULL) {
 			// get coefficients for I from file
 			if (fgets(line, 500, daybw) == NULL) {
 				printf("in balance.c, fgets read error on %d %d\n", i, j);
 				exit(1);
 			}
 
-			if ( i == 0 ) {
-				printf("Day coefficients for day 0: %s\n", line);
-			}
+			//if ( i == 0 ) {
+			//	printf("Day coefficients for day 0: %s\n", line);
+			//}
 
 			j = 0;
 			result = strtok(line, " ");
@@ -667,13 +716,13 @@ void read_apply_balance_data( FluxWappData * wappdata, int day_order, int scan_o
 			fclose(daybw);
 		}
 		else {
-			printf("Error allocating memory for basket weaving solution coefficients. Can not recover\n");
+			printf("Error allocating memory for basket weaving solution coefficients. Can not recover in day %d\n",i);
 			exit(1);
 		}
 
 	}
 
-	printf("Applying basket weaving coefficients\n");
+//	printf("Applying basket weaving coefficients\n");
 
 	// apply day weave solution
 	for (int day = 0; day < wappdata->numDays; day++) {
@@ -752,110 +801,131 @@ void read_apply_balance_data( FluxWappData * wappdata, int day_order, int scan_o
 	//return;
 
 	
-        for( int i=0; i< 50; i++ ) {
-                printf( "%f %f %f\n", cur->records[i].stokes.I, cur->records[i].RA, cur->records[i].DEC );
-        }
+//        for( int i=0; i< 50; i++ ) {
+//                printf( "%f %f %f\n", cur->records[i].stokes.I, cur->records[i].RA, cur->records[i].DEC );
+//        }
 	
-	printf("DAY DATA\n");
-	for (int i = 0; i < wappdata->numDays; i++) {
-			printf("%f %f %f\n ", days[i].coeffsI[0], days[i].coeffsI[1], days[i].coeffsI[2]);
-	}
+//	printf("DAY DATA\n");
+//	for (int i = 0; i < wappdata->numDays; i++) {
+//			printf("%f %f %f\n ", days[i].coeffsI[0], days[i].coeffsI[1], days[i].coeffsI[2]);
+//	}
 
 
-	printf("Reading basket weaving scan coefficients from file\n");
+	//printf("Reading basket weaving scan coefficients from file\n");
 	loop_gain = loop_gain * 0.7;
 
 	scans = malloc(sizeof(BWcoeff) * numScans);
 
 	// now scan solutions
-	for (int i = 0; i < numScans; i++) {
+	int totScans = 0;
+	for (int i = 0; i < wappdata->numDays; i++) {
 
-		//printf("i = %d", i);
-		//exit(0);
-		sprintf(scandayfilename, "bw/scan%d.dat", i);
-		FILE *scanbw = fopen(scandayfilename, "r");
 
-		//printf("Done open file");
+		for (int k = 0; k < wappdata->scanDayData[i].numScans; k++) {
+			//	for (int i = 0; i < numScans; i++) {
 
-		scans[i].coeffsI = malloc(sizeof(float) * (order + 1));
-		scans[i].coeffsQ = malloc(sizeof(float) * (order + 1));
-		scans[i].coeffsU = malloc(sizeof(float) * (order + 1));
-		scans[i].coeffsV = malloc(sizeof(float) * (order + 1));
+			//sprintf(scandayfilename, "bw/scan%d.dat", i);
+			int beam;
+			if(!strcmp(wappdata->wapp,"multibeam"))
+			{
+				beam = i%7;
+			}
+			else
+			{
+				beam = atoi(&wappdata->wapp[4]);
+			}
+			sprintf(scandayfilename, "%s/beam%d/scan%d.dat",&wappdata->daydata[i].mjd,beam,k);
+			//printf("Reading from %s\n",scandayfilename);
+			FILE *scanbw = fopen(scandayfilename, "r");
 
-		if (scanbw != NULL && scans[i].coeffsI != NULL && scans[i].coeffsQ != NULL && scans[i].coeffsU != NULL && scans[i].coeffsV != NULL) {
-			// get coefficients for I from file
-			if (fgets(line, 500, scanbw) == NULL) {
-				printf("in balance.c, fgets read error on %d %d\n", i, j);
+
+			scans[k+totScans].coeffsI = malloc(sizeof(float) * (order + 1));
+			scans[k+totScans].coeffsQ = malloc(sizeof(float) * (order + 1));
+			scans[k+totScans].coeffsU = malloc(sizeof(float) * (order + 1));
+			scans[k+totScans].coeffsV = malloc(sizeof(float) * (order + 1));
+
+			if (scanbw == NULL)
+			{
+				printf("Could not read file %s\n",scandayfilename);
+				continue;
+			}
+
+			if (scans[k+totScans].coeffsI != NULL && scans[k+totScans].coeffsQ != NULL && scans[k+totScans].coeffsU != NULL && scans[k+totScans].coeffsV != NULL) {
+				// get coefficients for I from file
+				if (fgets(line, 500, scanbw) == NULL) {
+					printf("in balance.c, fgets read error on %d %d\n", k+totScans, j);
+					exit(1);
+				}
+
+				//if( k == 0 ) printf("Scan coefficients for scan 0: %s", line);
+
+				j = 0;
+				result = strtok(line, " ");
+				while (result != NULL) {
+					sscanf(result, "%f", &scans[k+totScans].coeffsI[j]);
+					result = strtok(NULL, " ");
+					j++;
+				}
+				if (j != (order + 1)) {
+					printf("ERROR: read %d basket weaving coefficients when expected %d\n", j, (order + 1));
+				}
+
+				if (fgets(line, 500, scanbw) == NULL) {
+					printf("in decdep.c, fgets read error\n");
+					exit(1);
+				}
+				// now Q
+				j = 0;
+				result = strtok(line, " ");
+				while (result != NULL) {
+					sscanf(result, "%f", &scans[k+totScans].coeffsQ[j]);
+					result = strtok(NULL, " ");
+					j++;
+				}
+				if (j != (order + 1)) {
+					printf("ERROR: read %d basket weaving coefficients when expected %d\n", j, (order + 1));
+				}
+
+				if (fgets(line, 500, scanbw) == NULL) {
+					printf("in decdep.c, fgets read error\n");
+					exit(1);
+				}
+				// U
+				j = 0;
+				result = strtok(line, " ");
+				while (result != NULL) {
+					sscanf(result, "%f", &scans[k+totScans].coeffsU[j]);
+					result = strtok(NULL, " ");
+					j++;
+				}
+				if (j != (order + 1)) {
+					printf("ERROR: read %d basket weaving coefficients when expected %d\n", j, (order + 1));
+				}
+
+				if (fgets(line, 500, scanbw) == NULL) {
+					printf("in decdep.c, fgets read error\n");
+					exit(1);
+				}
+				// V
+				j = 0;
+				result = strtok(line, " ");
+				while (result != NULL) {
+					sscanf(result, "%f", &scans[k+totScans].coeffsV[j]);
+					result = strtok(NULL, " ");
+					j++;
+				}
+				if (j != (order + 1)) {
+					printf("ERROR: read %d basket weaving coefficients when expected %d\n", j, (order + 1));
+				}
+
+				fclose(scanbw);
+			}
+			else {
+				printf("Error allocating memory for basket weaving solution coefficients for day %d. Can not recover\n",i);
 				exit(1);
 			}
-
-			if( i == 0 ) printf("Scan coefficients for scan 0: %s", line);
-
-			j = 0;
-			result = strtok(line, " ");
-			while (result != NULL) {
-				sscanf(result, "%f", &scans[i].coeffsI[j]);
-				result = strtok(NULL, " ");
-				j++;
-			}
-			if (j != (order + 1)) {
-				printf("ERROR: read %d basket weaving coefficients when expected %d\n", i, (order + 1));
-			}
-
-			if (fgets(line, 500, scanbw) == NULL) {
-				printf("in decdep.c, fgets read error\n");
-				exit(1);
-			}
-			// now Q
-			j = 0;
-			result = strtok(line, " ");
-			while (result != NULL) {
-				sscanf(result, "%f", &scans[i].coeffsQ[j]);
-				result = strtok(NULL, " ");
-				j++;
-			}
-			if (j != (order + 1)) {
-				printf("ERROR: read %d basket weaving coefficients when expected %d\n", i, (order + 1));
-			}
-
-			if (fgets(line, 500, scanbw) == NULL) {
-				printf("in decdep.c, fgets read error\n");
-				exit(1);
-			}
-			// U
-			j = 0;
-			result = strtok(line, " ");
-			while (result != NULL) {
-				sscanf(result, "%f", &scans[i].coeffsU[j]);
-				result = strtok(NULL, " ");
-				j++;
-			}
-			if (j != (order + 1)) {
-				printf("ERROR: read %d basket weaving coefficients when expected %d\n", i, (order + 1));
-			}
-
-			if (fgets(line, 500, scanbw) == NULL) {
-				printf("in decdep.c, fgets read error\n");
-				exit(1);
-			}
-			// V
-			j = 0;
-			result = strtok(line, " ");
-			while (result != NULL) {
-				sscanf(result, "%f", &scans[i].coeffsV[j]);
-				result = strtok(NULL, " ");
-				j++;
-			}
-			if (j != (order + 1)) {
-				printf("ERROR: read %d basket weaving coefficients when expected %d\n", i, (order + 1));
-			}
-
-			fclose(scanbw);
 		}
-		else {
-			printf("Error allocating memory for basket weaving solution coefficients. Can not recover\n");
-			exit(1);
-		}
+		totScans+= wappdata->scanDayData[i].numScans;
 	}
 
 
@@ -865,7 +935,6 @@ void read_apply_balance_data( FluxWappData * wappdata, int day_order, int scan_o
 	{
 		ScanDayData *daydata = &wappdata->scanDayData[r];
 
-		//printf("NumScans is %d\n", daydata->numScans );
 		for (int i = 0; i < daydata->numScans; i++) {
 			if (daydata->numScans) {
 				int x, j, k, p, num_delta = 0;
@@ -910,8 +979,7 @@ void read_apply_balance_data( FluxWappData * wappdata, int day_order, int scan_o
 					dV[num_delta] = refV - crossV;
 					dRA[num_delta] = RA;
 					num_delta++;
-				}
-
+				}	
 				if (num_delta > order) {
 					delta_sum = 0.0;
 					for (k = 0; k < num_delta; k++)
@@ -925,7 +993,6 @@ void read_apply_balance_data( FluxWappData * wappdata, int day_order, int scan_o
 					//chebyshev_fit_bw_scan(dRA, dU, num_delta, nsigma, cU, order);
 					//chebyshev_fit_bw_scan(dRA, dV, num_delta, nsigma, cV, order);
 
-
 					for (k = 0; k < refscan->num_records; k++) {
 						if (isfinite(refscan->records[k].stokes.I) && refscan->records[k].RA >= min && refscan->records[k].RA <= max) {
 
@@ -936,7 +1003,7 @@ void read_apply_balance_data( FluxWappData * wappdata, int day_order, int scan_o
 							refscan->records[k].stokes.V -= chebyshev_eval(RA, scans[scancount].coeffsV, order) * loop_gain;
 						}
 					}
-					printf("Scan%d: %f %f %f\n", scancount, scans[scancount].coeffsI[0],scans[scancount].coeffsI[1],scans[scancount].coeffsI[2]);
+					//printf("Scan%d: %f %f %f\n", scancount, scans[scancount].coeffsI[0],scans[scancount].coeffsI[1],scans[scancount].coeffsI[2]);
 					//scancount++;
 				}
 			}
@@ -959,10 +1026,10 @@ int numScans = 0;
 	FluxDayData *cur = &wappdata->daydata[0];
 		
 
-	for( i=0; i< 50; i++ ) {
-		printf( "%f %f %f\n", cur->records[i].stokes.I, cur->records[i].RA, cur->records[i].DEC );	
+/*	for( i=0; i< 50; i++ ) {
+		printf( "%f %f %f\n", cur->records[i].stokes.I, cur->records[i].RA, cur->records[i].DEC);	
 	}
-	
+*/	
 
 // placeholder coefficients for basketweaving
 for (int i = 0; i < wappdata->numDays; i++) {
@@ -1015,7 +1082,7 @@ do{
 	if(wappdata->numDays) chisqglobal /= wappdata->numDays;
 	count++;
 	globalchange = chisqglobalprev - chisqglobal;
-	printf("Day iteration:%i global:%f change:%f prev:%f\n", count, chisqglobal, globalchange, chisqglobalprev);
+//	printf("Day iteration:%i global:%f change:%f prev:%f\n", count, chisqglobal, globalchange, chisqglobalprev);
 	chisqglobalprev = chisqglobal;
 	}while(globalchange > loop_epsilon && count < day_order);
 
@@ -1046,7 +1113,7 @@ do{
 	if(wappdata->numDays) chisqglobal /= wappdata->numDays;
 	count++;
 	globalchange = chisqglobalprev - chisqglobal;
-	printf("Scan iteration:%i global:%f change:%f prev:%f\n", count, chisqglobal, globalchange, chisqglobalprev);
+//	printf("Scan iteration:%i global:%f change:%f prev:%f\n", count, chisqglobal, globalchange, chisqglobalprev);
 	chisqglobalprev = chisqglobal;
 	}while(globalchange > loop_epsilon && count < scan_order);
 
@@ -1076,7 +1143,7 @@ loopgain - a multiplier that is used to limit the amount of change on each itera
 loop_epsilon - the threshold where any percent changes less than this signal the termiation criteria of the iterations.
 */
 
-	printf("Performing basket weaving\n"); printf("Loop_gain: %f Loop_epsilon: %f\n", loop_gain, loop_epsilon);
+//	printf("Performing basket weaving\n"); printf("Loop_gain: %f Loop_epsilon: %f\n", loop_gain, loop_epsilon);
 	basket_weave(wappdata, day_order, scan_order, loop_gain, loop_epsilon, bw_order);
 }
 //-------------------------------------------------------------------------------------------------------------

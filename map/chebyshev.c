@@ -641,7 +641,7 @@ void chebyshev_fit_dec(float *X, float *Y, int size, float nsigma, float *C, int
 	x[M] = X[size-1]; y[M] = Y[size-1]; size = M + 1;
 	
 	do 
-		{
+	{
 		//chebyshev_cholesky(order, C, size, x, y);
 		chebyshev_qrgsm(order, C, size, x, y); 
 		mean = 0.0;
@@ -663,16 +663,17 @@ void chebyshev_fit_dec(float *X, float *Y, int size, float nsigma, float *C, int
 
 		outlier = 0;	
 		for(i=0; i<size; i++) 
+		{
+			//if(fabs(diff[i]) > sigma) 
+			if(diff[i] > sigma) //positive thresholding only 
 			{
-			if(fabs(diff[i]) > sigma) 
-				{
 				outlier = 1;
 				size --; 
 				x[i] = x[size]; 
 				y[i] = y[size];
-				}
 			}
-		}while(outlier && size > order);
+		}
+	}while(outlier && size > order);
 	//free(xx); 
 	//free(yy); 
 	free(x); 

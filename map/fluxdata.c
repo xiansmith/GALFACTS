@@ -94,7 +94,8 @@ static float RAp[200000],DECp[200000],ASTp[200000];
 // read and process bad data file
 
 FILE *baddatafile = fopen("Baddata.list","rt");
-
+if(baddatafile != NULL)
+printf(":: Opened with fd %d\n",*baddatafile);
 float lowRA = 0.0, highRA = 0.0;
 
 int badmjd = 0, badlowchan = 0, badhighchan = 0, bad = 0;
@@ -103,6 +104,7 @@ char badbeam[8]={0};
 if(baddatafile != NULL)
 	{
 	//read out the #header
+	//printf(":: BAD file found.\n");
 	fgets(header,80,baddatafile);
 	while(!feof(baddatafile))
 		{
@@ -120,6 +122,11 @@ if(baddatafile != NULL)
 			}
 		}
 	}
+else
+{
+//	printf(":: BAD file not found.\n");
+	bad = 0;
+}
 
 
 ////////////
@@ -194,35 +201,38 @@ if(field[0] == 'N' && field[1] == '1')
 					printf("WARN: invalid beam (%i) specified.\n", beam);
 			}
 	}
-// ---------------------- N1 ends
-		if(bad && daydata->records[k].RA > highRA )
-    		{
+	// ---------------------- N1 ends
+	if(bad && daydata->records[k].RA > highRA )
+	{
 		if( baddatafile == NULL ) break;
 
-            if(!feof(baddatafile))
-            {
-                    // read out a line of bad data file
-                    fscanf(baddatafile,"%d %s %d %d %f %f", &badmjd, badbeam, &badlowchan, &badhighchan, &lowRA, &highRA);
-                    // check to see if mjd beam and channel match the current ones, if so stop reading further
-                    // we now have the RA range for the bad data for this day
-                    if((badmjd == day) && (badbeam[beam] == '1') && (chan >= badlowchan) && (chan <= badhighchan) )
-                    {
-                            bad = 1;
-                    } else {
-                            bad = 0;
-                            fclose( baddatafile );
-                    }
+		if(!feof(baddatafile))
+		{
+			// read out a line of bad data file
+			fscanf(baddatafile,"%d %s %d %d %f %f", &badmjd, badbeam, &badlowchan, &badhighchan, &lowRA, &highRA);
+			// check to see if mjd beam and channel match the current ones, if so stop reading further
+			// we now have the RA range for the bad data for this day
+			if((badmjd == day) && (badbeam[beam] == '1') && (chan >= badlowchan) && (chan <= badhighchan) )
+			{
+				bad = 1;
+			} else {
+				bad = 0;
+				//printf("Closing file\n");
+				fclose( baddatafile );
+			}
 
-            } else
-            {
-                    bad = 0;
-                    fclose (baddatafile );
-            }
-    }
+		} else
+		{
+			bad = 0;
+			//printf("Closing file\n");
+			fclose (baddatafile );
+		}
+	}
 
         if(bad && daydata->records[k].RA>=lowRA && daydata->records[k].RA<=highRA)
             {
             //if( daydata->records[k].RA > 117 ) printf("bad data at RA %f\n", daydata->records[k].RA );
+//		printf(":BAD: %d %s %d %f\n", badmjd, badbeam, chan, daydata->records[k].RA);
             daydata->records[k].stokes.I = NAN;
             daydata->records[k].stokes.Q = NAN;
             daydata->records[k].stokes.U = NAN;
@@ -241,6 +251,13 @@ if(field[0] == 'N' && field[1] == '1')
     daydata->numRecords = k;
     daydata->RAmin = RAmin;
     daydata->RAmax = RAmax;
+
+	// check if not closed to avoid leaking 
+/*	if ( fcntl(fileno(baddatafile), F_GETFD) != -1 )  {
+		fclose(baddatafile);
+		printf(":BAD: Closed file\n");
+	}
+*/
     return k;
 }
 
@@ -294,11 +311,11 @@ int fluxdaydata_read_binary_single_file(const char *field, FluxDayData *daydata,
 		//exit(1);
 	}
 
-//	printf( "Get data from single binary file. Fetching channel %d at position %d for %d numRecords\n", cfgChan, cfgStart, cfgNumRecords);
+	//printf( "Get data from single binary file. Fetching channel %d at position %d for %d numRecords\n", cfgChan, cfgStart, cfgNumRecords);
 
 	// we could assume numRecords never changes, but just in case
 	numRecords = cfgNumRecords;
-//	printf("numRecords after is %d\n", numRecords );
+	//printf("numRecords after is %d\n", numRecords );
 
 	if(daydata->records != NULL) free(daydata->records);
 	daydata->records = (FluxRecord*) malloc(numRecords * sizeof(FluxRecord));
@@ -313,6 +330,8 @@ int fluxdaydata_read_binary_single_file(const char *field, FluxDayData *daydata,
 // read and process bad data file
 
 FILE *baddatafile = fopen("Baddata.list","rt");
+if(baddatafile != NULL)
+printf(":Day %d: Opened with fd %d\n",day,*baddatafile);
 
 float lowRA = 0.0, highRA = 0.0;
 
@@ -321,6 +340,7 @@ char badbeam[8]={0};
 
 if(baddatafile != NULL)
 	{
+	//printf(":: BAD file found.\n");
 	//read out the #header
 	fgets(header,80,baddatafile);
 	while(!feof(baddatafile))
@@ -339,7 +359,11 @@ if(baddatafile != NULL)
 			}
 		}
 	}
-
+else
+{
+	//printf(":Day %d: BAD file not found.\n",day);
+	bad = 0;
+}
 
 ////////////
 
@@ -440,18 +464,22 @@ if(field[0] == 'N' && field[1] == '1')
 				bad = 1;
 			} else {
 				bad = 0;
+			    printf("Closing file\n");
 				fclose( baddatafile );
 			}
 
 		} else
 		{
 			bad = 0;
+			    printf("Closing file\n");
 			fclose (baddatafile );
 		}
 	}
 	
         if(bad && daydata->records[k].RA>=lowRA && daydata->records[k].RA<=highRA)
             {
+		//printf(":BAD: %d %s %d %f\n", badmjd, badbeam, chan, daydata->records[k].RA);
+		//exit(1);
             //if( daydata->records[k].RA > 117 ) printf("bad data at RA %f\n", daydata->records[k].RA );
             daydata->records[k].stokes.I = NAN;
             daydata->records[k].stokes.Q = NAN;
@@ -477,6 +505,7 @@ if(field[0] == 'N' && field[1] == '1')
 	// check if not closed to avoid leaking 
 /*	if ( fcntl(fileno(baddatafile), F_GETFD) != -1 )  {
 		fclose(baddatafile);
+		//printf(":BAD: Closed file\n");
 	}
 */	
 	return k;
@@ -497,6 +526,8 @@ if(avg == 0) navg = 1; else navg = avg;
 
 for(m=0; m<wappdata->numDays; m++)
 	{
+	printf("Reading Day %d\n",m);
+	fflush(stdout);
 	FluxDayData * daydata = &wappdata->daydata[m];	
 	FluxDayData * tempdata_avg = NULL;
 	if(tempdata_avg == NULL) 
@@ -574,8 +605,8 @@ for(m=0; m<wappdata->numDays; m++)
 				//numread = fluxdaydata_read_binary(field, tempdata, infile, j, chan+n, atoi(daydata->mjd));
 				numread = fluxdaydata_read_binary_single_file(field, tempdata, infile, configfile, j, chan+n, atoi(daydata->mjd));
 			}
-			//printf("Opened file %s\n",filename);
-			//printf("read %d records.\n",tempdata->numRecords );
+			printf("Opened file %s\n",filename);
+			printf("read %d records.\n",tempdata->numRecords );
 			fclose(infile);
 			fclose(configfile);
 			if(n==0)

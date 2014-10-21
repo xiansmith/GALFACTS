@@ -142,6 +142,11 @@ void make_beam_model(int channel,int beamno,float RA,float DEC,float radius)
 	FluxRecord pRec;
 	numDays = get_date_dirs("./", &files);
 	float maxI = 0.0;
+	float maxV = -10.0;
+	float minV = 10.0;
+	//float maxV = 10.0;
+	float maxU = 10.0;
+	float maxQ = 10.0;
 /*	for(j = 0;j < numDays;j++)
 	{
 		sprintf(infilename,"%s/beam%d/balance%03i.dat",files[j],beamno,channel);
@@ -171,6 +176,8 @@ void make_beam_model(int channel,int beamno,float RA,float DEC,float radius)
 //	for(beamno =  0;beamno <7; beamno++)
 //	{
 		int cnt = 0;
+		int day = 0;
+		int rec = 0;
 		//float maxI,minI,avgQ,avgU,avgV;
 		for(j = 0;j < numDays;j++)
 		{
@@ -182,7 +189,9 @@ void make_beam_model(int channel,int beamno,float RA,float DEC,float radius)
         			printf("ERROR: can't open input file %s\n", infilename);
 			        continue;
 		        }
-			sprintf(outfilename,"beam%d_model/beam%d_model%04i.dat",beamno,beamno,channel);
+			//printf("Reading %s\n",infilename);
+			//sprintf(outfilename,"beam%d_model/beam%d_model%04i.dat",beamno,beamno,channel);
+			sprintf(outfilename,"beam_models/beam%d_model%04i.dat",beamno,channel);
 			//sprintf(outfilename,"beam%d_model/beam%d_modelxxyy%04i.dat",beamno,beamno,channel);
 			beammodelfile = fopen(outfilename, "a");
 		        if (beammodelfile == NULL) {
@@ -199,6 +208,33 @@ void make_beam_model(int channel,int beamno,float RA,float DEC,float radius)
 				if(maxI < pRec.stokes.I && !isnan(pRec.stokes.I)) 
 				{
 					maxI = pRec.stokes.I;
+					day = j;
+					rec = i;
+					//maxV = pRec.stokes.V;
+					//maxQ = pRec.stokes.Q;
+					//maxU = pRec.stokes.U;
+				}
+				//if(fabs(maxV) < fabs(pRec.stokes.V) && !isnan(pRec.stokes.V)) 
+				/*if(maxQ < (pRec.stokes.Q) && !isnan(pRec.stokes.Q)) 
+				{
+					maxQ = pRec.stokes.Q;
+					//maxV = pRec.stokes.V;
+				}
+				if(maxU > (pRec.stokes.U) && !isnan(pRec.stokes.U)) 
+				{
+					maxU = pRec.stokes.U;
+					//maxV = pRec.stokes.V;
+				}*/
+				//if(fabs(maxV) < fabs(pRec.stokes.V) && !isnan(pRec.stokes.V)) 
+				if(maxV < pRec.stokes.V && !isnan(pRec.stokes.V)) 
+				{
+					maxV = pRec.stokes.V;
+					//maxV = pRec.stokes.V;
+				}
+				if(minV > pRec.stokes.V && !isnan(pRec.stokes.V)) 
+				{
+					minV = pRec.stokes.V;
+					//maxV = pRec.stokes.V;
 				}
 /*				if(i)
 				{
@@ -247,6 +283,7 @@ void make_beam_model(int channel,int beamno,float RA,float DEC,float radius)
 				}
 				cnt++;
 */
+
 				if(pRec.DEC <= (DEC + radius) && pRec.DEC >= (DEC - radius) && pRec.RA <= (RA + radius) && pRec.RA >= (RA - radius) \
 				&& !isnan(pRec.stokes.I)) 
 				{
@@ -265,6 +302,12 @@ void make_beam_model(int channel,int beamno,float RA,float DEC,float radius)
 		        fclose(infile);
 		        fclose(beammodelfile);
 		}
-		printf("MaxI : %f\n",maxI);
+		//printf("MaxI : %f\n",maxI);
+		
+		//printf("Beam %d V/I at maxI : %f\n",beamno,maxV/maxI);
+		//printf("Beam %d Q/I at maxI : %f\n",beamno,maxQ/maxI);
+		//printf("Beam %d U/I at maxI : %f\n",beamno,maxU/maxI);
+		printf("Beam %d +V/I: %2.6f -V/I: %2.6f MaxI %2.6f Day %d Rec %d\n",beamno,maxV/maxI,minV/maxI,maxI,day,rec);
+		//printf("Beam %d maxV %f /maxI %f : %f\n",beamno,maxV,maxI,maxV/maxI);
 //	}
 }

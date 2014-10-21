@@ -646,6 +646,9 @@ void write_binary_channel_data_single_file(SpecRecord dataset[], int numRecords,
 		return;
 		}
 
+	char buf[4096];
+	setbuffer(fluxfile,buf,4096);
+
 	snprintf(configfilename, 32, "fluxtime.dat_cfg");
 	fluxconfig = fopen(configfilename, "wb");
 	if(fluxconfig == NULL)

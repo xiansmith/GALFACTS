@@ -225,11 +225,11 @@ void grid_data(const FluxWappData *wappdata, const MapMetaData *md, float * data
 				dataQ[i+j*n1] /= w;
 				dataU[i+j*n1] /= w;
 				dataV[i+j*n1] /= w;
-				if(dataI[i+j*n1] > 20000 || dataI[i+j*n1] < -1000) dataI[i+j*n1] = NAN;
+/*				if(dataI[i+j*n1] > 20000 || dataI[i+j*n1] < -1000) dataI[i+j*n1] = NAN;
 				if(dataQ[i+j*n1] > 2000 || dataQ[i+j*n1] < -2000) dataQ[i+j*n1] = NAN;
 				if(dataU[i+j*n1] > 2000 || dataU[i+j*n1] < -2000) dataU[i+j*n1] = NAN;
 				if(dataV[i+j*n1] > 2000 || dataV[i+j*n1] < -2000) dataV[i+j*n1] = NAN;
-				} 
+*/				} 
 			else 
 				{
 				dataI[i+j*n1] = NAN;

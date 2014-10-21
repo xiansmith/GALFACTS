@@ -2,11 +2,11 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
-#include "corrections.h"
+#include "QUVcorr.h"
 
 //contains all the corrections derived from the CALIBRATOR sources. Since the multiple steps in the correction all rely on original data its better to deal with them all at a same place. Otherwise it is messy to pass the same data back and forth between different functions
 
-void corrections(FluxWappData * wappdata, int chan, MapMetaData *md)
+void QUVcorr(FluxWappData * wappdata, int chan, MapMetaData *md)
 {
 	//currently only works for full channel and not channel averages 
 	//this is because the table contains MAX_CHANNEL values
@@ -28,7 +28,7 @@ void corrections(FluxWappData * wappdata, int chan, MapMetaData *md)
 		int c;
 		FILE *table;
 		char filename[64];
-/*		sprintf(filename,"Qcorr.dat");
+		sprintf(filename,"%s.Qcorr.txt",md->field);
 
 		table = fopen(filename,"r");
 		if(table == NULL)
@@ -87,7 +87,8 @@ void corrections(FluxWappData * wappdata, int chan, MapMetaData *md)
 
 		}
 
-		sprintf(filename,"Ucorr.dat");
+		//sprintf(filename,"Ucorr.dat");
+		sprintf(filename,"%s.Ucorr.txt",md->field);
 		table = fopen(filename,"r");
 		if(table == NULL)
 		{
@@ -145,7 +146,8 @@ void corrections(FluxWappData * wappdata, int chan, MapMetaData *md)
 
 		}
 
-		sprintf(filename,"Vcorr.dat");
+		//sprintf(filename,"Vcorr.dat");
+		sprintf(filename,"%s.Vcorr.txt",md->field);
 		table = fopen(filename,"r");
 		if(table == NULL)
 		{
@@ -198,64 +200,6 @@ void corrections(FluxWappData * wappdata, int chan, MapMetaData *md)
 				for(b=0;b<7;b++)
 				{
 					vc[b][0]/=(md->avg_highchan - md->avg_lowchan);
-				}
-			}
-
-		}
-*/
-		sprintf(filename,"%s.Icorr.txt",md->field);
-		table = fopen(filename,"r");
-		if(table == NULL)
-		{
-			printf("ERROR: unable to open file %s\n", filename);
-			return;
-		}
-		else
-		{
-			for(i = 0; i < MAX_CHANNELS; i++)
-			{
-				fscanf(table ,"%d",&c);
-				//printf("%d ",c);
-				for(b=0;b<7;b++)
-				{
-					fscanf(table ,"%f",&spec_I[b][i]);
-					//printf("%f ",spec_I[b][i]);
-				}
-				//printf("\n");
-			}
-			fclose(table);
-
-			if(md->avg)
-			{	
-				int j;
-				for(j = md->avg_lowchan;j < md->avg_highchan;j+=md->avg)
-				{
-					int k;
-					for(k = j+1;k<j+md->avg;k++)
-					{
-						for(b=0;b<7;b++)
-						{
-							spec_I[b][j]+=spec_I[b][k];
-						}
-					}
-					for(b=0;b<7;b++)
-					{
-						spec_I[b][j]/=md->avg;
-					}
-				}
-			}
-			if( chan == 0 ) {
-				int k = 0;
-				for(k = md->avg_lowchan;k< md->avg_highchan;k++)
-				{
-					for(b=0;b<7;b++)
-					{
-						spec_I[b][0]+=spec_I[b][k];
-					}
-				}
-				for(b=0;b<7;b++)
-				{
-					spec_I[b][0]/=(md->avg_highchan - md->avg_lowchan);
 				}
 			}
 
@@ -387,18 +331,17 @@ void corrections(FluxWappData * wappdata, int chan, MapMetaData *md)
 		//pa[beam][chan] = pa[beam][chan]*M_PI/180.0;
 
 		//plugging in these for now
-		//pa[beam][chan] = -M_PI/4.0;
-		//Pc[beam][chan] = 1.0;
+		pa[beam][chan] = -M_PI/4.0;
+		Pc[beam][chan] = 1.0;
 		for(i=0;i<r;i++)
 		{
-			//daydata->records[i].stokes.Q = daydata->records[i].stokes.Q - qc[beam][chan]*daydata->records[i].stokes.I;
-			//daydata->records[i].stokes.U = daydata->records[i].stokes.U - uc[beam][chan]*daydata->records[i].stokes.I;
-			//daydata->records[i].stokes.V = daydata->records[i].stokes.V - vc[beam][chan]*daydata->records[i].stokes.I;
-			daydata->records[i].stokes.I *= spec_I[beam][chan];
-			//float Q = daydata->records[i].stokes.Q;
-			//float U = daydata->records[i].stokes.U;
-			//daydata->records[i].stokes.Q = Pc[beam][chan]*(Q*cos(2*pa[beam][chan])-U*sin(2*pa[beam][chan]));
-			//daydata->records[i].stokes.U = Pc[beam][chan]*(Q*sin(2*pa[beam][chan])+U*cos(2*pa[beam][chan]));
+			daydata->records[i].stokes.Q = daydata->records[i].stokes.Q - qc[beam][chan]*daydata->records[i].stokes.I;
+			daydata->records[i].stokes.U = daydata->records[i].stokes.U - uc[beam][chan]*daydata->records[i].stokes.I;
+			daydata->records[i].stokes.V = daydata->records[i].stokes.V - vc[beam][chan]*daydata->records[i].stokes.I;
+			float Q = daydata->records[i].stokes.Q;
+			float U = daydata->records[i].stokes.U;
+			daydata->records[i].stokes.Q = Pc[beam][chan]*(Q*cos(2*pa[beam][chan])-U*sin(2*pa[beam][chan]));
+			daydata->records[i].stokes.U = Pc[beam][chan]*(Q*sin(2*pa[beam][chan])+U*cos(2*pa[beam][chan]));
 		}
         }
 }

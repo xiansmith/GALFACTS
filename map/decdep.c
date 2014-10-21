@@ -31,7 +31,8 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int beam, int o
 
 // not doing average image, read coefficients from a file
 // and apply them
-	if (chan) {
+//	if (chan) {
+	if (0) {
 		//printf(" from file\n");
 		FILE *decfile = fopen(decrmfilename, "r");
 		char line[500];
@@ -134,7 +135,7 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int beam, int o
 		chebyshev_minmax(x, N, &min, &max);
 		chebyshev_normalize(x, N, min, max);
 
-		if (freq > Hfreq - 0.5 && freq < Hfreq + 0.5) {
+/*BUG		if (freq > Hfreq - 0.5 && freq < Hfreq + 0.5) {
 			for (n = 0; n < order + 1; n++) {
 				cI[n] = cIc[n + day * (order + 1)];
 				cQ[n] = cQc[n + day * (order + 1)];
@@ -154,7 +155,7 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int beam, int o
 				cVc[n + day * (order + 1)] = cV[n];
 			}
 		}
-
+*/
 		// now apply it
 		for (r = 0; r < R; r++) {
 			if (isfinite(daydata->records[r].stokes.I) && isfinite(daydata->records[r].stokes.Q) && isfinite(daydata->records[r].stokes.U)
@@ -162,7 +163,7 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int beam, int o
 				DEC = CNORMALIZE(daydata->records[r].DEC, min, max);
 			        
 				// XXX temporary magic number    
-				if(field[0] == 'N' && field[1] == '1')
+/*				iif(field[0] == 'N' && field[1] == '1')
                         	{
 					daydata->records[r].stokes.I = daydata->records[r].stokes.I  - chebyshev_eval(DEC, cI, order) + 0.75;	
 				}		
@@ -182,9 +183,9 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int beam, int o
 				{
 					daydata->records[r].stokes.I = daydata->records[r].stokes.I  - chebyshev_eval(DEC, cI, order) + 0.75;
 				}	
-	
+*/	
 				// original, no constant added
-				//daydata->records[r].stokes.I -= chebyshev_eval(DEC, cI, order);
+				daydata->records[r].stokes.I -= chebyshev_eval(DEC, cI, order);
 				daydata->records[r].stokes.Q -= chebyshev_eval(DEC, cQ, order);
 				daydata->records[r].stokes.U -= chebyshev_eval(DEC, cU, order);
 				daydata->records[r].stokes.V -= chebyshev_eval(DEC, cV, order);
@@ -192,7 +193,8 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int beam, int o
 		}
 
 	}
-	else {
+//	else {
+	if(1) {
 		// we are processing average image, create coefficients and write to file
 		//printf(" and write to file\n");
 
@@ -233,13 +235,21 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int beam, int o
 			}
 		}
 
+
+//		char RAfilename[128];
+//		sprintf(RAfilename, "%s/beam%d/RA_background.dat", daydata->mjd,beam);
+//		FILE *RAfile = fopen(RAfilename,"w");
+		//float *RAs,*bgs;
+		//*RAs = (float*)malloc(sizeof(float));
+		//*bgs = (float*)malloc(sizeof(float));
+		//int Cnt =0;
 		for (r = 0; r < R; r++) {
 			if (isfinite(daydata->records[r].stokes.I) && isfinite(daydata->records[r].stokes.Q) && isfinite(daydata->records[r].stokes.U)
 					&& isfinite(daydata->records[r].stokes.V)) {
 				DEC = CNORMALIZE(daydata->records[r].DEC, min, max);
                 		
 				// XXX temporary magic number 
-				if(field[0] == 'N' && field[1] == '1')
+/*				if(field[0] == 'N' && field[1] == '1')
                         	{
 					daydata->records[r].stokes.I = daydata->records[r].stokes.I  - chebyshev_eval(DEC, cI, order) + 0.75;	
 				}		
@@ -259,19 +269,51 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int beam, int o
 				{
 					daydata->records[r].stokes.I = daydata->records[r].stokes.I  - chebyshev_eval(DEC, cI, order) + 0.75;
 				}		
-				
+*/				
 				
 				// original, no constant added
-				//daydata->records[r].stokes.I -= chebyshev_eval(DEC, cI, order);
+				daydata->records[r].stokes.I -= chebyshev_eval(DEC, cI, order);
 				daydata->records[r].stokes.Q -= chebyshev_eval(DEC, cQ, order);
 				daydata->records[r].stokes.U -= chebyshev_eval(DEC, cU, order);
 				daydata->records[r].stokes.V -= chebyshev_eval(DEC, cV, order);
+				//if(RAfile != NULL && daydata->records[r].stokes.I < 5.0 && daydata->records[r].stokes.I > -3.0)
+				//fprintf(RAfile,"%2.6f %2.6f\n",daydata->records[r].RA,daydata->records[r].stokes.I);
+				//RAs[Cnt] = daydata->records[r].RA;
+				//bgs[Cnt] = daydata->records[r].stokes.I;
+				//Cnt++;
+			}
+		}
+	
+	        float RAcI[2];
+		N = 0;
+		for (r = 0; r < R; r++) {
+			if (isfinite(daydata->records[r].stokes.I)) {
+				x[N] = daydata->records[r].RA;
+				yI[N] = daydata->records[r].stokes.I;
+				N++;
 			}
 		}
 
+		chebyshev_minmax(x, N, &min, &max);
+		chebyshev_normalize(x, N, min, max);
+
+		chebyshev_fit_dec(x, yI, N, nsigma, RAcI, 1);
+
+		for (r = 0; r < R; r++) {
+			if (isfinite(daydata->records[r].stokes.I) && isfinite(daydata->records[r].stokes.Q) && isfinite(daydata->records[r].stokes.U)
+					&& isfinite(daydata->records[r].stokes.V)) {
+				float RA = CNORMALIZE(daydata->records[r].RA, min, max);
+				daydata->records[r].stokes.I -= chebyshev_eval(RA, RAcI, 1);
+//				if(RAfile != NULL && daydata->records[r].stokes.I < 5.0 && daydata->records[r].stokes.I > -3.0)
+//					fprintf(RAfile,"%2.6f %2.6f\n",daydata->records[r].RA,daydata->records[r].stokes.I);
+			}
+		}
+		
+//		if(RAfile != NULL)
+//		fclose(RAfile);
 		// finished applying correction, write the coefficients to file
 		//mkdir("decrm", 0777);
-		FILE *decfile = fopen(decrmfilename, "w"); // write files to decrm/decremovalN.dat
+/*		FILE *decfile = fopen(decrmfilename, "w"); // write files to decrm/decremovalN.dat
 		if (decfile != NULL) {
 			int i = 0;
 
@@ -305,7 +347,7 @@ static void day_dec_dependence(FluxWappData * wappdata, int day, int beam, int o
 		else {
 			// can not recover
 			printf("Likely hit bad beam. Couldn't write decremoval.dat file to file %s\n", decrmfilename);
-		}
+		}*/
 
 	} // end if (avg == 0)
 
@@ -453,7 +495,7 @@ void calculate_dec_dependence(FluxWappData * wappdata, int order, int chan, floa
 int d,beam;
 for(d=0; d<wappdata->numDays; d++) 
 	{
-	//printf("Day %d of %d", d+1, wappdata->numDays);
+	printf("Day %d of %d", d+1, wappdata->numDays);
         if(!strcmp(wappdata->wapp,"multibeam"))
 	{
 		beam = d%7;

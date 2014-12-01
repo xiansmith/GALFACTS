@@ -405,7 +405,15 @@ if(field[0] == 'N' && field[1] == '1')
 		}
 	}
 // ---------------------- N1 ends
+ if(field[0] == 'N' && field[1] == '4') {
+                                RAmax = 390.0;
+                        }
 
+                        if(field[0] == 'S' && field[1] == '4') {
+                                RAmax = 415.0;
+                        }
+
+	
 	if(num == 7)
 		{
         float RA = daydata->records[k].RA;
@@ -475,7 +483,7 @@ if(field[0] == 'N' && field[1] == '1')
 			fclose (baddatafile );
 		}
 	}
-	
+
         if(bad && daydata->records[k].RA>=lowRA && daydata->records[k].RA<=highRA)
             {
 		//printf(":BAD: %d %s %d %f\n", badmjd, badbeam, chan, daydata->records[k].RA);
@@ -488,8 +496,8 @@ if(field[0] == 'N' && field[1] == '1')
             }
 	
 	
-
-		k++;
+		 if(daydata->records[k].RA < RAmax)
+			k++;
 		}
 	else if(num <= 0) break;
 	else

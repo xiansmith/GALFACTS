@@ -250,6 +250,266 @@ if(num_delta > order && apply)
 return sqrt(delta_sum);
 }
 
+//-------------------------------------------------------------------------------------------------------------
+static float scan_weaveI(ScanDayData *daydata, int scan, float loop_gain, int apply, int order, BWcoeff* scancoeff)
+{
+int x, i, j, k, p, num_delta = 0;
+float RA, nRA, min, max, delta_sum=0.0, nsigma = 2.5;
+float dI[MAX_NUM_DAYS*MAX_NUM_SCANS], dQ[MAX_NUM_DAYS*MAX_NUM_SCANS], dU[MAX_NUM_DAYS*MAX_NUM_SCANS], dV[MAX_NUM_DAYS*MAX_NUM_SCANS], dRA[MAX_NUM_DAYS*MAX_NUM_SCANS];
+float cI[order+1], cQ[order+1], cU[order+1], cV[order+1];
+float *xminmax; xminmax = (float*)malloc(2*sizeof(float));
+ScanData * refscan;
+
+refscan = &daydata->scans[scan];
+for(j=0; j<refscan->num_cross_points; j++) 
+	{
+	float refI, refQ, refU, refV;
+	float crossI, crossQ, crossU, crossV;
+	CrossingPoint *crossPoint =  &refscan->crossPoints[j];
+	ScanData *crossScan = crossPoint->crossScan;
+	RA = crossPoint->RA;
+	p = crossPoint->ref_pos;
+	if(p >= 0 && p < refscan->num_records) 
+		{
+		if(isfinite(refscan->records[p].stokes.I)) 
+			{
+			refI = refscan->records[p].stokes.I;
+			}
+		}
+	if(!isfinite(refI)) continue;
+	p = crossPoint->cross_pos;
+	if(p >= 0 && p < crossScan->num_records) 
+		{
+		if(isfinite(crossScan->records[p].stokes.I)) 
+			{
+			crossI = crossScan->records[p].stokes.I;
+			}
+		}
+	if(!isfinite(crossI)) continue;
+	dI[num_delta] = refI - crossI;
+	dRA[num_delta] = RA;
+	num_delta++;
+	}
+
+if(num_delta > order && apply)
+	{
+	delta_sum = 0.0; for(k=0;k<num_delta;k++) delta_sum += dI[k]*dI[k]; delta_sum = sqrt(delta_sum/num_delta);
+	refscan = &daydata->scans[scan];
+	chebyshev_minmax(dRA, num_delta, &min, &max);
+	chebyshev_normalize(dRA, num_delta, min, max);
+	chebyshev_fit_bw_scan(dRA, dI, num_delta, nsigma, cI, order);
+
+	for( int i = 0; i < order + 1; i++ ) {
+			scancoeff->coeffsI[i] += cI[i];
+		}
+
+	for(k=0; k<refscan->num_records; k++)
+		{
+		if(isfinite(refscan->records[k].stokes.I) && refscan->records[k].RA >= min && refscan->records[k].RA <= max)
+			{
+			RA = CNORMALIZE(refscan->records[k].RA, min, max);
+			refscan->records[k].stokes.I -= chebyshev_eval(RA, cI, order) * loop_gain;
+			}
+		}
+	}
+	
+return sqrt(delta_sum);
+}
+//-------------------------------------------------------------------------------------------------------------
+static float scan_weaveQ(ScanDayData *daydata, int scan, float loop_gain, int apply, int order, BWcoeff* scancoeff)
+{
+int x, i, j, k, p, num_delta = 0;
+float RA, nRA, min, max, delta_sum=0.0, nsigma = 2.5;
+float dI[MAX_NUM_DAYS*MAX_NUM_SCANS], dQ[MAX_NUM_DAYS*MAX_NUM_SCANS], dU[MAX_NUM_DAYS*MAX_NUM_SCANS], dV[MAX_NUM_DAYS*MAX_NUM_SCANS], dRA[MAX_NUM_DAYS*MAX_NUM_SCANS];
+float cI[order+1], cQ[order+1], cU[order+1], cV[order+1];
+float *xminmax; xminmax = (float*)malloc(2*sizeof(float));
+ScanData * refscan;
+
+refscan = &daydata->scans[scan];
+for(j=0; j<refscan->num_cross_points; j++) 
+	{
+	float refI, refQ, refU, refV;
+	float crossI, crossQ, crossU, crossV;
+	CrossingPoint *crossPoint =  &refscan->crossPoints[j];
+	ScanData *crossScan = crossPoint->crossScan;
+	RA = crossPoint->RA;
+	p = crossPoint->ref_pos;
+	if(p >= 0 && p < refscan->num_records) 
+		{
+		if(isfinite(refscan->records[p].stokes.Q)) 
+			{
+			refQ = refscan->records[p].stokes.Q;
+			}
+		}
+	if(!isfinite(refQ)) continue;
+	p = crossPoint->cross_pos;
+	if(p >= 0 && p < crossScan->num_records) 
+		{
+		if(isfinite(crossScan->records[p].stokes.Q)) 
+			{
+			crossQ = crossScan->records[p].stokes.Q;
+			}
+		}
+	if(!isfinite(crossQ)) continue;
+	dQ[num_delta] = refQ - crossQ;
+	dRA[num_delta] = RA;
+	num_delta++;
+	}
+
+if(num_delta > order && apply)
+	{
+	delta_sum = 0.0; for(k=0;k<num_delta;k++) delta_sum += dQ[k]*dQ[k]; delta_sum = sqrt(delta_sum/num_delta);
+	refscan = &daydata->scans[scan];
+	chebyshev_minmax(dRA, num_delta, &min, &max);
+	chebyshev_normalize(dRA, num_delta, min, max);
+	chebyshev_fit_bw_scan(dRA, dQ, num_delta, nsigma, cQ, order);
+
+	for( int i = 0; i < order + 1; i++ ) {
+			scancoeff->coeffsQ[i] += cQ[i];
+		}
+
+	for(k=0; k<refscan->num_records; k++)
+		{
+		if(isfinite(refscan->records[k].stokes.Q) && refscan->records[k].RA >= min && refscan->records[k].RA <= max)
+			{
+			RA = CNORMALIZE(refscan->records[k].RA, min, max);
+			refscan->records[k].stokes.Q -= chebyshev_eval(RA, cQ, order) * loop_gain;
+			}
+		}
+	}
+	
+return sqrt(delta_sum);
+}
+//-------------------------------------------------------------------------------------------------------------
+static float scan_weaveU(ScanDayData *daydata, int scan, float loop_gain, int apply, int order, BWcoeff* scancoeff)
+{
+int x, i, j, k, p, num_delta = 0;
+float RA, nRA, min, max, delta_sum=0.0, nsigma = 2.5;
+float dI[MAX_NUM_DAYS*MAX_NUM_SCANS], dQ[MAX_NUM_DAYS*MAX_NUM_SCANS], dU[MAX_NUM_DAYS*MAX_NUM_SCANS], dV[MAX_NUM_DAYS*MAX_NUM_SCANS], dRA[MAX_NUM_DAYS*MAX_NUM_SCANS];
+float cI[order+1], cQ[order+1], cU[order+1], cV[order+1];
+float *xminmax; xminmax = (float*)malloc(2*sizeof(float));
+ScanData * refscan;
+
+refscan = &daydata->scans[scan];
+for(j=0; j<refscan->num_cross_points; j++) 
+	{
+	float refI, refQ, refU, refV;
+	float crossI, crossQ, crossU, crossV;
+	CrossingPoint *crossPoint =  &refscan->crossPoints[j];
+	ScanData *crossScan = crossPoint->crossScan;
+	RA = crossPoint->RA;
+	p = crossPoint->ref_pos;
+	if(p >= 0 && p < refscan->num_records) 
+		{
+		if(isfinite(refscan->records[p].stokes.U)) 
+			{
+			refU = refscan->records[p].stokes.U;
+			}
+		}
+	if(!isfinite(refU)) continue;
+	p = crossPoint->cross_pos;
+	if(p >= 0 && p < crossScan->num_records) 
+		{
+		if(isfinite(crossScan->records[p].stokes.U)) 
+			{
+			crossU = crossScan->records[p].stokes.U;
+			}
+		}
+	if(!isfinite(crossU)) continue;
+	dU[num_delta] = refU - crossU;
+	dRA[num_delta] = RA;
+	num_delta++;
+	}
+
+if(num_delta > order && apply)
+	{
+	delta_sum = 0.0; for(k=0;k<num_delta;k++) delta_sum += dU[k]*dU[k]; delta_sum = sqrt(delta_sum/num_delta);
+	refscan = &daydata->scans[scan];
+	chebyshev_minmax(dRA, num_delta, &min, &max);
+	chebyshev_normalize(dRA, num_delta, min, max);
+	chebyshev_fit_bw_scan(dRA, dU, num_delta, nsigma, cU, order);
+
+	for( int i = 0; i < order + 1; i++ ) {
+			scancoeff->coeffsU[i] += cU[i];
+		}
+
+	for(k=0; k<refscan->num_records; k++)
+		{
+		if(isfinite(refscan->records[k].stokes.U) && refscan->records[k].RA >= min && refscan->records[k].RA <= max)
+			{
+			RA = CNORMALIZE(refscan->records[k].RA, min, max);
+			refscan->records[k].stokes.U -= chebyshev_eval(RA, cU, order) * loop_gain;
+			}
+		}
+	}
+	
+return sqrt(delta_sum);
+}
+//-------------------------------------------------------------------------------------------------------------
+static float scan_weaveV(ScanDayData *daydata, int scan, float loop_gain, int apply, int order, BWcoeff* scancoeff)
+{
+int x, i, j, k, p, num_delta = 0;
+float RA, nRA, min, max, delta_sum=0.0, nsigma = 2.5;
+float dI[MAX_NUM_DAYS*MAX_NUM_SCANS], dQ[MAX_NUM_DAYS*MAX_NUM_SCANS], dU[MAX_NUM_DAYS*MAX_NUM_SCANS], dV[MAX_NUM_DAYS*MAX_NUM_SCANS], dRA[MAX_NUM_DAYS*MAX_NUM_SCANS];
+float cI[order+1], cQ[order+1], cU[order+1], cV[order+1];
+float *xminmax; xminmax = (float*)malloc(2*sizeof(float));
+ScanData * refscan;
+
+refscan = &daydata->scans[scan];
+for(j=0; j<refscan->num_cross_points; j++) 
+	{
+	float refI, refQ, refU, refV;
+	float crossI, crossQ, crossU, crossV;
+	CrossingPoint *crossPoint =  &refscan->crossPoints[j];
+	ScanData *crossScan = crossPoint->crossScan;
+	RA = crossPoint->RA;
+	p = crossPoint->ref_pos;
+	if(p >= 0 && p < refscan->num_records) 
+		{
+		if(isfinite(refscan->records[p].stokes.V)) 
+			{
+			refV = refscan->records[p].stokes.V;
+			}
+		}
+	if(!isfinite(refV)) continue;
+	p = crossPoint->cross_pos;
+	if(p >= 0 && p < crossScan->num_records) 
+		{
+		if(isfinite(crossScan->records[p].stokes.V)) 
+			{
+			crossV = crossScan->records[p].stokes.V;
+			}
+		}
+	if(!isfinite(crossV)) continue;
+	dV[num_delta] = refV - crossV;
+	dRA[num_delta] = RA;
+	num_delta++;
+	}
+
+if(num_delta > order && apply)
+	{
+	delta_sum = 0.0; for(k=0;k<num_delta;k++) delta_sum += dV[k]*dV[k]; delta_sum = sqrt(delta_sum/num_delta);
+	refscan = &daydata->scans[scan];
+	chebyshev_minmax(dRA, num_delta, &min, &max);
+	chebyshev_normalize(dRA, num_delta, min, max);
+	chebyshev_fit_bw_scan(dRA, dV, num_delta, nsigma, cV, order);
+
+	for( int i = 0; i < order + 1; i++ ) {
+			scancoeff->coeffsV[i] += cV[i];
+		}
+
+	for(k=0; k<refscan->num_records; k++)
+		{
+		if(isfinite(refscan->records[k].stokes.V) && refscan->records[k].RA >= min && refscan->records[k].RA <= max)
+			{
+			RA = CNORMALIZE(refscan->records[k].RA, min, max);
+			refscan->records[k].stokes.V -= chebyshev_eval(RA, cV, order) * loop_gain;
+			}
+		}
+	}
+	
+return sqrt(delta_sum);
+}
 
 //-------------------------------------------------------------------------------------------------------------
 static float day_weave(ScanDayData *daydata, float loop_gain, int day, int order, BWcoeff* coeffs )
@@ -350,7 +610,295 @@ if(num_delta > order)
 return sqrt(delta_sum);
 }
 
+//-------------------------------------------------------------------------------------------------------------
+static float day_weaveI(ScanDayData *daydata, float loop_gain, int day, int order, BWcoeff* coeffs )
+{
+int i, j, k, p, num_delta = 0;
+float RA, nRA, min, max, delta_sum = 0.0, nsigma = 2.5;
+float refI, refQ, refU, refV, crossI, crossQ, crossU, crossV; 
+float dI[MAX_NUM_DAYS*MAX_NUM_SCANS], dQ[MAX_NUM_DAYS*MAX_NUM_SCANS], dU[MAX_NUM_DAYS*MAX_NUM_SCANS], dV[MAX_NUM_DAYS*MAX_NUM_SCANS], dRA[MAX_NUM_DAYS*MAX_NUM_SCANS];
+float cI[order+1], cQ[order+1], cU[order+1], cV[order+1];
+ScanData *refscan;
 
+for( int i = 0; i < order + 1; i++ ) {
+	coeffs->coeffsI[i]=0.0;
+}
+
+for(i=0; i<daydata->numScans; i++) 
+	{
+	refscan = &daydata->scans[i];
+	int num_cross_points = refscan->num_cross_points;		
+	for(j=0; j<num_cross_points; j++) 
+		{
+		CrossingPoint *crossPoint =  &refscan->crossPoints[j];
+		ScanData *crossScan = crossPoint->crossScan;
+		RA = crossPoint->RA;				
+		p = crossPoint->ref_pos;
+		if(p >= 0 && p < refscan->num_records) 
+			{
+			refI = refscan->records[p].stokes.I;
+			}
+		if(!isfinite(refI)) continue;		
+		p = crossPoint->cross_pos;
+		if(p >= 0 && p < crossScan->num_records) 
+			{
+			crossI = crossScan->records[p].stokes.I;
+			}
+		if(!isfinite(crossI)) continue;
+		dI[num_delta] = refI - crossI;
+		dRA[num_delta] = RA;
+		num_delta++;
+		}
+	}
+
+
+if(num_delta > order)
+	{
+	delta_sum = 0.0; for(i=0; i<num_delta; i++) delta_sum += dI[i]*dI[i]; delta_sum = sqrt(delta_sum/num_delta);
+	chebyshev_minmax(dRA, num_delta, &min, &max);
+	chebyshev_normalize(dRA, num_delta, min, max);
+	chebyshev_fit_bw_day(dRA, dI, num_delta, nsigma, cI, order);
+
+	for( int i = 0; i < order + 1; i++ ) {
+		coeffs->coeffsI[i] += cI[i];
+	}
+
+	//printf( "COEFF %f %f %f\n", cI[0], cI[1], cI[2]);
+
+	for(i=0; i<daydata->numScans; i++) 
+		{
+		refscan = &daydata->scans[i];
+		for(k=0; k<refscan->num_records; k++) 
+			{
+			if(isfinite(refscan->records[k].stokes.I) && refscan->records[k].RA >= min && refscan->records[k].RA <= max)
+				{
+				float RA = CNORMALIZE(refscan->records[k].RA, min, max);
+				refscan->records[k].stokes.I -= chebyshev_eval(RA, cI, order) * loop_gain;
+				}
+			}				
+		}
+	}
+	
+return sqrt(delta_sum);
+}
+
+
+//-------------------------------------------------------------------------------------------------------------
+static float day_weaveQ(ScanDayData *daydata, float loop_gain, int day, int order, BWcoeff* coeffs )
+{
+int i, j, k, p, num_delta = 0;
+float RA, nRA, min, max, delta_sum = 0.0, nsigma = 2.5;
+float refI, refQ, refU, refV, crossI, crossQ, crossU, crossV; 
+float dI[MAX_NUM_DAYS*MAX_NUM_SCANS], dQ[MAX_NUM_DAYS*MAX_NUM_SCANS], dU[MAX_NUM_DAYS*MAX_NUM_SCANS], dV[MAX_NUM_DAYS*MAX_NUM_SCANS], dRA[MAX_NUM_DAYS*MAX_NUM_SCANS];
+float cI[order+1], cQ[order+1], cU[order+1], cV[order+1];
+ScanData *refscan;
+
+for( int i = 0; i < order + 1; i++ ) {
+	coeffs->coeffsQ[i]=0.0;
+}
+
+for(i=0; i<daydata->numScans; i++) 
+	{
+	refscan = &daydata->scans[i];
+	int num_cross_points = refscan->num_cross_points;		
+	for(j=0; j<num_cross_points; j++) 
+		{
+		CrossingPoint *crossPoint =  &refscan->crossPoints[j];
+		ScanData *crossScan = crossPoint->crossScan;
+		RA = crossPoint->RA;				
+		p = crossPoint->ref_pos;
+		if(p >= 0 && p < refscan->num_records) 
+			{
+			refQ = refscan->records[p].stokes.Q;
+			}
+		if(!isfinite(refQ)) continue;		
+		p = crossPoint->cross_pos;
+		if(p >= 0 && p < crossScan->num_records) 
+			{
+			crossQ = crossScan->records[p].stokes.Q;
+			}
+		if(!isfinite(crossQ)) continue;
+		dQ[num_delta] = refQ - crossQ;
+		dRA[num_delta] = RA;
+		num_delta++;
+		}
+	}
+
+
+if(num_delta > order)
+	{
+	delta_sum = 0.0; for(i=0; i<num_delta; i++) delta_sum += dQ[i]*dQ[i]; delta_sum = sqrt(delta_sum/num_delta);
+	chebyshev_minmax(dRA, num_delta, &min, &max);
+	chebyshev_normalize(dRA, num_delta, min, max);
+	chebyshev_fit_bw_day(dRA, dQ, num_delta, nsigma, cQ, order);
+
+	for( int i = 0; i < order + 1; i++ ) {
+		coeffs->coeffsQ[i] += cQ[i];
+	}
+
+	//printf( "COEFF %f %f %f\n", cQ[0], cQ[1], cI[2]);
+
+	for(i=0; i<daydata->numScans; i++) 
+		{
+		refscan = &daydata->scans[i];
+		for(k=0; k<refscan->num_records; k++) 
+			{
+			if(isfinite(refscan->records[k].stokes.Q) && refscan->records[k].RA >= min && refscan->records[k].RA <= max)
+				{
+				float RA = CNORMALIZE(refscan->records[k].RA, min, max);
+				refscan->records[k].stokes.Q -= chebyshev_eval(RA, cQ, order) * loop_gain;
+				}
+			}				
+		}
+	}
+	
+return sqrt(delta_sum);
+}
+
+
+//-------------------------------------------------------------------------------------------------------------
+static float day_weaveU(ScanDayData *daydata, float loop_gain, int day, int order, BWcoeff* coeffs )
+{
+int i, j, k, p, num_delta = 0;
+float RA, nRA, min, max, delta_sum = 0.0, nsigma = 2.5;
+float refI, refQ, refU, refV, crossI, crossQ, crossU, crossV; 
+float dI[MAX_NUM_DAYS*MAX_NUM_SCANS], dQ[MAX_NUM_DAYS*MAX_NUM_SCANS], dU[MAX_NUM_DAYS*MAX_NUM_SCANS], dV[MAX_NUM_DAYS*MAX_NUM_SCANS], dRA[MAX_NUM_DAYS*MAX_NUM_SCANS];
+float cI[order+1], cQ[order+1], cU[order+1], cV[order+1];
+ScanData *refscan;
+
+for( int i = 0; i < order + 1; i++ ) {
+	coeffs->coeffsU[i]=0.0;
+}
+
+for(i=0; i<daydata->numScans; i++) 
+	{
+	refscan = &daydata->scans[i];
+	int num_cross_points = refscan->num_cross_points;		
+	for(j=0; j<num_cross_points; j++) 
+		{
+		CrossingPoint *crossPoint =  &refscan->crossPoints[j];
+		ScanData *crossScan = crossPoint->crossScan;
+		RA = crossPoint->RA;				
+		p = crossPoint->ref_pos;
+		if(p >= 0 && p < refscan->num_records) 
+			{
+			refU = refscan->records[p].stokes.U;
+			}
+		if(!isfinite(refU)) continue;		
+		p = crossPoint->cross_pos;
+		if(p >= 0 && p < crossScan->num_records) 
+			{
+			crossU = crossScan->records[p].stokes.U;
+			}
+		if(!isfinite(crossU)) continue;
+		dU[num_delta] = refU - crossU;
+		dRA[num_delta] = RA;
+		num_delta++;
+		}
+	}
+
+
+if(num_delta > order)
+	{
+	delta_sum = 0.0; for(i=0; i<num_delta; i++) delta_sum += dU[i]*dU[i]; delta_sum = sqrt(delta_sum/num_delta);
+	chebyshev_minmax(dRA, num_delta, &min, &max);
+	chebyshev_normalize(dRA, num_delta, min, max);
+	chebyshev_fit_bw_day(dRA, dU, num_delta, nsigma, cU, order);
+
+	for( int i = 0; i < order + 1; i++ ) {
+		coeffs->coeffsU[i] += cU[i];
+	}
+
+	//printf( "COEFF %f %f %f\n", cI[0], cI[1], cI[2]);
+
+	for(i=0; i<daydata->numScans; i++) 
+		{
+		refscan = &daydata->scans[i];
+		for(k=0; k<refscan->num_records; k++) 
+			{
+			if(isfinite(refscan->records[k].stokes.U) && refscan->records[k].RA >= min && refscan->records[k].RA <= max)
+				{
+				float RA = CNORMALIZE(refscan->records[k].RA, min, max);
+				refscan->records[k].stokes.U -= chebyshev_eval(RA, cU, order) * loop_gain;
+				}
+			}				
+		}
+	}
+	
+return sqrt(delta_sum);
+}
+
+//-------------------------------------------------------------------------------------------------------------
+static float day_weaveV(ScanDayData *daydata, float loop_gain, int day, int order, BWcoeff* coeffs )
+{
+int i, j, k, p, num_delta = 0;
+float RA, nRA, min, max, delta_sum = 0.0, nsigma = 2.5;
+float refI, refQ, refU, refV, crossI, crossQ, crossU, crossV; 
+float dI[MAX_NUM_DAYS*MAX_NUM_SCANS], dQ[MAX_NUM_DAYS*MAX_NUM_SCANS], dU[MAX_NUM_DAYS*MAX_NUM_SCANS], dV[MAX_NUM_DAYS*MAX_NUM_SCANS], dRA[MAX_NUM_DAYS*MAX_NUM_SCANS];
+float cI[order+1], cQ[order+1], cU[order+1], cV[order+1];
+ScanData *refscan;
+
+for( int i = 0; i < order + 1; i++ ) {
+	coeffs->coeffsV[i]=0.0;
+}
+
+for(i=0; i<daydata->numScans; i++) 
+	{
+	refscan = &daydata->scans[i];
+	int num_cross_points = refscan->num_cross_points;		
+	for(j=0; j<num_cross_points; j++) 
+		{
+		CrossingPoint *crossPoint =  &refscan->crossPoints[j];
+		ScanData *crossScan = crossPoint->crossScan;
+		RA = crossPoint->RA;				
+		p = crossPoint->ref_pos;
+		if(p >= 0 && p < refscan->num_records) 
+			{
+			refV = refscan->records[p].stokes.V;
+			}
+		if(!isfinite(refV)) continue;		
+		p = crossPoint->cross_pos;
+		if(p >= 0 && p < crossScan->num_records) 
+			{
+			crossV = crossScan->records[p].stokes.V;
+			}
+		if(!isfinite(crossV)) continue;
+		dV[num_delta] = refV - crossV;
+		dRA[num_delta] = RA;
+		num_delta++;
+		}
+	}
+
+
+if(num_delta > order)
+	{
+	delta_sum = 0.0; for(i=0; i<num_delta; i++) delta_sum += dV[i]*dV[i]; delta_sum = sqrt(delta_sum/num_delta);
+	chebyshev_minmax(dRA, num_delta, &min, &max);
+	chebyshev_normalize(dRA, num_delta, min, max);
+	chebyshev_fit_bw_day(dRA, dV, num_delta, nsigma, cV, order);
+
+	for( int i = 0; i < order + 1; i++ ) {
+		coeffs->coeffsV[i] += cV[i];
+	}
+
+	//printf( "COEFF %f %f %f\n", cV[0], cI[1], cI[2]);
+
+	for(i=0; i<daydata->numScans; i++) 
+		{
+		refscan = &daydata->scans[i];
+		for(k=0; k<refscan->num_records; k++) 
+			{
+			if(isfinite(refscan->records[k].stokes.V) && refscan->records[k].RA >= min && refscan->records[k].RA <= max)
+				{
+				float RA = CNORMALIZE(refscan->records[k].RA, min, max);
+				refscan->records[k].stokes.V -= chebyshev_eval(RA, cV, order) * loop_gain;
+				}
+			}				
+		}
+	}
+	
+return sqrt(delta_sum);
+}
 
 void write_balance_data(FluxWappData * wappdata, int day_order, int scan_order, float loop_gain, float loop_epsilon, int order)
 {
@@ -398,7 +946,7 @@ void write_balance_data(FluxWappData * wappdata, int day_order, int scan_order, 
 	}
 
 	//do day by day weaving
-	chisqglobalprev = INFINITY;
+/*	chisqglobalprev = INFINITY;
 	count = 0;
 	do {
 		chisqglobal = 0.0;
@@ -418,6 +966,98 @@ void write_balance_data(FluxWappData * wappdata, int day_order, int scan_order, 
 		chisqglobalprev = chisqglobal;
 	}
 	while (globalchange > loop_epsilon && count < day_order);
+*/
+///////////////////////////// DO I Q U V seperately  ///////////
+	//do day by day weaving
+	chisqglobalprev = INFINITY;
+	count = 0;
+	do {
+		chisqglobal = 0.0;
+		for (r = 0; r < wappdata->numDays; r++) {
+			chisqtmp = day_weaveI(&wappdata->scanDayData[r], loop_gain, r, order, &days[r]);
+			chisqglobal += chisqtmp;
+		}
+		if (wappdata->numDays) chisqglobal /= wappdata->numDays;
+		count++;
+		globalchange = chisqglobalprev - chisqglobal;
+		printf("I Day iteration:%i global:%f change:%f prev:%f\n", count, chisqglobal, globalchange, chisqglobalprev);
+		//printf("I: %f %f %f\n", days[0]->coeffsI[0], days[0]->coeffsI[1], days[0]->coeffsI[2]);
+		//printf("Q: %f %f %f\n", days->coeffsQ[0], days->coeffsQ[1], days->coeffsQ[2]);
+		//printf("U: %f %f %f\n", days->coeffsU[0], days->coeffsU[1], days->coeffsU[2]);
+		//printf("V: %f %f %f\n", days->coeffsV[0], days->coeffsV[1], days->coeffsV[2]);
+
+		chisqglobalprev = chisqglobal;
+	}
+	while (globalchange > loop_epsilon && count < day_order);
+
+	//do day by day weaving
+	chisqglobalprev = INFINITY;
+	count = 0;
+	do {
+		chisqglobal = 0.0;
+		for (r = 0; r < wappdata->numDays; r++) {
+			chisqtmp = day_weaveQ(&wappdata->scanDayData[r], loop_gain, r, order, &days[r]);
+			chisqglobal += chisqtmp;
+		}
+		if (wappdata->numDays) chisqglobal /= wappdata->numDays;
+		count++;
+		globalchange = chisqglobalprev - chisqglobal;
+		printf("Q Day iteration:%i global:%f change:%f prev:%f\n", count, chisqglobal, globalchange, chisqglobalprev);
+		//printf("I: %f %f %f\n", days[0]->coeffsI[0], days[0]->coeffsI[1], days[0]->coeffsI[2]);
+		//printf("Q: %f %f %f\n", days->coeffsQ[0], days->coeffsQ[1], days->coeffsQ[2]);
+		//printf("U: %f %f %f\n", days->coeffsU[0], days->coeffsU[1], days->coeffsU[2]);
+		//printf("V: %f %f %f\n", days->coeffsV[0], days->coeffsV[1], days->coeffsV[2]);
+
+		chisqglobalprev = chisqglobal;
+	}
+	while (globalchange > loop_epsilon && count < day_order);
+
+
+	
+//do day by day weaving
+	chisqglobalprev = INFINITY;
+	count = 0;
+	do {
+		chisqglobal = 0.0;
+		for (r = 0; r < wappdata->numDays; r++) {
+			chisqtmp = day_weaveU(&wappdata->scanDayData[r], loop_gain, r, order, &days[r]);
+			chisqglobal += chisqtmp;
+		}
+		if (wappdata->numDays) chisqglobal /= wappdata->numDays;
+		count++;
+		globalchange = chisqglobalprev - chisqglobal;
+		printf("U Day iteration:%i global:%f change:%f prev:%f\n", count, chisqglobal, globalchange, chisqglobalprev);
+		//printf("I: %f %f %f\n", days[0]->coeffsI[0], days[0]->coeffsI[1], days[0]->coeffsI[2]);
+		//printf("Q: %f %f %f\n", days->coeffsQ[0], days->coeffsQ[1], days->coeffsQ[2]);
+		//printf("U: %f %f %f\n", days->coeffsU[0], days->coeffsU[1], days->coeffsU[2]);
+		//printf("V: %f %f %f\n", days->coeffsV[0], days->coeffsV[1], days->coeffsV[2]);
+
+		chisqglobalprev = chisqglobal;
+	}
+	while (globalchange > loop_epsilon && count < day_order);
+
+	//do day by day weaving
+	chisqglobalprev = INFINITY;
+	count = 0;
+	do {
+		chisqglobal = 0.0;
+		for (r = 0; r < wappdata->numDays; r++) {
+			chisqtmp = day_weaveV(&wappdata->scanDayData[r], loop_gain, r, order, &days[r]);
+			chisqglobal += chisqtmp;
+		}
+		if (wappdata->numDays) chisqglobal /= wappdata->numDays;
+		count++;
+		globalchange = chisqglobalprev - chisqglobal;
+		printf("V Day iteration:%i global:%f change:%f prev:%f\n", count, chisqglobal, globalchange, chisqglobalprev);
+		//printf("I: %f %f %f\n", days[0]->coeffsI[0], days[0]->coeffsI[1], days[0]->coeffsI[2]);
+		//printf("Q: %f %f %f\n", days->coeffsQ[0], days->coeffsQ[1], days->coeffsQ[2]);
+		//printf("U: %f %f %f\n", days->coeffsU[0], days->coeffsU[1], days->coeffsU[2]);
+		//printf("V: %f %f %f\n", days->coeffsV[0], days->coeffsV[1], days->coeffsV[2]);
+
+		chisqglobalprev = chisqglobal;
+	}
+	while (globalchange > loop_epsilon && count < day_order);
+
 
 	// write coefficients to disk
 	//if( ! mkdir("bw", 0777) ) printf("Error making directory in balance.c\n");
@@ -476,9 +1116,9 @@ void write_balance_data(FluxWappData * wappdata, int day_order, int scan_order, 
 	}
 
 
-
+/////////////////////////////////////////// original stop when I converges
 	//do the scan by scan weaving
-	int scanbwcoeffcount = 0;
+/*	int scanbwcoeffcount = 0;
 	chisqglobalprev = INFINITY;
 	count = 0;
 	do {
@@ -513,9 +1153,150 @@ void write_balance_data(FluxWappData * wappdata, int day_order, int scan_order, 
 		chisqglobalprev = chisqglobal;
 	}
 	while (globalchange > loop_epsilon && count < scan_order);
+*/
+	int scanbwcoeffcount = 0;
+	chisqglobalprev = INFINITY;
+	count = 0;
+	do {
+		chisqglobal = 0.0;
+		scanbwcoeffcount = 0;
+		for (r = 0; r < wappdata->numDays; r++) {
+			ScanDayData *daydata = &wappdata->scanDayData[r];
+			chisqday = 0.0;
+			int scancount = 0;
+			for (i = 0; i < daydata->numScans; i++) {
+				chisqtmp = 0.0;
+				if (daydata->numScans) {
+					chisqtmp = scan_weaveI(daydata, i, loop_gain * 0.7, 1, order, &scans[scanbwcoeffcount]);
+					scancount++;
+					scanbwcoeffcount++;
+				}
+				chisqday += chisqtmp;
+			}
+			if (scancount) chisqday /= scancount;
+			chisqglobal += chisqday;
+		}
+		if (wappdata->numDays) chisqglobal /= wappdata->numDays;
+		count++;
+		globalchange = chisqglobalprev - chisqglobal;
+		printf("I Scan iteration:%i global:%f change:%f prev:%f\n", count, chisqglobal, globalchange, chisqglobalprev);
 
-	// write coefficients to disk
-	//mkdir("bw", 0777);
+		//printf("I: %f %f %f\n", scans[50].coeffsI[0], scans[50].coeffsI[1], scans[50].coeffsI[2]);
+		//printf("Q: %f %f %f\n", scans[50].coeffsQ[0], scans[50].coeffsQ[1], scans[50].coeffsQ[2]);
+		//printf("U: %f %f %f\n", scans[50].coeffsU[0], scans[50].coeffsU[1], scans[50].coeffsU[2]);
+		//printf("V: %f %f %f\n", scans[50].coeffsV[0], scans[50].coeffsV[1], scans[50].coeffsV[2]);
+
+		chisqglobalprev = chisqglobal;
+	}
+	while (globalchange > loop_epsilon && count < scan_order);
+
+	scanbwcoeffcount = 0;
+	chisqglobalprev = INFINITY;
+	count = 0;
+	do {
+		chisqglobal = 0.0;
+		scanbwcoeffcount = 0;
+		for (r = 0; r < wappdata->numDays; r++) {
+			ScanDayData *daydata = &wappdata->scanDayData[r];
+			chisqday = 0.0;
+			int scancount = 0;
+			for (i = 0; i < daydata->numScans; i++) {
+				chisqtmp = 0.0;
+				if (daydata->numScans) {
+					chisqtmp = scan_weaveQ(daydata, i, loop_gain * 0.7, 1, order, &scans[scanbwcoeffcount]);
+					scancount++;
+					scanbwcoeffcount++;
+				}
+				chisqday += chisqtmp;
+			}
+			if (scancount) chisqday /= scancount;
+			chisqglobal += chisqday;
+		}
+		if (wappdata->numDays) chisqglobal /= wappdata->numDays;
+		count++;
+		globalchange = chisqglobalprev - chisqglobal;
+		printf("Q Scan iteration:%i global:%f change:%f prev:%f\n", count, chisqglobal, globalchange, chisqglobalprev);
+
+		//printf("I: %f %f %f\n", scans[50].coeffsI[0], scans[50].coeffsI[1], scans[50].coeffsI[2]);
+		//printf("Q: %f %f %f\n", scans[50].coeffsQ[0], scans[50].coeffsQ[1], scans[50].coeffsQ[2]);
+		//printf("U: %f %f %f\n", scans[50].coeffsU[0], scans[50].coeffsU[1], scans[50].coeffsU[2]);
+		//printf("V: %f %f %f\n", scans[50].coeffsV[0], scans[50].coeffsV[1], scans[50].coeffsV[2]);
+
+		chisqglobalprev = chisqglobal;
+	}
+	while (globalchange > loop_epsilon && count < scan_order);
+	
+	scanbwcoeffcount = 0;
+	chisqglobalprev = INFINITY;
+	count = 0;
+	do {
+		chisqglobal = 0.0;
+		scanbwcoeffcount = 0;
+		for (r = 0; r < wappdata->numDays; r++) {
+			ScanDayData *daydata = &wappdata->scanDayData[r];
+			chisqday = 0.0;
+			int scancount = 0;
+			for (i = 0; i < daydata->numScans; i++) {
+				chisqtmp = 0.0;
+				if (daydata->numScans) {
+					chisqtmp = scan_weaveU(daydata, i, loop_gain * 0.7, 1, order, &scans[scanbwcoeffcount]);
+					scancount++;
+					scanbwcoeffcount++;
+				}
+				chisqday += chisqtmp;
+			}
+			if (scancount) chisqday /= scancount;
+			chisqglobal += chisqday;
+		}
+		if (wappdata->numDays) chisqglobal /= wappdata->numDays;
+		count++;
+		globalchange = chisqglobalprev - chisqglobal;
+		printf("U Scan iteration:%i global:%f change:%f prev:%f\n", count, chisqglobal, globalchange, chisqglobalprev);
+
+		//printf("I: %f %f %f\n", scans[50].coeffsI[0], scans[50].coeffsI[1], scans[50].coeffsI[2]);
+		//printf("Q: %f %f %f\n", scans[50].coeffsQ[0], scans[50].coeffsQ[1], scans[50].coeffsQ[2]);
+		//printf("U: %f %f %f\n", scans[50].coeffsU[0], scans[50].coeffsU[1], scans[50].coeffsU[2]);
+		//printf("V: %f %f %f\n", scans[50].coeffsV[0], scans[50].coeffsV[1], scans[50].coeffsV[2]);
+
+		chisqglobalprev = chisqglobal;
+	}
+	while (globalchange > loop_epsilon && count < scan_order);
+	
+	scanbwcoeffcount = 0;
+	chisqglobalprev = INFINITY;
+	count = 0;
+	do {
+		chisqglobal = 0.0;
+		scanbwcoeffcount = 0;
+		for (r = 0; r < wappdata->numDays; r++) {
+			ScanDayData *daydata = &wappdata->scanDayData[r];
+			chisqday = 0.0;
+			int scancount = 0;
+			for (i = 0; i < daydata->numScans; i++) {
+				chisqtmp = 0.0;
+				if (daydata->numScans) {
+					chisqtmp = scan_weaveV(daydata, i, loop_gain * 0.7, 1, order, &scans[scanbwcoeffcount]);
+					scancount++;
+					scanbwcoeffcount++;
+				}
+				chisqday += chisqtmp;
+			}
+			if (scancount) chisqday /= scancount;
+			chisqglobal += chisqday;
+		}
+		if (wappdata->numDays) chisqglobal /= wappdata->numDays;
+		count++;
+		globalchange = chisqglobalprev - chisqglobal;
+		printf("V Scan iteration:%i global:%f change:%f prev:%f\n", count, chisqglobal, globalchange, chisqglobalprev);
+
+		//printf("I: %f %f %f\n", scans[50].coeffsI[0], scans[50].coeffsI[1], scans[50].coeffsI[2]);
+		//printf("Q: %f %f %f\n", scans[50].coeffsQ[0], scans[50].coeffsQ[1], scans[50].coeffsQ[2]);
+		//printf("U: %f %f %f\n", scans[50].coeffsU[0], scans[50].coeffsU[1], scans[50].coeffsU[2]);
+		//printf("V: %f %f %f\n", scans[50].coeffsV[0], scans[50].coeffsV[1], scans[50].coeffsV[2]);
+
+		chisqglobalprev = chisqglobal;
+	}
+	while (globalchange > loop_epsilon && count < scan_order);
 
 	int totScans = 0;
 	for (i = 0; i < wappdata->numDays; i++) {
@@ -565,7 +1346,7 @@ void write_balance_data(FluxWappData * wappdata, int day_order, int scan_order, 
 			}
 			else {
 				// can not recover
-				printf("couldn't write basket weaving coefficient file\n");
+				printf("couldn't write basket weaving coefficient file to %s\n",bwscanfilename);
 				//exit(1)
 				continue;;
 			}
@@ -1082,7 +1863,7 @@ do{
 	if(wappdata->numDays) chisqglobal /= wappdata->numDays;
 	count++;
 	globalchange = chisqglobalprev - chisqglobal;
-//	printf("Day iteration:%i global:%f change:%f prev:%f\n", count, chisqglobal, globalchange, chisqglobalprev);
+	printf("Day iteration:%i global:%f change:%f prev:%f\n", count, chisqglobal, globalchange, chisqglobalprev);
 	chisqglobalprev = chisqglobal;
 	}while(globalchange > loop_epsilon && count < day_order);
 
@@ -1113,7 +1894,7 @@ do{
 	if(wappdata->numDays) chisqglobal /= wappdata->numDays;
 	count++;
 	globalchange = chisqglobalprev - chisqglobal;
-//	printf("Scan iteration:%i global:%f change:%f prev:%f\n", count, chisqglobal, globalchange, chisqglobalprev);
+	printf("Scan iteration:%i global:%f change:%f prev:%f\n", count, chisqglobal, globalchange, chisqglobalprev);
 	chisqglobalprev = chisqglobal;
 	}while(globalchange > loop_epsilon && count < scan_order);
 

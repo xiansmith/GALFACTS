@@ -335,12 +335,12 @@ void QUVcorr(FluxWappData * wappdata, int chan, MapMetaData *md)
 		if((md->field[0] == 'S' && md->field[1] == '1') || (md->field[0] == 'N' && md->field[1] == '1'))
 		{
 			pa[beam][chan] = -M_PI/4.0;
-			printf( "PA for S1 or N1 PA value is %f." , -M_PI/4.0 );
+			//printf( "PA for S1 or N1 PA value is %f." , -M_PI/4.0 );
 		}
 		else  // S2, S3, S4, N2, N3 and N4 add 60 degrees
 		{
 			pa[beam][chan] = M_PI/12.0;
-			printf( "PA for S2, S3, S4, N2, N3, or N4 is %f." , M_PI/12.0);
+			//printf( "PA for S2, S3, S4, N2, N3, or N4 is %f." , M_PI/12.0);
 		}
 
 		//plugging in these for now

@@ -495,7 +495,7 @@ void calculate_dec_dependence(FluxWappData * wappdata, int order, int chan, floa
 int d,beam;
 for(d=0; d<wappdata->numDays; d++) 
 	{
-	printf("Day %d of %d", d+1, wappdata->numDays);
+	//printf("Day %d of %d", d+1, wappdata->numDays);
         if(!strcmp(wappdata->wapp,"multibeam"))
 	{
 		beam = d%7;

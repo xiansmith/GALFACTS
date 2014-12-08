@@ -43,7 +43,7 @@ static void absolute_cal_day(FluxWappData * wappdata, int day, int beam, int cha
 				//daydata->records[r].stokes.I -= (0.0000330741985*RA*RA-0.0116655548*RA-2.41301002);
 				//N4
 				//daydata->records[r].stokes.I -= (0.0000000957942322*RA*RA+0.00644514212*RA-5.84658068);
-				daydata->records[r].stokes.I -= (c[2]*RA*RA+c[1]*RA-c[0]);
+				daydata->records[r].stokes.I -= (c[2]*RA*RA+c[1]*RA+c[0]);
 			}
 		}
 	}

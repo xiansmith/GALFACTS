@@ -16,6 +16,7 @@
 #include "spec_corr.h"
 #include "corrections.h"
 #include "QUVcorr.h"
+#include "fix_pointing.h"
 // MAPMAIN with Chebyshev fitting
 
 int multibeam; 
@@ -150,6 +151,9 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 			//printf("Reading data ...\n"); 
 
 			fluxwappdata_readchan_binary(md->field, md->band, wappdata, chan, BASKETWEAVE, md->avg, md->decmin, md->decmax);
+
+                        printf("Fix pointing\n");
+                        fix_pointing(md->field, wappdata);
 
 			//printf("Apply the feed coupling mueller matrix correction...\n");
 			correct_UV(wappdata,chan,md);

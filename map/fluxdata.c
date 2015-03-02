@@ -525,7 +525,7 @@ void fluxwappdata_readchan_binary(const char *field, int band, FluxWappData * wa
 {
 
 float dec_step_expected = 0.005;
-float dec_step_tolerance = 0.002;
+float dec_step_tolerance = 0.001;
 float min_dec_step = dec_step_expected - dec_step_tolerance;
 float max_dec_step = dec_step_expected + dec_step_tolerance;
 //float ra_step_expected = 

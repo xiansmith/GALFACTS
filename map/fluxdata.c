@@ -523,6 +523,12 @@ if(field[0] == 'N' && field[1] == '1')
 /**********************************************************************/
 void fluxwappdata_readchan_binary(const char *field, int band, FluxWappData * wappdata, int chan, int id, int avg, float decmin, float decmax)
 {
+
+float dec_step_expected = 0.005;
+float dec_step_tolerance = 0.002;
+float min_dec_step = dec_step_expected - dec_step_tolerance;
+float max_dec_step = dec_step_expected + dec_step_tolerance;
+//float ra_step_expected = 
 int  m,j,n, i, numread, flag = 0, navg;
 FILE *infile, *configfile;
 char beamno[6];
@@ -735,18 +741,28 @@ for(m=0; m<wappdata->numDays; m++)
 // ---------------------- N1 ends
 
 //				Remove alien spacecraft !!
-				if(i>0)
+					if(i > 0 && !moonflag
+						&& tempdata_avg->records[i].DEC < decmax
+						&& tempdata_avg->records[i].DEC > decmin)
 					{
-					if((tempdata_avg->records[i].DEC < decmax && tempdata_avg->records[i].DEC > decmin  && fabs(tempdata_avg->records[i].DEC - tempdata_avg->records[i-1].DEC) > 0.0003 && (tempdata_avg->records[i].RA - tempdata_avg->records[i-1].RA) > 0 && !moonflag)) 
-					jj++;
+						if (fabs(tempdata_avg->records[i].DEC - tempdata_avg->records[i-1].DEC) < max_dec_step
+						    && fabs(tempdata_avg->records[i].DEC - tempdata_avg->records[i-1].DEC) > min_dec_step)
+						{
+						    jj++;
+						}
 					}
-				if(i==0) jj++;				
+
+					if(i == 0)
+						jj++;				
 				}
-			}		
-		daydata->numRecords = jj;
-		free(tempdata_avg->records);
+			}
+
+			daydata->numRecords = jj;
+
+			free(tempdata_avg->records);
 		}
-	free(tempdata_avg);
+
+		free(tempdata_avg);
 	} 
 }
 /**********************************************************************/

@@ -524,11 +524,10 @@ if(field[0] == 'N' && field[1] == '1')
 void fluxwappdata_readchan_binary(const char *field, int band, FluxWappData * wappdata, int chan, int id, int avg, float decmin, float decmax)
 {
 
-float dec_step_expected = 0.005;
-float dec_step_tolerance = 0.001;
-float min_dec_step = dec_step_expected - dec_step_tolerance;
-float max_dec_step = dec_step_expected + dec_step_tolerance;
-//float ra_step_expected = 
+const float dec_step_expected = 0.005;
+const float dec_step_tolerance = 0.001;
+const float min_dec_step = dec_step_expected - dec_step_tolerance;
+const float max_dec_step = dec_step_expected + dec_step_tolerance;
 int  m,j,n, i, numread, flag = 0, navg;
 FILE *infile, *configfile;
 char beamno[6];

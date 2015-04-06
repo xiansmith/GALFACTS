@@ -644,7 +644,7 @@ for(m=0; m<wappdata->numDays; m++)
 				if( avgfile != NULL )
 				{
 					numread = fluxdaydata_read_binary(
-						field, tempdata, infile, j, 0, atoi(daydata->mjd),
+						field, tempdata, avgfile, j, 0, atoi(daydata->mjd),
 						ramin, ramax);
 				}
 				else

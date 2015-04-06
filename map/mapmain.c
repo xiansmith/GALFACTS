@@ -150,7 +150,9 @@ static void create_fits_cube(FluxWappData * wappdata, char * wapp, MapMetaData *
 			printf("Channel: %i \n", chan);
 			//printf("Reading data ...\n"); 
 
-			fluxwappdata_readchan_binary(md->field, md->band, wappdata, chan, BASKETWEAVE, md->avg, md->decmin, md->decmax);
+			fluxwappdata_readchan_binary(
+				md->field, md->band, wappdata, chan, BASKETWEAVE, md->avg,
+				md->decmin, md->decmax, md->ramin, md->ramax);
 
                         printf("Fix pointing\n");
                         fix_pointing(md->field, wappdata);

@@ -78,8 +78,15 @@ typedef struct {
 
 
 int fluxrecord_read_binary(FluxRecord * pRec, FILE * file);
-int fluxdaydata_read_binary(const char *field, FluxDayData *daydata, FILE *infile, int beam, int chan, int day);
-void fluxwappdata_readchan_binary(const char *field, int band, FluxWappData * wappdata, int chan, int id, int avg, float decmin, float decmax); // band 0
+
+int fluxdaydata_read_binary(const char *field, FluxDayData *daydata,
+	FILE *infile, int beam, int chan, int day,
+	const float ramin, const float ramax);
+
+void fluxwappdata_readchan_binary(const char *field, int band,
+	FluxWappData * wappdata, int chan, int id, int avg, float decmin,
+	float decmax, const float ramin, const float ramax);
+
 //void fluxwappdata_readchan_binary1(const char *field, FluxWappData * wappdata, int chan, int id, int avg, float decmin, float decmax); // band 1
 FluxWappData * fluxwappdata_alloc(const char *wapp, char **days, int numDays);
 void fluxwappdata_free(FluxWappData * wappdata);
@@ -87,7 +94,10 @@ int fluxwappdata_writechan(FluxWappData * wappdata, int chan);
 int fluxwappdata_writechan_binary(FluxWappData * wappdata, int chan);
 int fluxrecord_write(FluxRecord * pRec, FILE * file);
 int fluxrecord_write_binary(FluxRecord * pRec, FILE * file);
-int fluxdaydata_read_binary_single_file(const char *field, FluxDayData *daydata, FILE *infile, FILE *configfile, int beam, int chan, int day);
+
+int fluxdaydata_read_binary_single_file(const char *field, FluxDayData *daydata,
+	FILE *infile, FILE *configfile, int beam, int chan, int day,
+	const float ramin, const float ramax);
 
 #endif //_FLUXDATA_H
 

@@ -219,10 +219,8 @@ if(field[0] == 'N' && field[1] == '1')
 			}
 	}
 	// ---------------------- N1 ends
-	if(bad && daydata->records[k].RA > highRA )
+	if(bad && daydata->records[k].RA > highRA && baddatafile != NULL)
 	{
-		if( baddatafile == NULL ) break;
-
 		if(!feof(baddatafile))
 		{
 			// read out a line of bad data file

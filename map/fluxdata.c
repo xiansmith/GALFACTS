@@ -73,12 +73,17 @@ if(wappdata->daydata != NULL)
 free(wappdata);
 }
 /**********************************************************************/
-int fluxdaydata_read_binary(const char *field, FluxDayData *daydata, FILE *infile, int beam, int chan, int day)
+int fluxdaydata_read_binary(const char *field, FluxDayData *daydata,
+	FILE *infile, int beam, int chan, int day,
+	const float ramin, const float ramax)
 {
 int numRecords;
 char header[80+1];
-float RAmax = FLT_MIN;
-float RAmin = FLT_MAX;
+
+	// to keep track of the smallest and largest RA values encountered,
+	// which still fall within the configured RA bounds of the field.
+	float min_ra_read = FLT_MAX;
+	float max_ra_read = FLT_MIN;
 
 fread(&numRecords, sizeof(int), 1, infile); 
 if(daydata->records != NULL) free(daydata->records);
@@ -159,12 +164,24 @@ if(field[0] == 'N' && field[1] == '1')
 	}
 // ---------------------- N1 ends
 
-	if(num == 7)
-		{
-        float RA = daydata->records[k].RA;
-        float DECR = daydata->records[k].DEC*M_PI/180.0;
-        if(RA > RAmax) RAmax = RA;
-        if (RA < RAmin) RAmin = RA;
+		if(num == 7) {
+			float RA = daydata->records[k].RA;
+			float DECR = daydata->records[k].DEC*M_PI/180.0;
+
+			if(max_ra_read < RA && RA < ramax) {
+				// keep track of the largest encountered RA value
+				// that still falls within the configured RA bounds
+				// of the field.
+				max_ra_read = RA;
+			}
+
+			if(RA < min_ra_read) {
+				// do the same for the smallest encountered RA value
+				// but don't check configured lower bound for this fix,
+				// just to stay as close as possible to original logic.
+				// should be revisited after 3.1.2 data release.
+				min_ra_read = RA;
+			}
 
 // Just for N1
 // ----------------------
@@ -202,10 +219,8 @@ if(field[0] == 'N' && field[1] == '1')
 			}
 	}
 	// ---------------------- N1 ends
-	if(bad && daydata->records[k].RA > highRA )
+	if(bad && daydata->records[k].RA > highRA && baddatafile != NULL)
 	{
-		if( baddatafile == NULL ) break;
-
 		if(!feof(baddatafile))
 		{
 			// read out a line of bad data file
@@ -239,7 +254,14 @@ if(field[0] == 'N' && field[1] == '1')
             daydata->records[k].stokes.V = NAN;
             }
 
-		k++;
+			if(ramax < 360.0 || daydata->records[k].RA < ramax) {
+				// 24h wrapping fix: N4 has some high-RA records which cause
+				// streaky artefacts around the 0h line. This filtering works,
+				// but there might be a better way to do this earlier in the
+				// pipeline. also, we may want to filter ALL fields, not just
+				// those with RAMAX >= 360?
+				k++;
+			}
 		}
 	else if(num <= 0) break;
 	else
@@ -249,8 +271,8 @@ if(field[0] == 'N' && field[1] == '1')
 		}
     }
     daydata->numRecords = k;
-    daydata->RAmin = RAmin;
-    daydata->RAmax = RAmax;
+    daydata->RAmin = min_ra_read;
+    daydata->RAmax = max_ra_read;
 
 	// check if not closed to avoid leaking 
 /*	if ( fcntl(fileno(baddatafile), F_GETFD) != -1 )  {
@@ -262,12 +284,12 @@ if(field[0] == 'N' && field[1] == '1')
 }
 
 /**********************************************************************/
-int fluxdaydata_read_binary_single_file(const char *field, FluxDayData *daydata, FILE *infile, FILE *configfile, int beam, int chan, int day)
+int fluxdaydata_read_binary_single_file(const char *field, FluxDayData *daydata,
+	FILE *infile, FILE *configfile, int beam, int chan, int day,
+	const float ramin, const float ramax)
 {
 	int numRecords;
 	char header[80+1];
-	float RAmax = FLT_MIN;
-	float RAmin = FLT_MAX;
 	int k = 0;
 	int channelcount;
 	int configlines;
@@ -275,6 +297,11 @@ int fluxdaydata_read_binary_single_file(const char *field, FluxDayData *daydata,
 	int numRead;
 	int cfgChan, cfgStart, cfgNumRecords;
 	char filename[64];
+
+	// to keep track of the smallest and largest RA values encountered,
+	// which still fall within the configured RA bounds of the field.
+	float min_ra_read = FLT_MAX;
+	float max_ra_read = FLT_MIN;
 
 	// for single file processing, we need the config file or fail and exit
 	// even missing channels will have NANs to read
@@ -404,22 +431,25 @@ if(field[0] == 'N' && field[1] == '1')
 		if(m > 200000) printf("Pointing fix array overrun !\n");
 		}
 	}
-// ---------------------- N1 ends
- if(field[0] == 'N' && field[1] == '4') {
-                                RAmax = 390.0;
-                        }
 
-                        if(field[0] == 'S' && field[1] == '4') {
-                                RAmax = 415.0;
-                        }
+		if(num == 7) {
+			float RA = daydata->records[k].RA;
+			float DECR = daydata->records[k].DEC*M_PI/180.0;
 
-	
-	if(num == 7)
-		{
-        float RA = daydata->records[k].RA;
-        float DECR = daydata->records[k].DEC*M_PI/180.0;
-        if(RA > RAmax) RAmax = RA;
-        if (RA < RAmin) RAmin = RA;
+			if(max_ra_read < RA && RA < ramax) {
+				// keep track of the largest encountered RA value
+				// that still falls within the configured RA bounds
+				// of the field.
+				max_ra_read = RA;
+			}
+
+			if (RA < min_ra_read) {
+				// do the same for the smallest encountered RA value
+				// but don't check configured lower bound for this fix,
+				// just to stay as close as possible to original logic.
+				// should be revisited after 3.1.2 data release.
+				min_ra_read = RA;
+			}
 
 // Just for N1
 // ----------------------
@@ -494,10 +524,15 @@ if(field[0] == 'N' && field[1] == '1')
             daydata->records[k].stokes.U = NAN;
             daydata->records[k].stokes.V = NAN;
             }
-	
-	
-		 if(daydata->records[k].RA < RAmax)
-			k++;
+
+			if(ramax < 360.0 || daydata->records[k].RA < ramax) {
+				// 24h wrapping fix: N4 has some high-RA records which cause
+				// streaky artefacts around the 0h line. This filtering works,
+				// but there might be a better way to do this earlier in the
+				// pipeline. also, we may want to filter ALL fields, not just
+				// those with RAMAX >= 360?
+				k++;
+			}
 		}
 	else if(num <= 0) break;
 	else
@@ -507,8 +542,8 @@ if(field[0] == 'N' && field[1] == '1')
 		}
     }
 	daydata->numRecords = k;
-    daydata->RAmin = RAmin;
-    daydata->RAmax = RAmax;
+    daydata->RAmin = min_ra_read;
+    daydata->RAmax = max_ra_read;
   
 	// check if not closed to avoid leaking 
 /*	if ( fcntl(fileno(baddatafile), F_GETFD) != -1 )  {
@@ -521,7 +556,9 @@ if(field[0] == 'N' && field[1] == '1')
 /**********************************************************************/
 
 /**********************************************************************/
-void fluxwappdata_readchan_binary(const char *field, int band, FluxWappData * wappdata, int chan, int id, int avg, float decmin, float decmax)
+void fluxwappdata_readchan_binary(
+	const char *field, int band, FluxWappData * wappdata, int chan, int id,
+	int avg, float decmin, float decmax, const float ramin, const float ramax)
 {
 
 const float dec_step_expected = 0.005;
@@ -604,7 +641,9 @@ for(m=0; m<wappdata->numDays; m++)
 
 				if( avgfile != NULL )
 				{
-					numread = fluxdaydata_read_binary(field, tempdata, infile, j, 0, atoi(daydata->mjd));
+					numread = fluxdaydata_read_binary(
+						field, tempdata, avgfile, j, 0, atoi(daydata->mjd),
+						ramin, ramax);
 				}
 				else
 				{
@@ -615,8 +654,9 @@ for(m=0; m<wappdata->numDays; m++)
 			}
 			else
 			{
-				//numread = fluxdaydata_read_binary(field, tempdata, infile, j, chan+n, atoi(daydata->mjd));
-				numread = fluxdaydata_read_binary_single_file(field, tempdata, infile, configfile, j, chan+n, atoi(daydata->mjd));
+				numread = fluxdaydata_read_binary_single_file(
+					field, tempdata, infile, configfile, j, chan+n,
+					atoi(daydata->mjd), ramin, ramax);
 			}
 			printf("Opened file %s\n",filename);
 			printf("read %d records.\n",tempdata->numRecords );

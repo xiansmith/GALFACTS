@@ -106,30 +106,32 @@ float lowRA = 0.0, highRA = 0.0;
 int badmjd = 0, badlowchan = 0, badhighchan = 0, bad = 0;
 char badbeam[8]={0};
 
-if(baddatafile != NULL)
-	{
+if(baddatafile != NULL) {
 	//read out the #header
-	//printf(":: BAD file found.\n");
 	fgets(header,80,baddatafile);
-	while(!feof(baddatafile))
-		{
+
+	while(!feof(baddatafile)) {
 		// read out a line of bad data file
-		fscanf(baddatafile,"%d %s %d %d %f %f", &badmjd, badbeam, &badlowchan, &badhighchan, &lowRA, &highRA);
-		//printf("bad beam pattern: %s %d %d %f %f\n", badbeam, badlowchan, badhighchan, lowRA, highRA);
-		// check to see if mjd beam and channel match the current ones, if so stop reading further
-		// we now have the RA range for the bad data for this day
-		if((badmjd == day) && (badbeam[beam] == '1') && (chan >= badlowchan) && (chan <= badhighchan))
-			{
-			//fclose(baddatafile);
+		fscanf(baddatafile,"%d %s %d %d %f %f", &badmjd, badbeam, &badlowchan,
+			&badhighchan, &lowRA, &highRA);
+
+		// check to see if mjd beam and channel match the current ones,
+		// if so stop reading further. we now have the RA range for the bad
+		// data for this day
+		if((badmjd == day) && (badbeam[beam] == '1') && (chan >= badlowchan)
+			&& (chan <= badhighchan)) {
 			bad = 1;
 			break;
-			//for implementation read code at line no 361
-			}
 		}
 	}
-else
-{
-//	printf(":: BAD file not found.\n");
+
+	if(!bad) {
+		// no baddata lines found for this mjd+beam+channel so close the file
+		fclose(baddatafile);
+		baddatafile = NULL;
+	}
+}
+else {
 	bad = 0;
 }
 
@@ -219,7 +221,7 @@ if(field[0] == 'N' && field[1] == '1')
 			}
 	}
 	// ---------------------- N1 ends
-	if(bad && daydata->records[k].RA > highRA && baddatafile != NULL)
+	if(bad && daydata->records[k].RA > highRA && baddatafile != NULL && (ramax < 360.0 || daydata->records[k].RA <= ramax))
 	{
 		if(!feof(baddatafile))
 		{
@@ -365,30 +367,31 @@ float lowRA = 0.0, highRA = 0.0;
 int badmjd = 0, badlowchan = 0, badhighchan = 0, bad = 0;
 char badbeam[8]={0};
 
-if(baddatafile != NULL)
-	{
-	//printf(":: BAD file found.\n");
+if(baddatafile != NULL) {
 	//read out the #header
 	fgets(header,80,baddatafile);
-	while(!feof(baddatafile))
-		{
+
+	while(!feof(baddatafile)) {
 		// read out a line of bad data file
-		fscanf(baddatafile,"%d %s %d %d %f %f", &badmjd, badbeam, &badlowchan, &badhighchan, &lowRA, &highRA);
-		//printf("bad beam pattern: %s %d %d %f %f\n", badbeam, badlowchan, badhighchan, lowRA, highRA);
-		// check to see if mjd beam and channel match the current ones, if so stop reading further
-		// we now have the RA range for the bad data for this day
-		if((badmjd == day) && (badbeam[beam] == '1') && (chan >= badlowchan) && (chan <= badhighchan))
-			{
-			//fclose(baddatafile);
+		fscanf(baddatafile,"%d %s %d %d %f %f", &badmjd, badbeam, &badlowchan,
+			&badhighchan, &lowRA, &highRA);
+
+		// check to see if mjd beam and channel match the current ones,
+		// if so stop reading further. we now have the RA range for the bad
+		// data for this day
+		if((badmjd == day) && (badbeam[beam] == '1') && (chan >= badlowchan)
+			&& (chan <= badhighchan)) {
 			bad = 1;
 			break;
-			//for implementation read code at line no 361
-			}
 		}
 	}
-else
-{
-	//printf(":Day %d: BAD file not found.\n",day);
+
+	if(!bad) {
+		fclose(baddatafile);
+		baddatafile = NULL;
+	}
+}
+else {
 	bad = 0;
 }
 
@@ -488,7 +491,7 @@ if(field[0] == 'N' && field[1] == '1')
 	}
 // ---------------------- N1 ends
 
-	if(bad && daydata->records[k].RA > highRA )
+	if(bad && daydata->records[k].RA > highRA && baddatafile != NULL && (ramax < 360.0 || daydata->records[k].RA <= ramax))
 	{
 		if(!feof(baddatafile))
 		{

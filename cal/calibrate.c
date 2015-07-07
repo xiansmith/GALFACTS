@@ -3,6 +3,7 @@
 #include "calibrate.h"
 #include "rfi.h"
 #include "chebyshev.h"
+#include "denoising.h"
 #include <string.h>
 //----------------------------------------------------------------------------------------------------------
 //pre-compute the raw cal for every channel

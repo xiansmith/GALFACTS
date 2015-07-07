@@ -15,8 +15,10 @@ void fix_pointing(const char *field, FluxWappData *wappdata)
 	sprintf(filename,"%s.pointing_fits.dat",field);
 	fits = fopen(filename,"r");
 
-	if(NULL == fits)
-		printf("ERR: Could not open file %s\n");
+	if(NULL == fits) {
+		printf("ERR: Could not open file %s. No pointing fixes applied.\n", filename);
+		return;
+	}
 
 	float low_zenith[7][3];
 	float high_zenith[7][3];

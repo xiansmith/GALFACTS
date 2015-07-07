@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "chebyshev.h"
+#include "jsd_futil.h"
 
 void mark_bad_channels(SpecRecord dataset[], int size, int lowchan, int highchan, float numSigma, float hidrogenfreq, float hidrogenband, float freq[],
 		int *badchannels) {

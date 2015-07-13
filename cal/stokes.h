@@ -4,13 +4,32 @@
 #ifndef _STOKES_H
 #define _STOKES_H
 
-void calculate_stokes(SpecRecord dataset[], int size, int lowchan, int highchan, int RFIF, int calskyfiles, float Tcalx[], float Tcaly[], int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, int start, int end);
-void write_channel_data(SpecRecord dataset[], int size, int lowchan, int highchan);
-void write_binary_channel_data(SpecRecord dataset[], int size, int lowchan, int highchan);
-void average_stokes(SpecRecord dataset[], int size, int lowchan, int highchan, float hidrogenfreq, float hidrogenband, float freq[]);
-void correct_beamgains(SpecRecord dataset[], int size, int lowchan, int highchan, int beam);
-void write_binary_channel_data_single_file(SpecRecord dataset[], int numRecords, int lowchan, int highchan);
-void write_binary_average_data(SpecRecord dataset[], int size, int lowchan, int highchan);
-void write_rfi_data( SpecRecord dataset[], int numRecords, int lowchan, int highchan);
-#endif //_STOKES_H
+void calculate_stokes(SpecRecord dataset[], const int size, const int lowchan,
+	const int highchan, const int RFIF, const int calskyfiles,
+	const float Tcalx[], const float Tcaly[], const int uvDenoising,
+	const float uvDenoisingTau, const float uvDenoisingLambda, const int start,
+	const int end);
 
+void write_channel_data(const SpecRecord dataset[], const int size, const int lowchan,
+	const int highchan);
+
+void write_binary_channel_data(const SpecRecord dataset[], const int size,
+	const int lowchan, const int highchan);
+
+void average_stokes(SpecRecord dataset[], const int size, const int lowchan,
+	const int highchan, const float hidrogenfreq, const float hidrogenband,
+	const float freq[]);
+
+void correct_beamgains(SpecRecord dataset[], const int size, const int lowchan,
+	const int highchan, const int beam);
+
+void write_binary_channel_data_single_file(const SpecRecord dataset[],
+	const int numRecords, const int lowchan, const int highchan);
+
+void write_binary_average_data(const SpecRecord dataset[], const int size,
+	const int lowchan, const int highchan);
+
+void write_rfi_data(const SpecRecord dataset[], const int numRecords,
+	const int lowchan, const int highchan);
+
+#endif //_STOKES_H

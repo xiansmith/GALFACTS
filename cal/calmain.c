@@ -5,6 +5,7 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include <sys/time.h>
 #include <glob.h>
 
 #include "common.h"
@@ -21,15 +22,24 @@
 int multibeam;
 
 clock_t sclock;
+double sec_start;
 //--------------------------------------------------------------------------------------------------------
 static void start_clock(void)
 {
+	struct timeval time;
+	gettimeofday(&time, NULL);
+	sec_start = (double)time.tv_sec + (double)time.tv_usec * .000001;
 	sclock = clock();
 }
 //--------------------------------------------------------------------------------------------------------
 static void read_clock(void)
 {
 	printf("Computation time = %f\n", ((double)clock() - sclock)/CLOCKS_PER_SEC);
+
+	struct timeval time;
+	gettimeofday(&time, NULL);
+	double sec_end = (double)time.tv_sec + (double)time.tv_usec * .000001;
+	printf("Wall time = %f\n", sec_end - sec_start);
 }
 //--------------------------------------------------------------------------------------------------------
 static void read_tcal(const char *filename, float *Tcalx, float *Tcaly) 
@@ -142,6 +152,8 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 
 
 	start_clock();
+	printf("Locating/opening files\n");
+	
 	globbuf.gl_offs = 1;
 	if(band == -1) sprintf(globpattern, "%s/%s/*.*.beam%i.*.spec", datadirname, datedir, beam); 
 	else sprintf(globpattern, "%s/%s/*.*.b*%is*%i.*.spec", datadirname, datedir, beam, band); 
@@ -172,7 +184,9 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 	printf("Hidrogen bandwidth: %fMHz, %fMHz\n", hidrogenfreq-hidrogenband, hidrogenfreq+hidrogenband);
 	
 	for(k=0; k<MAX_CHANNELS; k++) freq[k] = fcen - ((float)(k + 1 - MAX_CHANNELS/2)) * df; // !!!!!!!!!
-	
+
+	read_clock(); start_clock();
+	printf("Writing freq.dat\n");
 	FILE *freq_file;
 	freq_file=fopen("freq.dat", "w");
 	for(k=0; k<MAX_CHANNELS; k++) fprintf(freq_file, "%d\t%f\n", k, freq[k]);
@@ -228,6 +242,7 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 		}		
 
 	read_clock(); start_clock();
+	printf("Marking bad channels\n");
 	mark_bad_channels(dataset, numRecords, lowchan, highchan, numSigmaT, hidrogenfreq, hidrogenband, freq, badchannels);
 	read_clock(); start_clock();
 	if(annfiles)
@@ -237,6 +252,7 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 			printf("Create out of band RFI annotation files\n");
 			outofbandrfi_ann(dataset, numRecords, lowchan, highchan);
 			rfi_ann(dataset, numRecords, lowchan, highchan, freq);
+			read_clock(); start_clock();
 		}
 		printf("Creating pointing annotation file\n"); 
 		create_annotations(dataset, numRecords);
@@ -245,11 +261,13 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 	
 	printf("Writing RFI plot data\n");
 	write_rfi_data( dataset, numRecords, lowchan, highchan );
+	read_clock(); start_clock();
 	
 	printf("Compute the raw values of cal\n");
 	compute_raw_cal(dataset, numRecords, lowchan, highchan);
 	read_clock(); start_clock();
-	
+
+	printf("Initialize Tcal arrays\n");
 	float Tcalx[MAX_CHANNELS];
 	float Tcaly[MAX_CHANNELS];
 
@@ -264,6 +282,7 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
                 Tcalx_s[i] = 1.0;
                 Tcaly_s[i] = 1.0;
         }
+	read_clock(); start_clock();
 
 	if(fit_smooth == 1)
 	{	
@@ -327,23 +346,33 @@ int uvDenoising, float uvDenoisingTau, float uvDenoisingLambda, float hidrogenfr
 	// old method: write_binary_channel_data(dataset, numRecords, lowchan, highchan);
 
 	read_clock(); start_clock();
-	printf("Writing average data\n");
+	printf("Averaging data\n");
 	average_stokes(dataset, numRecords, lowchan, highchan, hidrogenfreq, hidrogenband, freq);
+	read_clock(); start_clock();
+	
+	printf("Writing binary channel data\n");
+	write_binary_channel_data(dataset, numRecords, 0, 1);
+	read_clock(); start_clock();
 
 	// new method, new filename but old format
 	// average data is still in channel 0, but no longer overwrite the real channel 0
-	write_binary_channel_data(dataset, numRecords, 0, 1);
+	printf("Writing channel data\n");
 	write_channel_data(dataset, numRecords, 0, 1);
 
-	read_clock();	
+	read_clock();
 	free(dataset);
-	return;	
+	return;
 }
 //--------------------------------------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
 	int i, j;
 	clock_t time0 = clock();
+
+	struct timeval time;
+	gettimeofday(&time, NULL);
+	double sec0 = (double)time.tv_sec + (double)time.tv_usec * .000001;
+
 
 	if ((argc < 26) || (argc > 27))
 		{
@@ -536,6 +565,10 @@ int main(int argc, char *argv[])
 	free(datedirs); //free(subdir);
 	free(badchannels);
 	printf("Total computation time = %f\n", ((double)clock() - time0)/CLOCKS_PER_SEC);
+
+	gettimeofday(&time, NULL);
+	double sec1 = (double)time.tv_sec + (double)time.tv_usec * .000001;
+	printf("Total wall time = %f\n", sec1-sec0);
 	return EXIT_SUCCESS;
 }
 
